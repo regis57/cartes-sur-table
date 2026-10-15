@@ -5,6 +5,8 @@ sans pistage. Site : https://jeuxdecartes.altiplume.com
 
 - [Journal des versions](Journal) : ce que l'on fait à chaque version.
 - [Manifeste de sécurité](Manifeste-securite) : ce que le site promet et s'interdit.
+- [Bilan sécurité](Bilan-securite) : les dispositions par conception et de durcissement
+  réellement en place, couche par couche, et ce qui reste à faire.
 - [README](https://github.com/regis57/cartes-sur-table#readme) : les modalités (démarrer,
   vérifier, contribuer, licence).
 - [Déploiement](https://github.com/regis57/cartes-sur-table/blob/main/docs/DEPLOIEMENT.md),
