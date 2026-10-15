@@ -6,7 +6,10 @@
 | Audit des dépendances de production | `npm audit`, CI | chaque PR | bloquant au niveau « élevé » |
 | Revue des dépendances (vulnérabilités, licences) | `dependency-review` | chaque PR | bloquant |
 | Hygiène du dépôt : secrets, adresses personnelles, inline, tiers, identités de commit | `scripts/hygiene.mjs`, hooks, CI | chaque commit, push, PR | bloquant |
-| Analyse statique | CodeQL (security-extended), Opengrep | chaque PR, chaque lundi | bloquant (ERROR) |
+| Secrets dans l'historique | gitleaks | chaque PR, chaque lundi | bloquant |
+| Analyse statique | CodeQL (security-extended, code et workflows), Opengrep | chaque PR, chaque lundi | bloquant (ERROR) |
+| Audit des workflows | zizmor | chaque PR | bloquant |
+| Posture du dépôt | OpenSSF Scorecard | chaque mardi | publié |
 | Image : construction, démarrage, absence de gestionnaire de paquets, Trivy | `release.yml` | chaque PR, chaque fusion | bloquant (critique corrigée) |
 | Provenance et SBOM de l'image | `release.yml`, attestation GitHub | chaque fusion | vérifiable par `gh attestation verify` |
 | OWASP ZAP passif sur l'image | `zap.yml` | chaque PR, chaque lundi | bloquant (moyen ou haut) |

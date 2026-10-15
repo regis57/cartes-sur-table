@@ -1,13 +1,29 @@
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# Dépendances et builds
 node_modules/
 packages/client/public/js/
+dist/
+build/
+coverage/
+
+# Base locale
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
 data/
-.env
-.env.*
-!.env.example
+
+# Éditeurs / OS
+.vscode/
+.idea/
 *.log
 .DS_Store
 Thumbs.db

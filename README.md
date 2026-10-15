@@ -1,4 +1,4 @@
-# Jeux de cartes
+# Cartes sur table
 
 Des jeux de cartes français, jouables dans le navigateur, sur téléphone comme sur
 ordinateur : seul contre des bots, avec d'autres joueurs, ou entre amis avec un code.
@@ -25,8 +25,8 @@ directement par Node (retrait des types), sans étape de construction côté ser
 ## Démarrer
 
 ```bash
-git clone https://github.com/regis57/jeuxdecartes.git
-cd jeuxdecartes
+git clone https://github.com/regis57/cartes-sur-table.git
+cd cartes-sur-table
 npm ci --ignore-scripts
 npm run dev          # construit le client puis lance le serveur
 ```
@@ -47,10 +47,10 @@ npm run verify                        # typage strict, tests, construction, audi
 |---|---|
 | Avant chaque commit | hook `pre-commit` : refuse les secrets |
 | Avant chaque push | hook `pre-push` : `npm run verify` |
-| Chaque pull request | CI, CodeQL, Opengrep, revue des dépendances, image Docker + Trivy, OWASP ZAP passif |
+| Chaque pull request | CI, gitleaks, CodeQL, zizmor, Opengrep, revue des dépendances, image Docker + Trivy, OWASP ZAP passif |
 | Chaque fusion sur `main` | image publiée sur GHCR avec SBOM et attestation de provenance |
 | Chaque lundi | contrôle externe du site en ligne, Trivy sur l'image publiée, ZAP sur le site |
-| Chaque semaine | Dependabot (npm, Actions, Docker) |
+| Chaque semaine | Dependabot (npm, Actions, Docker) ; OpenSSF Scorecard le mardi |
 
 La branche `main` est protégée : pull request obligatoire, contrôles verts requis, commits
 signés, squash seulement, pas de force-push (`.github/rulesets/protect-main.json`).

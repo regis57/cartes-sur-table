@@ -14,11 +14,11 @@ Temps estimé : 30 à 40 minutes la première fois.
 
 - [ ] DSM à jour, vérification en deux étapes, blocage automatique (déjà fait pour Altiplume).
 - [ ] Container Manager installé ; dossier partagé `docker` ; créer le sous-dossier `jeuxdecartes`.
-- [ ] L'image `ghcr.io/regis57/<nom-du-dépôt>` est publiée (le workflow *Release* la publie à
+- [ ] L'image `ghcr.io/regis57/cartes-sur-table` est publiée (le workflow *Release* la publie à
       chaque fusion sur `main`) et **publique** (GitHub → profil → Packages → *Package settings*).
 - [ ] Un navigateur connecté à Cloudflare et à `altiplume.com`.
 
-> Remplacez `<nom-du-dépôt>` par le nom choisi pour le dépôt GitHub, partout.
+> Remplacez `cartes-sur-table` par le nom choisi pour le dépôt GitHub, partout.
 
 ## 1. Cloudflare : créer le tunnel dédié
 
@@ -133,7 +133,7 @@ d'email. Tout le reste de la configuration est dans `docker-compose.yml`, versio
 - Nom du projet : `jeuxdecartes`
 - Chemin : `/docker/jeuxdecartes`
 - Source : *Créer docker-compose.yml*, puis collez le contenu de
-  `https://raw.githubusercontent.com/regis57/<nom-du-dépôt>/main/docker-compose.yml`
+  `https://raw.githubusercontent.com/regis57/cartes-sur-table/main/docker-compose.yml`
 - Portail web : **ne rien configurer** (aucun port n'est publié, c'est voulu).
 
 **Suivant → Terminé.** Le NAS télécharge l'image, crée le réseau `jeuxdecartes`, le
@@ -182,9 +182,9 @@ puis **Démarrer** : l'image `latest` est retéléchargée. Une minute d'indispo
 les profils sont dans le volume, rien n'est perdu.
 
 Pour figer une version précise plutôt que `latest`, remplacez dans le compose
-`image: ghcr.io/regis57/<nom-du-dépôt>:latest` par `…@sha256:<empreinte>` donnée par le
+`image: ghcr.io/regis57/cartes-sur-table:latest` par `…@sha256:<empreinte>` donnée par le
 résumé du workflow *Release*. La provenance se vérifie depuis n'importe quelle machine :
-`gh attestation verify oci://ghcr.io/regis57/<nom-du-dépôt>@sha256:… --owner regis57`.
+`gh attestation verify oci://ghcr.io/regis57/cartes-sur-table@sha256:… --owner regis57`.
 
 ## 7. Sauvegarde et retrait
 

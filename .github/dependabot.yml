@@ -1,5 +1,15 @@
 version: 2
 updates:
+  # Actions GitHub (épinglées par SHA, Dependabot met à jour SHA + commentaire de version)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -8,10 +18,6 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
   - package-ecosystem: docker
     directory: /
     schedule:

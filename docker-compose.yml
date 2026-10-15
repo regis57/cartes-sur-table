@@ -10,8 +10,8 @@
 services:
   api:
     # `latest` = dernière fusion sur main. Pour figer une version précise :
-    # ghcr.io/regis57/jeuxdecartes@sha256:<empreinte> (donnée par le workflow Release).
-    image: ghcr.io/regis57/jeuxdecartes:latest
+    # ghcr.io/regis57/cartes-sur-table@sha256:<empreinte> (donnée par le workflow Release).
+    image: ghcr.io/regis57/cartes-sur-table:latest
     container_name: jeuxdecartes-api
     restart: unless-stopped
     env_file: [.env]

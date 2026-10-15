@@ -43,7 +43,7 @@ ENV NODE_ENV=production \
     APP_BUILT_AT=$APP_BUILT_AT
 
 LABEL org.opencontainers.image.title="Jeux de cartes" \
-      org.opencontainers.image.source="https://github.com/regis57/jeuxdecartes" \
+      org.opencontainers.image.source="https://github.com/regis57/cartes-sur-table" \
       org.opencontainers.image.licenses="AGPL-3.0-or-later" \
       org.opencontainers.image.version=$APP_VERSION \
       org.opencontainers.image.revision=$APP_REVISION \

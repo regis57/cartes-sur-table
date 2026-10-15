@@ -5,10 +5,10 @@
 **Ne créez pas de ticket public** pour une faille de sécurité.
 
 Utilisez le signalement privé de GitHub : onglet **Security** du dépôt, puis **Report a
-vulnerability** (<https://github.com/regis57/jeuxdecartes/security/advisories/new>).
+vulnerability** (<https://github.com/regis57/cartes-sur-table/security/advisories/new>).
 
 Merci d'indiquer : la version ou le commit, les étapes de reproduction, l'impact estimé.
-Un accusé de réception est envoyé sous 7 jours ; un correctif ou un plan de correction
+Un accusé de réception est envoyé sous 72 heures ; un correctif ou un plan de correction
 sous 30 jours selon la gravité.
 
 ## Versions prises en charge
