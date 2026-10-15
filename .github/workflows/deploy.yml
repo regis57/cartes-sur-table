@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build + provenance SLSA
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write       # OIDC pour signer l'attestation (Sigstore)
+      attestations: write
+    steps:
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      # TODO stack : remplacer par le vrai build (npm ci && npm run build, docker build...)
+      - name: Build
+        run: |
+          mkdir -p dist
+          git archive --format=tar.gz -o dist/app.tar.gz HEAD
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/app.tar.gz
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: app
+          path: dist/app.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Déploiement production
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production   # protégé : branche main uniquement
+    permissions:
+      contents: read
+      id-token: write         # préfère l'OIDC aux secrets longue durée chez l'hébergeur
+    steps:
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      # TODO cible : brancher le déploiement (Cloud Run, Fly.io, VPS, Pages...)
+      - name: Deploy
+        run: echo "Aucune cible de déploiement configurée pour l'instant."
