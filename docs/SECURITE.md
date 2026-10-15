@@ -17,6 +17,7 @@
 | Trivy sur l'image publiée | `securite.yml` | chaque lundi | bloquant |
 | ZAP passif sur le site en ligne | `securite.yml` | chaque lundi | bloquant |
 | Mises à jour | Dependabot (npm, Actions, Docker) | chaque semaine | PR à fusionner |
+| Wiki (journal, manifeste) | `wiki.yml` | chaque fusion sur `main` | publié |
 
 Les binaires de scan (Trivy, Opengrep, ZAP) sont pris dans leurs releases officielles,
 version et empreinte SHA-256 fixées dans les workflows, jamais par une action tierce.

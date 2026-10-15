@@ -1,0 +1,54 @@
+name: Wiki
+
+# Publie le wiki du dépôt à chaque fusion sur main : les pages de `wiki/` et, réécrites
+# pour le wiki, le journal des versions et le manifeste de sécurité de `docs/`.
+# Le wiki ne se modifie pas à la main : tout passe par une pull request.
+
+on:
+  push:
+    branches: [main]
+    paths: ['wiki/**', 'docs/JOURNAL.md', 'docs/MANIFESTE-SECURITE.md', 'scripts/wiki-build.mjs', '.github/workflows/wiki.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki
+  cancel-in-progress: true
+
+jobs:
+  publier:
+    name: publier
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: .wiki
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Assembler
+        run: |
+          node scripts/wiki-build.mjs .wiki-out
+          find .wiki -maxdepth 1 -name '*.md' -delete
+          cp .wiki-out/*.md .wiki/
+      - name: Publier
+        env:
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd .wiki
+          git config user.name "Regis"
+          git config user.email "regis57@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "wiki déjà à jour"; exit 0; fi
+          git commit -m "Wiki : synchronisation depuis ${SHA::7}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.wiki.git" HEAD:master
