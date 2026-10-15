@@ -5,6 +5,7 @@
 
 import http from 'node:http';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import { Server, type Namespace, type Socket } from 'socket.io';
@@ -168,10 +169,15 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       },
     }),
   );
+  // La page 404 est lue une fois au démarrage : rien n'est lu sur disque à la demande.
+  let notFoundPage = 'Introuvable';
+  try {
+    notFoundPage = readFileSync(path.join(CLIENT_DIR, '404.html'), 'utf8');
+  } catch {
+    /* client non construit : texte brut */
+  }
   app.use((_req, res) => {
-    res.status(404).sendFile(path.join(CLIENT_DIR, '404.html'), (err) => {
-      if (err) res.type('text/plain').send('Introuvable');
-    });
+    res.status(404).type(notFoundPage.startsWith('<') ? 'html' : 'text/plain').send(notFoundPage);
   });
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const status = isPlainObject(err) && typeof err['status'] === 'number' ? (err['status'] as number) : 500;

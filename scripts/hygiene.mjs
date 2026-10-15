@@ -42,7 +42,13 @@ try {
 
 const SKIP = /(^|\/)(package-lock\.json|.*\.(png|jpg|jpeg|gif|ico|woff2?))$/i;
 for (const f of files) {
-  if (SKIP.test(f) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) continue;
+  if (SKIP.test(f)) continue;
+  let text;
+  try {
+    text = fs.readFileSync(f, 'utf8');
+  } catch {
+    continue; // supprimé entre-temps, ou un dossier (sous-module)
+  }
   if (/(^|\/)\.env($|\.)/.test(f) && !/\.env\.example$/.test(f)) {
     problems.push(`${f} : fichier de secrets suivi`);
     continue;
@@ -51,7 +57,6 @@ for (const f of files) {
     problems.push(`${f} : fichier sensible suivi`);
     continue;
   }
-  const text = fs.readFileSync(f, 'utf8');
   if (f !== 'scripts/hygiene.mjs' && f !== '.githooks/pre-commit') {
     for (const [re, label] of SECRET_PATTERNS) if (re.test(text)) problems.push(`${f} : ${label} probable`);
     const m = text.match(PERSONAL_MAIL);

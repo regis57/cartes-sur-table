@@ -425,7 +425,8 @@ test('Espace de noms par défaut refusé ; création de profil limitée par IP',
 });
 
 test('Inactivité : le siège libéré peut être repris par la même connexion', async () => {
-  const { server, url } = await boot({ timings: { botDelay: 100_000, forcedDelay: 100_000, afkTimeout: 60 }, rejoinGraceMs: 5000 });
+  // Pioches forcées rapides : l'inactivité ne se mesure qu'à un tour où l'humain a un vrai choix.
+  const { server, url } = await boot({ timings: { botDelay: 5, forcedDelay: 5, afkTimeout: 60 }, rejoinGraceMs: 5000 });
   try {
     const c = client(url);
     await once(c, 'connect');

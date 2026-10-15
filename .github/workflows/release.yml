@@ -83,12 +83,16 @@ jobs:
       # Construite et chargée localement d'abord, à chaque fois — PR comme main :
       # on vérifie avant de publier, jamais après.
       - name: Construire (sans publier)
+        env:
+          APP_VERSION: ${{ steps.meta.outputs.version }}
+          APP_REVISION: ${{ steps.meta.outputs.short }}
+          APP_BUILT_AT: ${{ steps.meta.outputs.built_at }}
         run: |
           docker buildx build \
             --platform linux/amd64 \
-            --build-arg APP_VERSION="${{ steps.meta.outputs.version }}" \
-            --build-arg APP_REVISION="${{ steps.meta.outputs.short }}" \
-            --build-arg APP_BUILT_AT="${{ steps.meta.outputs.built_at }}" \
+            --build-arg APP_VERSION="$APP_VERSION" \
+            --build-arg APP_REVISION="$APP_REVISION" \
+            --build-arg APP_BUILT_AT="$APP_BUILT_AT" \
             --tag jeuxdecartes:verif \
             --load \
             .
@@ -144,13 +148,17 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "$TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          ACTOR: ${{ github.actor }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
       - name: Construire et publier
         if: github.event_name != 'pull_request'
         id: push
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
+          APP_VERSION: ${{ steps.meta.outputs.version }}
+          APP_REVISION: ${{ steps.meta.outputs.short }}
+          APP_BUILT_AT: ${{ steps.meta.outputs.built_at }}
         run: |
           args=""
           IFS=',' read -ra list <<< "$TAGS"
@@ -159,9 +167,9 @@ jobs:
           # et une trace de construction, lisibles par `docker buildx imagetools inspect`.
           docker buildx build \
             --platform linux/amd64 \
-            --build-arg APP_VERSION="${{ steps.meta.outputs.version }}" \
-            --build-arg APP_REVISION="${{ steps.meta.outputs.short }}" \
-            --build-arg APP_BUILT_AT="${{ steps.meta.outputs.built_at }}" \
+            --build-arg APP_VERSION="$APP_VERSION" \
+            --build-arg APP_REVISION="$APP_REVISION" \
+            --build-arg APP_BUILT_AT="$APP_BUILT_AT" \
             --sbom=true \
             --provenance=mode=max \
             --push \
@@ -185,6 +193,7 @@ jobs:
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.push.outputs.digest }}
+          OWNER: ${{ github.repository_owner }}
         run: |
           {
             echo "## Image publiée"
@@ -198,6 +207,6 @@ jobs:
             echo "Vérifier la provenance depuis n'importe quelle machine :"
             echo
             echo '```'
-            echo "gh attestation verify oci://${IMAGE}@${DIGEST} --owner ${{ github.repository_owner }}"
+            echo "gh attestation verify oci://${IMAGE}@${DIGEST} --owner $OWNER"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

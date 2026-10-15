@@ -179,8 +179,6 @@ function renderRoundEnd(data: RoundEndPayload): void {
     : t('table.round_won_by', { name: winnerName });
   const table = h('table', 'tableau');
   const head = h('tr');
-  head.append(h('th', '', t('site.guest') === '' ? '' : ''));
-  head.firstChild?.remove();
   head.append(h('th', '', ''), h('th', '', t('table.cards_left')), h('th', '', t('table.round_points')), h('th', '', t('table.total')));
   table.append(head);
   data.summary.perSeat.forEach((ps, i) => {
