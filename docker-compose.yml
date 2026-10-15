@@ -33,6 +33,8 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
+    pids_limit: 128
+    mem_limit: 512m
     networks: [jeuxdecartes]
     logging:
       driver: json-file

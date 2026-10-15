@@ -137,3 +137,54 @@ test('Table : émoticônes et phrases — catalogue seul, limitées en débit, d
   assert.equal(out.count('emote'), 3);
   t.destroy();
 });
+
+test('Table : sans humain, les bots s\'arrêtent et la table se libère même en pleine manche (pas de table zombie)', async () => {
+  const out = new Recorder();
+  let destroyed = false;
+  const seats = [seat('A', true), seat('Anne', false), seat('Paul', false), seat('Lucie', false)];
+  const t = new Table(Table.newId('solo'), def, seats, out, {
+    timings: FAST, rng: seededRng(6), rejoinGraceMs: 150, botThinkMs: 5, onDestroy: () => { destroyed = true; },
+  });
+  t.start();
+  await tick(30);
+  const movesBefore = out.seatEvents.length;
+  t.leave(0, 'disconnect');
+  await tick(60);
+  assert.equal(out.seatEvents.length, movesBefore, 'aucun coup joué sans humain');
+  assert.equal(t.phase, 'playing');
+  await waitFor(() => destroyed, 2000);
+  assert.equal(t.phase, 'destroyed');
+});
+
+test('Table : à la reprise, une table mise en pause repart', async () => {
+  const out = new Recorder();
+  const seats = [seat('A', true), seat('Anne', false), seat('Paul', false), seat('Lucie', false)];
+  const t = new Table(Table.newId('solo'), def, seats, out, { timings: FAST, rng: seededRng(7), rejoinGraceMs: 5000, botThinkMs: 5 });
+  t.start();
+  const key = seats[0]!.rejoinKey!;
+  t.leave(0, 'disconnect');
+  await tick(40);
+  assert.equal(t.rejoin(key, 'h-A2'), 0);
+  const v = out.lastState(0)!;
+  assert.equal(v.game.current, 0, 'c\'est au revenant de jouer');
+  assert.ok(t.onMove(0, v.game.legal[0]!.key));
+  const before = out.seatEvents.filter((e) => e.event === 'state').length;
+  await tick(120);
+  assert.ok(out.seatEvents.filter((e) => e.event === 'state').length > before, 'les bots rejouent');
+  t.destroy();
+});
+
+test('Table : le transport est prévenu quand un humain libère son siège (coupure, inactivité, départ)', async () => {
+  const out = new Recorder();
+  const released: string[] = [];
+  const seats = [seat('A', true), seat('B', true), seat('Paul', false), seat('Lucie', false)];
+  const t = new Table(Table.newId('online'), def, seats, out, {
+    timings: { ...FAST, botDelay: 100_000 }, rng: seededRng(8), rejoinGraceMs: 100, botThinkMs: 5, onHumanReleased: (h) => released.push(h),
+  });
+  t.start();
+  t.leave(1, 'quit');
+  assert.deepEqual(released, ['h-B']);
+  await waitFor(() => released.length === 2, 3000);
+  assert.deepEqual(released, ['h-B', 'h-A'], 'inactivité → libération aussi');
+  t.destroy();
+});

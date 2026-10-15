@@ -90,7 +90,8 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     return isValidProfileToken(t) ? t : null;
   }
 
-  api.post('/profil', (req, res) => {
+  // Création de profil : écriture durable, donc limite propre et basse (par IP, par heure).
+  api.post('/profil', httpRateLimit({ windowMs: 3_600_000, max: 10, trust: cfg.trustProxy }), (req, res) => {
     const body: unknown = req.body;
     if (!isPlainObject(body) || !isValidProfileToken(body['token'])) {
       res.status(400).json({ error: 'jeton-invalide' });
@@ -196,6 +197,10 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
 
   const connectionsPerIp = new Map<string, number>();
 
+  // L'espace de noms par défaut « / » n'a aucun usage : refusé, pour qu'il ne serve pas
+  // à contourner les limites des espaces de jeu.
+  io.of('/').use((_socket, next) => next(new Error('forbidden')));
+
   for (const game of GAMES) mountGame(game);
 
   function mountGame(game: RegisteredGame): void {
@@ -238,6 +243,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       if (tables.size >= cfg.maxTables) {
         for (const { sock } of humans) {
           sock.data.inQueue = false;
+          sock.data.privateCode = null;
           sock.emit('serverBusy');
         }
         return;
@@ -265,6 +271,13 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
           nsp.to(t.id).emit('tableClosed', { tableId: t.id });
         },
         onRoundEnd,
+        onHumanReleased: (humanId, id) => {
+          const sock = nsp.sockets.get(humanId);
+          if (sock && sock.data.tableId === id) {
+            sock.leave(id);
+            sock.data.tableId = null;
+          }
+        },
       });
       tables.set(tableId, table as unknown as Table<unknown, unknown, unknown>);
       humans.forEach(({ sock }, i) => {

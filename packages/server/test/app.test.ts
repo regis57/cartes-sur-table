@@ -408,3 +408,39 @@ test('Cohérence : le dictionnaire du client couvre les émoticônes, les phrase
   for (const code of EMOJI_CODES) assert.ok(game.includes(`'${code}'`), `émoticône ${code} connue du client`);
   for (const code of PHRASES) assert.ok(game.includes(`'${code}'`), `phrase ${code} connue du client`);
 });
+
+test('Espace de noms par défaut refusé ; création de profil limitée par IP', async () => {
+  const { server, url, port } = await boot();
+  try {
+    const root = connect(url, { transports: ['websocket'], reconnection: false, forceNew: true });
+    await once(root, 'connect_error');
+    root.close();
+    let last = 0;
+    for (let i = 0; i < 11; i++) last = (await req(port, 'POST', '/api/profil', { token: generateProfileToken(), pseudo: 'x' })).status;
+    assert.equal(last, 429, 'la onzième création de l\'heure est refusée');
+    assert.equal(server.store.count, 10);
+  } finally {
+    await server.close();
+  }
+});
+
+test('Inactivité : le siège libéré peut être repris par la même connexion', async () => {
+  const { server, url } = await boot({ timings: { botDelay: 100_000, forcedDelay: 100_000, afkTimeout: 60 }, rejoinGraceMs: 5000 });
+  try {
+    const c = client(url);
+    await once(c, 'connect');
+    const seat = once<{ tableId: string; seat: number; rejoinKey: string }>(c, 'seat');
+    const afk = once(c, 'afk', 5000);
+    c.emit('solo', { name: 'Lent' });
+    const s = await seat;
+    await afk;
+    const back = once<View>(c, 'state');
+    c.emit('rejoin', { tableId: s.tableId, rejoinKey: s.rejoinKey });
+    const v = await back;
+    assert.equal(v.seat, s.seat);
+    assert.ok(!v.seats[s.seat]!.isBot);
+    c.close();
+  } finally {
+    await server.close();
+  }
+});

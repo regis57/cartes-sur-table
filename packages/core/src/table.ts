@@ -58,6 +58,8 @@ export interface TableOptions {
   onDestroy?: (table: Table<unknown, unknown, unknown>) => void;
   /** Fin de manche (et de partie si `matchOver`) : pour les profils et les succès. */
   onRoundEnd?: (info: RoundEndInfo) => void;
+  /** Un humain a quitté son siège (coupure, inactivité, départ) : le transport peut délier sa connexion. */
+  onHumanReleased?: (humanId: string, tableId: string) => void;
 }
 
 export interface RoundEndInfo {
@@ -100,6 +102,9 @@ export class Table<S, M, V> {
   private readonly emoteLimiters: (() => boolean)[];
   private readonly onDestroy: TableOptions['onDestroy'];
   private readonly onRoundEnd: TableOptions['onRoundEnd'];
+  private readonly onHumanReleased: TableOptions['onHumanReleased'];
+  /** Minuterie de grâce : indépendante des minuteries de jeu, qu'un coup efface. */
+  private graceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(id: string, def: GameDefinition<S, M, V>, seats: Seat[], out: Outbox, opts: TableOptions = {}) {
     if (!def.seatCounts.includes(seats.length)) throw new RangeError(`${def.id} : ${seats.length} sièges non admis`);
@@ -115,6 +120,7 @@ export class Table<S, M, V> {
     this.botThinkMs = opts.botThinkMs ?? 150;
     this.onDestroy = opts.onDestroy;
     this.onRoundEnd = opts.onRoundEnd;
+    this.onHumanReleased = opts.onHumanReleased;
     this.emoteLimiters = seats.map(() => createRateLimiter({ capacity: 3, refillPerSec: 0.4 }));
     this.state = def.createRound(seats.length, this.rng);
   }
@@ -132,6 +138,8 @@ export class Table<S, M, V> {
   destroy(): void {
     if (this.phase === 'destroyed') return;
     this.clearTimers();
+    if (this.graceTimer) clearTimeout(this.graceTimer);
+    this.graceTimer = null;
     this.phase = 'destroyed';
     this.onDestroy?.(this as unknown as Table<unknown, unknown, unknown>);
   }
@@ -265,6 +273,9 @@ export class Table<S, M, V> {
     if (!s) return;
 
     if (s.isBot) {
+      // Sans aucun humain à la table, les bots ne jouent pas : une table vide ne
+      // consomme ni processeur ni minuterie ; elle reprend au retour d'un humain.
+      if (this.humansPresent === 0) return;
       this.schedule(this.timings.botDelay, () => this.playBot(seat));
       return;
     }
@@ -303,10 +314,12 @@ export class Table<S, M, V> {
   leave(seat: number, reason: 'disconnect' | 'quit'): void {
     const s = this.seats[seat];
     if (!s || s.isBot) return;
+    const humanId = s.humanId;
     s.isBot = true;
     s.humanId = null;
     s.rejoinDeadline = reason === 'disconnect' ? Date.now() + this.rejoinGraceMs : null;
     if (reason === 'quit') s.rejoinKey = null;
+    if (humanId) this.onHumanReleased?.(humanId, this.id);
     this.afterSeatChange(seat);
   }
 
@@ -314,9 +327,11 @@ export class Table<S, M, V> {
     const s = this.seats[seat];
     if (!s || s.isBot) return;
     this.out.toSeat(seat, 'afk', { tableId: this.id, reason });
+    const humanId = s.humanId;
     s.isBot = true;
     s.humanId = null;
     s.rejoinDeadline = Date.now() + this.rejoinGraceMs;
+    if (humanId) this.onHumanReleased?.(humanId, this.id);
     this.afterSeatChange(seat);
   }
 
@@ -330,10 +345,13 @@ export class Table<S, M, V> {
       this.clearTimers();
       this.scheduleTurn();
     }
-    // Si le dernier humain attendu ne revient pas, la table se libère.
-    this.schedule(this.rejoinGraceMs + 50, () => {
-      if (!this.anyoneExpected) this.destroy();
-    });
+    // Si le dernier humain attendu ne revient pas, la table se libère : minuterie
+    // à part, qu'aucun coup ne peut effacer.
+    if (this.graceTimer) clearTimeout(this.graceTimer);
+    this.graceTimer = setTimeout(() => {
+      this.graceTimer = null;
+      if (this.phase !== 'destroyed' && !this.anyoneExpected) this.destroy();
+    }, this.rejoinGraceMs + 50);
   }
 
   /** Reprise d'un siège par son humain, avec la clé remise au départ. */
@@ -347,7 +365,8 @@ export class Table<S, M, V> {
     s.rejoinDeadline = null;
     this.out.toAll('seats', { tableId: this.id, seats: this.publicSeats() });
     this.out.toSeat(idx, 'state', this.viewFor(idx));
-    if (this.phase === 'playing' && this.def.currentSeat(this.state) === idx) {
+    if (this.phase === 'playing') {
+      // Son tour, ou une table que les bots avaient mise en pause : on relance.
       this.clearTimers();
       this.scheduleTurn();
     }
