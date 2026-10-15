@@ -2,6 +2,7 @@
  * Jeux de cartes — Copyright (C) 2026 regis57
  * Licensed under the GNU Affero General Public License v3.0 or later.
  */
+import './theme.ts';
 import { $, h, show, hide, toast, onAction, openDialog, closeDialog, fill } from './ui.ts';
 import { loadLocale, t, has } from './i18n.ts';
 import {

@@ -3,9 +3,10 @@
  * Licensed under the GNU Affero General Public License v3.0 or later.
  */
 
-:root { --carte-l: 68px; --carte-h: 98px; }
-@media (max-width: 820px) { :root { --carte-l: 54px; --carte-h: 78px; } }
-@media (max-width: 480px) { :root { --carte-l: 44px; --carte-h: 64px; } }
+:root { --carte-l: 80px; --carte-h: 116px; }
+@media (max-width: 1100px) { :root { --carte-l: 68px; --carte-h: 98px; } }
+@media (max-width: 820px) { :root { --carte-l: 58px; --carte-h: 84px; } }
+@media (max-width: 480px) { :root { --carte-l: 50px; --carte-h: 72px; } }
 
 body.jeu { overflow-x: hidden; }
 
@@ -19,20 +20,20 @@ body.jeu { overflow-x: hidden; }
   text-align: left;
   padding: 16px 18px;
   border-radius: var(--rayon);
-  border: 1px solid rgba(245, 241, 230, 0.2);
-  background: rgba(0, 0, 0, 0.22);
-  color: var(--craie);
+  border: 1px solid var(--panneau-bord);
+  background: var(--panneau);
+  color: var(--texte);
   cursor: pointer;
 }
 .mode:hover { border-color: var(--laiton); }
 .mode b { font-family: var(--police-titre); font-size: 1.3rem; }
-.mode span { color: var(--craie-douce); font-size: 0.95rem; }
+.mode span { color: var(--texte-doux); font-size: 0.95rem; }
 .ligne { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
-.ligne label { color: var(--craie-douce); }
+.ligne label { color: var(--texte-doux); }
 .compte { font-family: var(--police-titre); font-size: 3rem; color: var(--laiton); line-height: 1; margin: 10px 0; }
 .attente-liste { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 18px; }
-.attente-liste li { display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.22); padding: 6px 12px 6px 6px; border-radius: 999px; }
-.code-partage { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 2rem; letter-spacing: 0.2em; color: var(--laiton); background: rgba(0, 0, 0, 0.3); padding: 10px 18px; border-radius: 8px; display: inline-block; user-select: all; }
+.attente-liste li { display: flex; align-items: center; gap: 8px; background: var(--panneau); padding: 6px 12px 6px 6px; border-radius: 999px; }
+.code-partage { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 2rem; letter-spacing: 0.2em; color: var(--laiton); background: var(--champ-fond); padding: 10px 18px; border-radius: 8px; display: inline-block; user-select: all; }
 
 /* La table de jeu */
 .barre {
@@ -41,13 +42,13 @@ body.jeu { overflow-x: hidden; }
   padding: 0 72px;
   z-index: 40;
 }
-.barre .statut { background: rgba(0, 0, 0, 0.6); padding: 7px 16px; border-radius: 999px; font-weight: 600; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barre .statut { background: var(--toast-fond); color: var(--toast-texte); padding: 8px 18px; font-size: 1.1rem; border-radius: 999px; font-weight: 600; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menu-btn {
   position: fixed; top: 10px; right: 12px; z-index: 60;
-  width: 44px; height: 44px; border-radius: 10px; border: 1px solid rgba(245, 241, 230, 0.3);
-  background: rgba(0, 0, 0, 0.55); color: var(--craie); cursor: pointer; display: grid; place-items: center; gap: 4px;
+  width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--panneau-bord);
+  background: rgba(0, 0, 0, 0.55); color: var(--texte); cursor: pointer; display: grid; place-items: center; gap: 4px;
 }
-.menu-btn i { display: block; width: 20px; height: 2px; background: var(--craie); border-radius: 2px; }
+.menu-btn i { display: block; width: 20px; height: 2px; background: var(--toast-texte); border-radius: 2px; }
 
 .table-jeu-grille {
   display: grid;
@@ -66,10 +67,10 @@ body.jeu { overflow-x: hidden; }
 .siege.droite { grid-column: 3; grid-row: 2; }
 .siege.bas { grid-column: 2; grid-row: 3; }
 .centre { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
-.etiquette { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; align-items: center; background: rgba(0, 0, 0, 0.5); padding: 4px 12px 4px 4px; border-radius: 18px; max-width: 100%; position: relative; line-height: 1.25; }
+.etiquette { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; align-items: center; background: var(--toast-fond); color: var(--toast-texte); padding: 4px 12px 4px 4px; border-radius: 18px; max-width: 100%; position: relative; line-height: 1.25; }
 .etiquette .avatar { width: 34px; height: 34px; grid-row: 1 / 3; }
 .etiquette .nom { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 16ch; }
-.etiquette .infos { grid-column: 2; font-size: 0.85rem; white-space: nowrap; color: var(--craie-douce); }
+.etiquette .infos { grid-column: 2; font-size: 0.95rem; white-space: nowrap; opacity: 0.85; }
 .etiquette .pts { color: var(--laiton); font-weight: 700; }
 .etiquette .etat { font-style: italic; }
 .siege.gauche .etiquette, .siege.droite .etiquette { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 8px; }
@@ -79,7 +80,7 @@ body.jeu { overflow-x: hidden; }
 @media (max-width: 600px) {
   .siege.gauche .etiquette .nom, .siege.droite .etiquette .nom { display: none; }
   .siege.gauche .etiquette, .siege.droite .etiquette { padding: 4px 6px; border-radius: 12px; }
-  .siege.gauche .etiquette .infos, .siege.droite .etiquette .infos { white-space: normal; font-size: 0.72rem; line-height: 1.2; }
+  .siege.gauche .etiquette .infos, .siege.droite .etiquette .infos { white-space: normal; font-size: 0.8rem; line-height: 1.2; }
   .siege.gauche .etiquette .etat, .siege.droite .etiquette .etat { display: none; }
 }
 .main { display: flex; justify-content: center; align-items: center; min-height: calc(var(--carte-h) + 8px); max-width: 100%; }
@@ -93,19 +94,21 @@ body.jeu { overflow-x: hidden; }
 .main.moi { flex-wrap: wrap; gap: 6px 0; }
 .main.moi .carte { cursor: pointer; transition: transform 0.12s; }
 .main.moi .carte.jouable:hover, .main.moi .carte.jouable:focus-visible { transform: translateY(-12px); z-index: 5; }
-.main.moi .carte.injouable { opacity: 0.55; cursor: default; }
+.main.moi .carte.injouable { opacity: 0.6; cursor: default; }
+.main.moi .carte.jouable { outline: 3px solid var(--laiton); outline-offset: -3px; }
 .piles { display: flex; gap: 14px; align-items: center; }
 .pioche { position: relative; cursor: pointer; }
-.pioche .compteur { position: absolute; inset: auto 4px 4px auto; font-size: 0.7rem; background: rgba(0, 0, 0, 0.6); padding: 1px 6px; border-radius: 999px; color: var(--craie); font-family: var(--police-ui); }
-.couleur { font-family: var(--police-titre); font-size: 1.1rem; background: rgba(0, 0, 0, 0.5); padding: 4px 14px; border-radius: 999px; }
-.couleur .rouge { color: #ff6b63; }
-.sens { color: var(--craie-douce); font-size: 0.85rem; }
+.pioche .compteur { position: absolute; inset: auto 4px 4px auto; font-size: 0.7rem; background: rgba(0, 0, 0, 0.6); padding: 1px 6px; border-radius: 999px; color: var(--texte); font-family: var(--police-ui); }
+.couleur { font-family: var(--police-titre); font-size: 1.25rem; background: var(--toast-fond); color: var(--toast-texte); padding: 4px 14px; border-radius: 999px; }
+.couleur .rouge { color: var(--carte-rouge); }
+:root[data-theme="dark"] .couleur .rouge, :root:not([data-theme="light"]) .couleur .rouge { color: #ff7b72; }
+.sens { color: var(--toast-texte); font-size: 0.95rem; background: var(--toast-fond); padding: 3px 12px; border-radius: 999px; }
 .bulle {
   position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-  background: var(--craie); color: var(--carte-noir); padding: 6px 10px; border-radius: 10px;
+  background: var(--texte); color: var(--carte-noir); padding: 6px 10px; border-radius: 10px;
   font-size: 0.9rem; white-space: nowrap; box-shadow: 0 4px 12px var(--ombre); z-index: 20;
 }
-.bulle::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--craie); }
+.bulle::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--texte); }
 .bulle img { width: 36px; height: 36px; display: block; }
 
 /* Réactions */
@@ -114,20 +117,20 @@ body.jeu { overflow-x: hidden; }
   display: flex; justify-content: center; gap: 6px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
 }
-.reactions button { background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(245, 241, 230, 0.25); color: var(--craie); border-radius: 999px; padding: 8px 14px; cursor: pointer; min-height: 44px; }
+.reactions button { background: var(--toast-fond); border: 1px solid var(--panneau-bord); color: var(--toast-texte); border-radius: 999px; padding: 10px 18px; cursor: pointer; min-height: 48px; font-size: 1.05rem; }
 .reactions button:hover { border-color: var(--laiton); }
 .choix-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; }
-.choix-grille button { background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(245, 241, 230, 0.2); border-radius: 10px; padding: 8px; cursor: pointer; }
+.choix-grille button { background: var(--panneau); border: 1px solid var(--panneau-bord); border-radius: 10px; padding: 8px; cursor: pointer; }
 .choix-grille button:hover { border-color: var(--laiton); }
 .choix-grille img { width: 48px; height: 48px; display: block; margin: 0 auto; }
 .choix-liste { display: grid; gap: 8px; }
-.choix-liste button { text-align: left; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(245, 241, 230, 0.2); color: var(--craie); border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+.choix-liste button { text-align: left; background: var(--panneau); border: 1px solid var(--panneau-bord); color: var(--texte); border-radius: 8px; padding: 10px 14px; cursor: pointer; }
 .choix-liste button:hover { border-color: var(--laiton); }
 .couleurs { display: flex; gap: 14px; justify-content: center; }
 .couleurs .carte { cursor: pointer; }
 
 .tableau { width: 100%; border-collapse: collapse; margin: 0 0 18px; }
-.tableau th, .tableau td { padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(245, 241, 230, 0.2); vertical-align: top; }
+.tableau th, .tableau td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--panneau-bord); vertical-align: top; }
 .tableau th { color: var(--laiton); font-weight: 600; }
 .mini { display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 4px; background: var(--carte-fond); color: var(--carte-noir); font-family: var(--police-titre); font-weight: 700; font-size: 0.9rem; }
 .mini.rouge { color: var(--carte-rouge); }
