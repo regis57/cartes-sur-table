@@ -12,7 +12,8 @@ import { Server, type Namespace, type Socket } from 'socket.io';
 import {
   Table, Matchmaking, PrivateTables, ProfileStore, pickBotNames, AVATAR_COUNT, VERSION,
   securityHeaders, httpRateLimit, isOriginAllowed, getClientIp, createRateLimiter, sanitizeName,
-  isValidTableId, isValidInviteCode, isValidProfileToken, isValidRejoinKey, isPlainObject, isSmallInt, profileIdFromToken,
+  isValidTableId, isValidInviteCode, isValidProfileToken, isValidRejoinKey, isPlainObject, isSmallInt,
+  ChallengeStore, verifyRegistration, verifyAssertion, isB64url, b64urlEncode, ALG_ES256, ALG_RS256,
   type Seat, type Outbox, type LobbyEntry, type RegisteredGame, type RoundEndInfo, type BotLevel, type ClientToServer, type ServerToClient,
 } from '@jdc/core';
 import { loadConfig, type Config } from './config.ts';
@@ -142,6 +143,132 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     res.json({ exportedAt: new Date().toISOString(), ...store.export(p.id) });
   });
 
+  // ---------- passkeys ----------
+  // Le serveur ne garde que la clé publique. Le domaine (rpId) et l'origine attendue
+  // viennent de PUBLIC_ORIGIN ; sans lui (développement), de l'hôte demandé.
+
+  const challenges = new ChallengeStore();
+  const rpOf = (req: Request): { rpId: string; origins: string[] } => {
+    if (cfg.publicOrigin) return { rpId: new URL(cfg.publicOrigin).hostname, origins: [cfg.publicOrigin, ...cfg.allowedOrigins] };
+    const host = String(req.headers.host ?? 'localhost');
+    const proto = req.headers['x-forwarded-proto'] === 'https' ? 'https' : req.protocol;
+    return { rpId: host.replace(/:\d+$/, ''), origins: [`${proto}://${host}`] };
+  };
+  const profileOf = (req: Request): { id: string; pseudo: string; avatar: number } | null => {
+    const t = bearer(req);
+    return t ? store.getByToken(t) : null;
+  };
+  const passkeyLimit = httpRateLimit({ windowMs: 3_600_000, max: 30, trust: cfg.trustProxy });
+
+  api.post('/passkeys/options', passkeyLimit, (req, res) => {
+    const p = profileOf(req);
+    if (!p) {
+      res.status(401).json({ error: 'profil-inconnu' });
+      return;
+    }
+    const { rpId } = rpOf(req);
+    res.json({
+      challenge: challenges.issue(p.id),
+      rp: { id: rpId, name: 'Cartes sur table' },
+      user: { id: b64urlEncode(Buffer.from(p.id, 'hex')), name: p.pseudo, displayName: p.pseudo },
+      pubKeyCredParams: [{ type: 'public-key', alg: ALG_ES256 }, { type: 'public-key', alg: ALG_RS256 }],
+      authenticatorSelection: { residentKey: 'required', requireResidentKey: true, userVerification: 'preferred' },
+      attestation: 'none',
+      timeout: 120_000,
+      excludeCredentials: store.passkeys(p.id).map((k) => ({ type: 'public-key', id: k.id })),
+    });
+  });
+
+  // Note : CodeQL (js/missing-rate-limiting) ne reconnaît que quelques bibliothèques de
+  // limitation et signale ces deux routes ; `passkeyLimit` (30/h/IP) et la limite globale
+  // de l'application s'y appliquent pourtant. Alertes à rejeter comme faux positifs.
+  api.post('/passkeys', passkeyLimit, (req, res) => {
+    const p = profileOf(req);
+    const body: unknown = req.body;
+    if (!p || !isPlainObject(body)) {
+      res.status(p ? 400 : 401).json({ error: p ? 'requete-invalide' : 'profil-inconnu' });
+      return;
+    }
+    const { rpId, origins } = rpOf(req);
+    try {
+      const reg = verifyRegistration({ rawId: body['rawId'], clientDataJSON: body['clientDataJSON'], attestationObject: body['attestationObject'] }, rpId, origins);
+      const ch = challenges.consume(reg.challenge);
+      if (!ch || ch.profileId !== p.id) {
+        res.status(400).json({ error: 'defi-invalide' });
+        return;
+      }
+      const added = store.addPasskey(p.id, { id: reg.credentialId, publicKeyPem: reg.publicKeyPem, alg: reg.alg, signCount: reg.signCount, name: body['name'] ?? 'Passkey' });
+      if (!added) {
+        res.status(409).json({ error: 'passkey-refusee' });
+        return;
+      }
+      res.status(201).json({ passkey: added });
+    } catch (err) {
+      res.status(400).json({ error: 'enregistrement-invalide', detail: err instanceof Error ? err.message : 'erreur' });
+    }
+  });
+
+  api.delete('/passkeys/:id', (req, res) => {
+    const p = profileOf(req);
+    if (!p) {
+      res.status(401).json({ error: 'profil-inconnu' });
+      return;
+    }
+    const id = req.params['id'];
+    const deleted = isB64url(id) ? store.deletePasskey(p.id, id) : false;
+    res.status(deleted ? 200 : 404).json({ deleted });
+  });
+
+  api.post('/passkeys/auth/options', passkeyLimit, (req, res) => {
+    const { rpId } = rpOf(req);
+    res.json({ challenge: challenges.issue(null), rpId, allowCredentials: [], userVerification: 'preferred', timeout: 120_000 });
+  });
+
+  /** Authentification par passkey : rend un jeton de session, à garder comme un jeton de profil. */
+  api.post('/passkeys/auth', passkeyLimit, (req, res) => {
+    const body: unknown = req.body;
+    if (!isPlainObject(body) || !isB64url(body['rawId'])) {
+      res.status(400).json({ error: 'requete-invalide' });
+      return;
+    }
+    const key = store.findPasskey(body['rawId']);
+    if (!key) {
+      res.status(401).json({ error: 'passkey-inconnue' });
+      return;
+    }
+    const { rpId, origins } = rpOf(req);
+    try {
+      const ok = verifyAssertion(
+        { rawId: body['rawId'], clientDataJSON: body['clientDataJSON'], authenticatorData: body['authenticatorData'], signature: body['signature'] },
+        key.publicKeyPem, key.alg, key.signCount, rpId, origins,
+      );
+      const ch = challenges.consume(ok.challenge);
+      if (!ch) {
+        res.status(400).json({ error: 'defi-invalide' });
+        return;
+      }
+      store.touchPasskey(ok.credentialId, ok.signCount);
+      const token = store.createSession(key.profileId);
+      if (!token) {
+        res.status(401).json({ error: 'profil-inconnu' });
+        return;
+      }
+      res.json({ token, ...store.export(key.profileId) });
+    } catch (err) {
+      res.status(401).json({ error: 'authentification-invalide', detail: err instanceof Error ? err.message : 'erreur' });
+    }
+  });
+
+  /** Déconnecte tous les appareils entrés par passkey (le jeton d'origine reste valable). */
+  api.post('/profil/sessions/revoke', (req, res) => {
+    const p = profileOf(req);
+    if (!p) {
+      res.status(401).json({ error: 'profil-inconnu' });
+      return;
+    }
+    res.json({ revoked: store.revokeSessions(p.id) });
+  });
+
   /** Droit à l'effacement : immédiat, réel, sans question. */
   api.delete('/profil', (req, res) => {
     const t = bearer(req);
@@ -149,7 +276,8 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       res.status(401).json({ error: 'profil-inconnu' });
       return;
     }
-    const deleted = store.delete(profileIdFromToken(t));
+    const p = store.getByToken(t);
+    const deleted = p ? store.delete(p.id) : false;
     res.status(deleted ? 200 : 404).json({ deleted });
   });
 
@@ -527,6 +655,8 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     try {
       const n = store.purgeInactive(cfg.purgeDays);
       if (n > 0) console.log(`[profils] ${n} profil(s) inactif(s) depuis ${cfg.purgeDays} jours effacé(s)`);
+      const sNb = store.purgeSessions(180);
+      if (sNb > 0) console.log(`[profils] ${sNb} session(s) sans usage depuis 180 jours effacée(s)`);
     } catch (err) {
       console.error('[profils] purge :', err instanceof Error ? err.message : err);
     }
