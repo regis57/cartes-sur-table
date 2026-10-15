@@ -19,7 +19,7 @@ Premier jeu : le **8 Américain**. Prochains : la belote, le tarot.
   jamais de HTML construit à partir du réseau.
 
 Deux dépendances de production : `express` et `socket.io`. Pas de base externe : SQLite
-intégré à Node (`node:sqlite`). Node 22.18 ou plus récent ; TypeScript exécuté
+intégré à Node (`node:sqlite`). Node 22.18 ou plus récent (26 en production) ; TypeScript exécuté
 directement par Node (retrait des types), sans étape de construction côté serveur.
 
 ## Démarrer

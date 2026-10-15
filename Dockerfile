@@ -8,7 +8,7 @@ ARG APP_REVISION
 ARG APP_BUILT_AT
 
 # --- Étape 1 : construire le client (TypeScript → JavaScript, dépendances de développement)
-FROM node:22.23-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
+FROM node:26.10-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json tsconfig.json ./
 COPY packages/core/package.json packages/core/
@@ -20,7 +20,7 @@ COPY packages ./packages
 RUN npm run build
 
 # --- Étape 2 : dépendances de production seulement
-FROM node:22.23-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS deps
+FROM node:26.10-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/
@@ -30,7 +30,7 @@ COPY packages/client/package.json packages/client/
 RUN npm ci --omit=dev --ignore-scripts
 
 # --- Étape 3 : image finale
-FROM node:22.23-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS runtime
+FROM node:26.10-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS runtime
 ARG APP_VERSION
 ARG APP_REVISION
 ARG APP_BUILT_AT
@@ -72,6 +72,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# node:sqlite est marqué expérimental par Node 22 bien que son API soit figée :
+# node:sqlite reste marqué expérimental (API figée) :
 # on neutralise l'avertissement, et rien d'autre.
 CMD ["node", "--no-warnings=ExperimentalWarning", "packages/server/src/main.ts"]
