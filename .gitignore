@@ -1,0 +1,23 @@
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# Dépendances et builds
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+coverage/
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
