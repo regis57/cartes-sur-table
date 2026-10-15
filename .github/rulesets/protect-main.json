@@ -28,9 +28,13 @@
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
           { "context": "verifier" },
-          { "context": "analyze" },
           { "context": "opengrep" },
-          { "context": "docker" }
+          { "context": "docker" },
+          { "context": "Secrets (gitleaks)" },
+          { "context": "SAST (CodeQL) (actions)" },
+          { "context": "SAST (CodeQL) (javascript-typescript)" },
+          { "context": "Audit des workflows (zizmor)" },
+          { "context": "Revue des dépendances (PR)" }
         ]
       }
     }
