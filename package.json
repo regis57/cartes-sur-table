@@ -1,0 +1,35 @@
+{
+  "name": "jeuxdecartes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jeux de cartes français en ligne : socle commun, bots, parties à plusieurs, sans compte ni publicité",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "workspaces": [
+    "packages/*",
+    "packages/games/*"
+  ],
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning packages/server/src/main.ts",
+    "dev": "npm run build && npm start",
+    "build": "tsc -p packages/client/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p packages/client/tsconfig.json --noEmit",
+    "test": "node --no-warnings=ExperimentalWarning --test \"packages/**/test/*.test.ts\"",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "hygiene": "node scripts/hygiene.mjs",
+    "verify": "npm run typecheck && npm test && npm run build && npm run audit:prod && npm run hygiene"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "socket.io-client": "^4.8.4",
+    "typescript": "^7.0.2"
+  }
+}

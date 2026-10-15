@@ -1,0 +1,109 @@
+<!doctype html>
+<!--
+  Jeux de cartes — Copyright (C) 2026 regis57
+  Licensed under the GNU Affero General Public License v3.0 or later.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Votre profil — Jeux de cartes</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/site.css">
+  <script type="module" src="/js/profil.js"></script>
+</head>
+<body>
+  <a class="drapeau" href="/" aria-label="Jeux de cartes, accueil"><span></span><span></span><span></span></a>
+  <main class="page etroite">
+    <h1 data-i18n="profile.title">Votre profil</h1>
+    <p data-i18n="profile.intro"></p>
+
+    <section id="sans-profil" class="panneau" hidden>
+      <h2 data-i18n="profile.create">Créer un profil</h2>
+      <label for="pseudo" data-i18n="site.name_label">Votre prénom ou pseudo</label>
+      <input id="pseudo" class="champ" type="text" maxlength="20" autocomplete="nickname" spellcheck="false">
+      <p></p>
+      <p data-i18n="site.avatar_label">Votre avatar</p>
+      <div id="avatars" class="avatars" role="radiogroup" aria-label="Avatar"></div>
+      <p></p>
+      <div class="boutons">
+        <button type="button" class="btn btn-laiton" data-action="create" data-i18n="profile.create">Créer un profil</button>
+        <button type="button" class="btn btn-craie" data-action="show-restore" data-i18n="profile.restore">J'ai déjà un code de récupération</button>
+      </div>
+      <div id="restaurer" hidden>
+        <p></p>
+        <label for="code" data-i18n="profile.restore_label">Code de récupération</label>
+        <input id="code" class="champ code" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters">
+        <p></p>
+        <button type="button" class="btn btn-laiton" data-action="restore" data-i18n="profile.restore_action">Retrouver mon profil</button>
+      </div>
+    </section>
+
+    <section id="avec-profil" hidden>
+      <div class="panneau">
+        <p><img id="avatar-actuel" class="avatar" src="/img/avatars/a01.svg" alt=""> <strong id="pseudo-actuel"></strong><br><small id="depuis"></small></p>
+        <label for="pseudo-edit" data-i18n="site.name_label">Votre prénom ou pseudo</label>
+        <input id="pseudo-edit" class="champ" type="text" maxlength="20" autocomplete="nickname" spellcheck="false">
+        <p></p>
+        <p data-i18n="site.avatar_label">Votre avatar</p>
+        <div id="avatars-edit" class="avatars" role="radiogroup" aria-label="Avatar"></div>
+        <p></p>
+        <div class="boutons">
+          <button type="button" class="btn btn-laiton" data-action="save" data-i18n="site.save">Enregistrer</button>
+          <button type="button" class="btn btn-craie" data-action="show-code" data-i18n="profile.code_show">Afficher mon code de récupération</button>
+        </div>
+        <div id="code-zone" hidden>
+          <p></p>
+          <p class="attention" data-i18n="profile.code_warning"></p>
+          <p class="code-recup" id="code-affiche"></p>
+          <div class="boutons">
+            <button type="button" class="btn btn-craie" data-action="copy-code" data-i18n="profile.code_copy">Copier le code</button>
+            <button type="button" class="btn btn-craie" data-action="hide-code" data-i18n="profile.code_hide">Masquer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panneau">
+        <h2 data-i18n="profile.stats">Statistiques</h2>
+        <div id="stats" class="stats"></div>
+      </div>
+
+      <div class="panneau">
+        <h2><span data-i18n="profile.achievements">Succès</span> <small id="succes-compte"></small></h2>
+        <div id="succes" class="succes-liste"></div>
+      </div>
+
+      <div class="panneau">
+        <h2 data-i18n="site.data">Vos données</h2>
+        <div class="boutons">
+          <button type="button" class="btn btn-craie" data-action="export" data-i18n="profile.export">Télécharger mes données (JSON)</button>
+          <button type="button" class="btn btn-craie" data-action="signout" data-i18n="profile.signout">Oublier ce profil sur cet appareil</button>
+          <button type="button" class="btn btn-rouge" data-action="delete" data-i18n="profile.delete">Supprimer mon profil</button>
+        </div>
+        <p><small data-i18n="profile.signout_hint"></small></p>
+      </div>
+    </section>
+
+    <footer class="pied">
+      <a href="/">Accueil</a>
+      <a href="/profil/">Profil</a>
+      <a href="/a-propos/">À propos</a>
+      <a href="/soutenir/">Soutenir</a>
+      <a href="/donnees/">Vos données</a>
+      <a href="/confidentialite/">Confidentialité</a>
+      <a href="/mentions-legales/">Mentions légales</a>
+      <a href="https://github.com/regis57/jeuxdecartes" rel="noopener noreferrer">Code source (AGPL-3.0)</a>
+    </footer>
+  </main>
+
+  <dialog id="dlg-code">
+    <h2 data-i18n="profile.code_title">Votre code de récupération</h2>
+    <p class="attention" data-i18n="profile.code_warning"></p>
+    <p class="code-recup" id="code-nouveau"></p>
+    <div class="boutons">
+      <button type="button" class="btn btn-craie" data-action="copy-new-code" data-i18n="profile.code_copy">Copier le code</button>
+      <button type="button" class="btn btn-laiton" data-action="code-done" data-i18n="profile.code_done">C'est noté</button>
+    </div>
+  </dialog>
+</body>
+</html>

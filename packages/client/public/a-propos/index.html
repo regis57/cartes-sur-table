@@ -1,0 +1,56 @@
+<!doctype html>
+<!--
+  Jeux de cartes — Copyright (C) 2026 regis57
+  Licensed under the GNU Affero General Public License v3.0 or later.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>À propos — Jeux de cartes</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <a class="drapeau" href="/" aria-label="Jeux de cartes, accueil"><span></span><span></span><span></span></a>
+  <main class="page etroite prose">
+    <h1>À propos</h1>
+    <p>Des jeux de cartes français, jouables dans le navigateur, sur téléphone comme sur ordinateur. Seul contre des bots, avec d'autres joueurs, ou entre amis avec un code. Sans compte obligatoire, sans publicité, sans pistage.</p>
+
+    <h2>Comment ça marche</h2>
+    <ul>
+      <li>Le serveur est seul maître des règles : votre navigateur n'envoie que des intentions (« je joue cette carte »), toujours revérifiées. Personne ne reçoit jamais les cartes d'un autre.</li>
+      <li>Les cartes sont mélangées avec un aléa cryptographique.</li>
+      <li>Les bots réfléchissent par simulation : à chaque coup, ils imaginent des centaines de parties possibles compatibles avec ce qu'ils ont le droit de savoir, et jouent ce qui marche le mieux en moyenne. Ils ne voient pas vos cartes.</li>
+      <li>Si un joueur se déconnecte, un bot prend son siège, et le joueur peut le reprendre pendant une minute et demie.</li>
+      <li>Il n'y a pas de messagerie : les réactions et les phrases viennent d'un catalogue fermé, le même pour tout le monde.</li>
+    </ul>
+
+    <h2>Les règles du 8 Américain</h2>
+    <ul>
+      <li>Chacun reçoit six cartes ; une carte est retournée. On pose une carte de la couleur demandée, ou de la même valeur que la carte visible.</li>
+      <li>Le 8 se pose sur tout, sauf sur un 8, et celui qui le pose choisit la couleur.</li>
+      <li>Le 7 fait rejouer tout de suite. Le 10 inverse le sens du jeu.</li>
+      <li>Sans carte jouable, on pioche et on passe. Pioche vide : la défausse est rebattue.</li>
+      <li>La manche s'arrête quand une main est vide. Chacun marque ce qui lui reste : 8 = 32, 7 = 14, as = 11, 10 = 10, 9 = 9, roi = 4, dame = 3, valet = 2, les autres leur valeur. À 200 points, la partie s'arrête : le moins chargé gagne.</li>
+    </ul>
+
+    <h2>Ajouter un jeu</h2>
+    <p>Le socle ne connaît ni les cartes ni les atouts : il connaît un contrat. Un jeu, c'est un objet qui dit comment créer une manche, quels coups sont légaux, comment les appliquer, ce que chaque siège a le droit de voir, et comment tirer un monde possible pour les bots. Écrivez ce contrat, ses tests et ses douze phrases, et le reste (tables, bots, reprise, réseau, profils) vient tout seul. Le guide est dans le dépôt : <a href="https://github.com/regis57/jeuxdecartes" rel="noopener noreferrer">github.com/regis57/jeuxdecartes</a>. La belote et le tarot sont les prochains.</p>
+
+    <h2>Licence</h2>
+    <p>Tout est publié sous licence AGPL-3.0 : vous pouvez lire, copier, modifier et héberger le site, à condition d'offrir à vos joueurs le code de votre version.</p>
+
+    <footer class="pied">
+      <a href="/">Accueil</a>
+      <a href="/profil/">Profil</a>
+      <a href="/a-propos/">À propos</a>
+      <a href="/soutenir/">Soutenir</a>
+      <a href="/donnees/">Vos données</a>
+      <a href="/confidentialite/">Confidentialité</a>
+      <a href="/mentions-legales/">Mentions légales</a>
+      <a href="https://github.com/regis57/jeuxdecartes" rel="noopener noreferrer">Code source (AGPL-3.0)</a>
+    </footer>
+  </main>
+</body>
+</html>

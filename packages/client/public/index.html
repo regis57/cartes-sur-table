@@ -1,0 +1,58 @@
+<!doctype html>
+<!--
+  Jeux de cartes — Copyright (C) 2026 regis57
+  Licensed under the GNU Affero General Public License v3.0 or later.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jeux de cartes — 8 Américain, belote, tarot en ligne</title>
+  <meta name="description" content="Les jeux de cartes français, en ligne, dans le navigateur : solo contre des bots, à plusieurs, entre amis. Sans compte, sans publicité, sans pistage.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/css/site.css">
+  <script type="module" src="/js/accueil.js"></script>
+</head>
+<body>
+  <a class="drapeau" href="/" aria-label="Jeux de cartes, accueil"><span></span><span></span><span></span></a>
+  <main class="page">
+    <header class="accueil-tete">
+      <div>
+        <h1 data-i18n="site.name">Jeux de cartes</h1>
+        <p data-i18n="site.tagline">Les jeux de cartes français, en ligne, sans compte ni publicité.</p>
+      </div>
+      <div class="eventail" aria-hidden="true">
+        <div class="carte rouge"><span class="coin">8<span>♥</span></span><span class="centre">♥</span><span class="coin bas">8<span>♥</span></span></div>
+        <div class="carte"><span class="coin">D<span>♠</span></span><span class="centre">♠</span><span class="coin bas">D<span>♠</span></span></div>
+        <div class="carte"><span class="coin">7<span>♣</span></span><span class="centre">♣</span><span class="coin bas">7<span>♣</span></span></div>
+      </div>
+    </header>
+
+    <section class="identite" aria-labelledby="qui">
+      <h2 id="qui" hidden>Qui joue</h2>
+      <div id="identite-profil" hidden>
+        <p><img id="profil-avatar" class="avatar" src="/img/avatars/a01.svg" alt=""> <strong id="profil-pseudo"></strong> — <a href="/profil/" data-i18n="site.profile">Profil</a></p>
+      </div>
+      <div id="identite-invite">
+        <label for="pseudo" data-i18n="site.name_label">Votre prénom ou pseudo</label>
+        <input id="pseudo" class="champ" type="text" maxlength="20" autocomplete="nickname" spellcheck="false" data-i18n-attr="placeholder:site.name_placeholder" placeholder="Prénom ou pseudo">
+        <p><span data-i18n="site.avatar_label">Votre avatar</span></p>
+        <div id="avatars" class="avatars" role="radiogroup" aria-label="Avatar"></div>
+        <p><a href="/profil/" data-i18n="profile.create">Créer un profil</a>, <span data-i18n="profile.home_hint">pour garder vos succès et vos statistiques.</span></p>
+      </div>
+    </section>
+
+    <section class="tables" id="tables" aria-label="Jeux"></section>
+
+    <footer class="pied">
+      <a href="/a-propos/" data-i18n="site.about">À propos</a>
+      <a href="/soutenir/" data-i18n="site.support">Soutenir</a>
+      <a href="/donnees/" data-i18n="site.data">Vos données</a>
+      <a href="/confidentialite/" data-i18n="site.privacy">Confidentialité</a>
+      <a href="/mentions-legales/" data-i18n="site.legal">Mentions légales</a>
+      <a href="https://github.com/regis57/jeuxdecartes" rel="noopener noreferrer" data-i18n="site.source">Code source (AGPL-3.0)</a>
+    </footer>
+  </main>
+</body>
+</html>

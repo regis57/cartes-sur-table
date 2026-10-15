@@ -1,0 +1,12 @@
+#!/bin/sh
+# Lance les vérifications complètes avant chaque "git push".
+# Activation (une fois par clone) :  git config core.hooksPath .githooks
+# Contourner exceptionnellement :     git push --no-verify
+cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "pre-push : typage, tests, construction, audit, hygiène..."
+if ! npm run --silent verify; then
+  echo ""
+  echo "Push refusé : les vérifications ont échoué (voir ci-dessus)."
+  exit 1
+fi
+exit 0

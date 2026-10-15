@@ -1,0 +1,40 @@
+name: CI
+
+# Ce que `npm run verify` fait en local, refait par un tiers : typage strict, tests,
+# construction du client, audit des dépendances de production, hygiène du dépôt.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Moindre privilège : le jeton du workflow ne peut que lire le dépôt.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: verifier
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # L'hygiène lit tout l'historique (identités de commit).
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # --ignore-scripts : aucun script d'installation de dépendance n'est exécuté
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run audit:prod
+      - run: npm run hygiene

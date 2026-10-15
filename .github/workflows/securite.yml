@@ -1,0 +1,142 @@
+name: Sécurité
+
+# Le contrôle de sécurité externe (docs/SECURITE.md) : ce que les plateformes
+# gratuites voient de jeuxdecartes.altiplume.com, comparé à l'attendu. Chaque lundi matin et
+# à la demande. Échoue tant qu'un point est sous l'attendu — c'est le but.
+#
+# OWASP ZAP visite aussi le site en ligne, tel que le visiteur le reçoit (passif,
+# cible écrite en dur) : ici, le lundi, et jamais sur une PR.
+#
+# Et l'image publiée, repassée sous Trivy chaque semaine : une faille découverte
+# après la publication ne doit pas attendre la prochaine mise à jour pour se voir.
+on:
+  schedule:
+    - cron: '23 5 * * 1' # lundi 05:23 UTC (07:23 à Paris)
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Hôte à contrôler
+        default: jeuxdecartes.altiplume.com
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  externe:
+    name: contrôle externe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Contrôler
+        env:
+          HOST: ${{ inputs.host || 'jeuxdecartes.altiplume.com' }}
+        run: |
+          node scripts/securite-check.mjs "$HOST" --strict | tee rapport.md
+          echo "## Contrôle de sécurité externe" >> "$GITHUB_STEP_SUMMARY"
+          cat rapport.md >> "$GITHUB_STEP_SUMMARY"
+
+  image:
+    name: image publiée (Trivy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # Mêmes version et empreinte que .github/workflows/release.yml.
+      TRIVY_VERSION: "0.69.3"
+      TRIVY_SHA256: "1816b632dfe529869c740c0913e36bd1629cb7688bd5634f4a858c1d57c88b75"
+      IMAGE: ghcr.io/${{ github.repository }}:latest
+    steps:
+      - name: Installer Trivy (binaire officiel, empreinte vérifiée)
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/trivy.tgz" \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  $RUNNER_TEMP/trivy.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/trivy"
+          tar -xzf "$RUNNER_TEMP/trivy.tgz" -C "$RUNNER_TEMP/trivy" trivy
+      - name: Contrôler l'image en service
+        run: |
+          "$RUNNER_TEMP/trivy/trivy" image --quiet --timeout 10m \
+            --scanners vuln --severity HIGH,CRITICAL \
+            --format table --output trivy.txt "$IMAGE"
+          {
+            echo "## Trivy — l'image publiée (\`latest\`)"
+            echo
+            echo '```'
+            cat trivy.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          "$RUNNER_TEMP/trivy/trivy" image --quiet --timeout 10m --skip-db-update \
+            --scanners vuln --severity CRITICAL --ignore-unfixed --exit-code 1 "$IMAGE"
+
+  # Ce que le visiteur reçoit vraiment : en-têtes, redirections et cookies tels
+  # que Cloudflare les laisse passer. Même plan, même verdict que ci-dessus ; une
+  # visite de trois minutes au plus, deux requêtes à la fois, sans rien envoyer.
+  zap-public:
+    name: zap (site en ligne)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # Mêmes version et empreinte que .github/workflows/zap.yml.
+      ZAP_VERSION: "2.17.0"
+      ZAP_SHA256: "efe799aaa3627db683b43f00c9c210aea0b75c00cc8f0a0f0434d12bb3ddde5a"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Installer ZAP (release officielle, empreinte vérifiée)
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/zap.tgz" \
+            "https://github.com/zaproxy/zaproxy/releases/download/v${ZAP_VERSION}/ZAP_${ZAP_VERSION}_Linux.tar.gz"
+          echo "${ZAP_SHA256}  $RUNNER_TEMP/zap.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/zap.tgz" -C "$RUNNER_TEMP"
+          java -version
+
+      - name: Visiter et lire (passif)
+        env:
+          ZAP_CIBLE: https://${{ inputs.host || 'jeuxdecartes.altiplume.com' }}
+          ZAP_RAPPORTS: ${{ runner.temp }}/rapports
+        run: |
+          mkdir -p "$ZAP_RAPPORTS" "$RUNNER_TEMP/zap-home"
+          "$RUNNER_TEMP/ZAP_${ZAP_VERSION}/zap.sh" -cmd -silent \
+            -dir "$RUNNER_TEMP/zap-home" \
+            -autorun "$GITHUB_WORKSPACE/.github/zap/plan.yaml"
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "## OWASP ZAP — passif, site en ligne"
+            echo
+            if [ -f "$RUNNER_TEMP/rapports/zap-rapport.md" ]; then
+              cat "$RUNNER_TEMP/rapports/zap-rapport.md"
+            else
+              echo "Pas de rapport : ZAP n'est pas allé au bout (voir le journal du job)."
+            fi
+            # Les erreurs que ZAP a notées dans son journal (l'« insight » « ZAP errors
+            # logged ») : lues ici, et le journal entier part avec les rapports.
+            if [ -f "$RUNNER_TEMP/zap-home/zap.log" ]; then
+              cp "$RUNNER_TEMP/zap-home/zap.log" "$RUNNER_TEMP/rapports/zap.log"
+              echo
+              echo "### Erreurs du journal de ZAP"
+              echo
+              echo '```'
+              grep -E " (ERROR|FATAL) " "$RUNNER_TEMP/zap-home/zap.log" | cut -c1-300 | head -n 20 || echo "aucune"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Garder les rapports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zap-rapports-public
+          path: ${{ runner.temp }}/rapports
+          retention-days: 30
+          if-no-files-found: warn

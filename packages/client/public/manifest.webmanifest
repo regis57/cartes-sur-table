@@ -1,0 +1,10 @@
+{
+  "name": "Jeux de cartes",
+  "short_name": "Cartes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e6b45",
+  "theme_color": "#1e6b45",
+  "lang": "fr",
+  "icons": [{ "src": "/img/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

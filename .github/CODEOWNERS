@@ -1,5 +1,2 @@
-# Toute modification passe par le propriétaire
-*                    @regis57
-# Fichiers sensibles pour la chaîne CI/CD
-/.github/            @regis57
-/SECURITY.md         @regis57
+# Le responsable du dépôt est relecteur par défaut de tout changement.
+* @regis57
