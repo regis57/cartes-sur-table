@@ -22,6 +22,12 @@ Deux dépendances de production : `express` et `socket.io`. Pas de base externe 
 intégré à Node (`node:sqlite`). Node 22.18 ou plus récent (26 en production) ; TypeScript exécuté
 directement par Node (retrait des types), sans étape de construction côté serveur.
 
+La sécurité n'est pas une couche ajoutée : la vue par siège est imposée par le contrat de
+jeu, le serveur rejoue chaque coup, il n'y a ni mot de passe ni adresse email à protéger,
+aucun texte libre ne circule entre joueurs, et le conteneur tourne sans privilège, en
+lecture seule, sans port ouvert. Le détail est dans le
+[bilan sécurité](docs/BILAN-SECURITE.md).
+
 ## Démarrer
 
 ```bash
@@ -59,6 +65,9 @@ signés, squash seulement, pas de force-push (`.github/rulesets/protect-main.jso
 
 - [docs/MANIFESTE-SECURITE.md](docs/MANIFESTE-SECURITE.md) : ce que le site promet aux
   joueurs et ce qu'il s'interdit.
+- [docs/BILAN-SECURITE.md](docs/BILAN-SECURITE.md) : le bilan des dispositions de sécurité
+  par conception et de durcissement, couche par couche, avec le fichier où les vérifier —
+  et la liste de ce qui reste à faire.
 - [docs/JOURNAL.md](docs/JOURNAL.md) : ce que l'on fait à chaque version. Repris dans le
   [wiki](https://github.com/regis57/cartes-sur-table/wiki), synchronisé à chaque fusion.
 - [docs/SECURITE.md](docs/SECURITE.md) : les contrôles automatiques, par qui, quand.

@@ -17,7 +17,7 @@ mkdirSync(out, { recursive: true });
 for (const f of readdirSync('wiki')) if (f.endsWith('.md')) copyFileSync(path.join('wiki', f), path.join(out, f));
 
 /** Liens relatifs du dossier docs/ : vers la page wiki si elle existe, sinon vers le dépôt. */
-const WIKI_PAGES = { 'JOURNAL.md': 'Journal', 'MANIFESTE-SECURITE.md': 'Manifeste-securite' };
+const WIKI_PAGES = { 'JOURNAL.md': 'Journal', 'MANIFESTE-SECURITE.md': 'Manifeste-securite', 'BILAN-SECURITE.md': 'Bilan-securite' };
 function rewrite(md) {
   return md.replace(/\]\((?!https?:|#)([^)]+)\)/g, (_, target) => {
     const [file, anchor] = target.split('#');

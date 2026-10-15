@@ -18,8 +18,9 @@ Ajouté
   de secours.
 - Mode jour / nuit : bouton en haut à droite, préférence du système respectée, choix
   mémorisé dans le navigateur.
-- Manifeste de sécurité, ce journal, wiki synchronisé, guide de déploiement réécrit
-  avec les menus Cloudflare d'octobre 2026 et le pas-à-pas Synology.
+- Manifeste de sécurité, bilan des dispositions de sécurité et de durcissement, ce
+  journal, wiki synchronisé, guide de déploiement réécrit avec les menus Cloudflare
+  d'octobre 2026 et le pas-à-pas Synology.
 
 Changé
 - Texte de base agrandi (1,15 rem), boutons de 48 px minimum, cartes plus grandes sur

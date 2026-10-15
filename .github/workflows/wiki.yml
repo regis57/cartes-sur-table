@@ -7,7 +7,7 @@ name: Wiki
 on:
   push:
     branches: [main]
-    paths: ['wiki/**', 'docs/JOURNAL.md', 'docs/MANIFESTE-SECURITE.md', 'scripts/wiki-build.mjs', '.github/workflows/wiki.yml']
+    paths: ['wiki/**', 'docs/JOURNAL.md', 'docs/MANIFESTE-SECURITE.md', 'docs/BILAN-SECURITE.md', 'scripts/wiki-build.mjs', '.github/workflows/wiki.yml']
   workflow_dispatch:
 
 # Moindre privilège : rien au niveau du workflow ; le seul job reçoit `contents: write`,
