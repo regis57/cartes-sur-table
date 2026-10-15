@@ -340,3 +340,8 @@ body:not(.jeu) .theme-btn { right: 16px; }
 .identite label, .champ, .btn, .mode b, .stat b, .succes b { font-size: 1.05em; }
 .champ { font-size: 1.1rem; min-height: 48px; }
 small { font-size: 0.92em; }
+
+.passkeys-liste { display: flex; flex-direction: column; gap: 10px; }
+.passkey { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 10px; background: var(--champ-fond); border: 1px solid var(--panneau-bord); }
+.passkey small { display: block; opacity: 0.85; }
+.btn.petit { min-height: 40px; padding: 6px 14px; font-size: 0.95em; }

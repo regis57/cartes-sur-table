@@ -29,8 +29,10 @@
       <tr><td>La date de création et celle de la dernière visite, au jour près</td><td>Effacer les profils abandonnés</td><td>Tant que le profil existe</td></tr>
       <tr><td>Par jeu : parties jouées, gagnées, manches</td><td>Vos statistiques</td><td>Tant que le profil existe</td></tr>
       <tr><td>Vos succès et la date du jour où vous les avez obtenus</td><td>Les afficher sur votre profil</td><td>Tant que le profil existe</td></tr>
+      <tr><td>Si vous ajoutez une passkey : sa clé <em>publique</em>, le nom que vous lui donnez, un compteur d'usage et deux dates au jour près</td><td>Vous reconnaître d'un geste (empreinte, visage, code de l'appareil) sans code de récupération</td><td>Jusqu'à ce que vous la retiriez</td></tr>
+      <tr><td>Après une connexion par passkey : l'empreinte d'un jeton de session</td><td>Garder cet appareil connecté</td><td>Six mois sans usage, ou jusqu'à « Déconnecter les autres appareils »</td></tr>
     </table>
-    <p>Et c'est tout. Pas d'adresse email, pas de mot de passe, pas d'adresse IP, pas d'historique de parties, pas d'empreinte de navigateur, pas de mesure d'audience. Le jeton secret lui-même n'est jamais stocké sur le serveur : seule son empreinte l'est, et on ne peut pas remonter de l'une à l'autre.</p>
+    <p>Et c'est tout. Pas d'adresse email, pas de mot de passe, pas d'adresse IP, pas d'historique de parties, pas d'empreinte de navigateur, pas de mesure d'audience. Le jeton secret lui-même n'est jamais stocké sur le serveur : seule son empreinte l'est, et on ne peut pas remonter de l'une à l'autre. Une passkey ne quitte jamais votre appareil : le serveur n'en reçoit que la partie publique, qui ne permet pas de se faire passer pour vous.</p>
     <p>Un profil sans visite depuis <strong>douze mois</strong> est effacé automatiquement.</p>
 
     <h2>Vos droits, sans formulaire</h2>

@@ -9,6 +9,7 @@ import {
   fetchProfile, createProfile, restoreProfile, updateProfile, exportProfile, deleteProfile, getToken, setToken, getGuest, setGuest,
   formatRecoveryCode, type ProfileData,
 } from './profile.ts';
+import { passkeysSupported, registerPasskey, deletePasskey, signInWithPasskey, revokeSessions } from './passkeys.ts';
 import { avatarSrc, renderAvatarPicker } from './avatars.ts';
 
 const ALL_ACHIEVEMENTS = [
@@ -62,6 +63,46 @@ function render(data: ProfileData): void {
   }
 }
 
+function renderPasskeys(data: ProfileData): void {
+  const zone = $('passkeys');
+  const list = $('passkeys-liste');
+  list.textContent = '';
+  if (!passkeysSupported()) {
+    hide(zone);
+    return;
+  }
+  show(zone);
+  const keys = data.passkeys ?? [];
+  if (keys.length === 0) list.append(h('p', '', t('passkeys.none')));
+  for (const k of keys) {
+    const row = h('div', 'passkey');
+    const txt = h('div');
+    txt.append(h('b', '', k.name));
+    const since = new Date(k.createdAt * 1000).toLocaleDateString(document.documentElement.lang);
+    const last = k.lastUsedAt ? new Date(k.lastUsedAt * 1000).toLocaleDateString(document.documentElement.lang) : null;
+    txt.append(h('small', '', last ? t('passkeys.used', { date: since, last }) : t('passkeys.added', { date: since })));
+    row.append(txt);
+    const del = h('button', 'btn btn-craie petit', t('passkeys.remove'));
+    del.type = 'button';
+    del.addEventListener('click', async () => {
+      if (!confirm(t('passkeys.remove_confirm', { name: k.name }))) return;
+      const ok = await deletePasskey(k.id).catch(() => false);
+      if (!ok) {
+        toast(t('site.offline'), 'erreur');
+        return;
+      }
+      data.passkeys = keys.filter((x) => x.id !== k.id);
+      renderPasskeys(data);
+      toast(t('passkeys.removed'), 'succes');
+    });
+    row.append(del);
+    list.append(row);
+  }
+  const sessions = data.sessions ?? 0;
+  $('sessions-info').textContent = sessions > 0 ? t('passkeys.sessions', { n: sessions }) : '';
+  (sessions > 0 ? show : hide)($('btn-revoke'));
+}
+
 function renderNone(): void {
   show($('sans-profil'));
   hide($('avec-profil'));
@@ -71,9 +112,14 @@ function renderNone(): void {
 
 async function main(): Promise<void> {
   await loadLocale();
-  const data = await fetchProfile().catch(() => null);
-  if (data) render(data);
-  else renderNone();
+  let current: ProfileData | null = await fetchProfile().catch(() => null);
+  if (current) {
+    render(current);
+    renderPasskeys(current);
+  } else {
+    renderNone();
+  }
+  (passkeysSupported() ? show : hide)($('btn-passkey-signin'));
 
   onAction({
     'create': async () => {
@@ -83,7 +129,9 @@ async function main(): Promise<void> {
         setGuest({ name: pseudo, avatar: avatarNew });
         $('code-nouveau').textContent = formatRecoveryCode(token);
         openDialog('dlg-code');
+        current = data;
         render(data);
+        renderPasskeys(data);
         toast(t('profile.created'), 'succes');
       } catch {
         toast(t('site.offline'), 'erreur');
@@ -98,7 +146,54 @@ async function main(): Promise<void> {
         toast(t('profile.restore_failed'), 'erreur');
         return;
       }
+      current = data;
       render(data);
+      renderPasskeys(data);
+    },
+    'passkey-signin': async () => {
+      let data: ProfileData | null = null;
+      try {
+        data = await signInWithPasskey();
+      } catch {
+        data = null;
+      }
+      if (!data) {
+        toast(t('passkeys.signin_failed'), 'erreur');
+        return;
+      }
+      current = data;
+      render(data);
+      renderPasskeys(data);
+      toast(t('passkeys.signed_in'), 'succes');
+    },
+    'passkey-add': async () => {
+      if (!current) return;
+      const name = $<HTMLInputElement>('passkey-nom').value.trim() || t('passkeys.default_name');
+      let added: Awaited<ReturnType<typeof registerPasskey>> = null;
+      try {
+        added = await registerPasskey(name);
+      } catch {
+        added = null;
+      }
+      if (!added) {
+        toast(t('passkeys.add_failed'), 'erreur');
+        return;
+      }
+      current.passkeys = [...(current.passkeys ?? []), added];
+      $<HTMLInputElement>('passkey-nom').value = '';
+      renderPasskeys(current);
+      toast(t('passkeys.added_ok'), 'succes');
+    },
+    'revoke-sessions': async () => {
+      if (!current) return;
+      const n = await revokeSessions().catch(() => null);
+      if (n === null) {
+        toast(t('site.offline'), 'erreur');
+        return;
+      }
+      current.sessions = 0;
+      renderPasskeys(current);
+      toast(t('passkeys.revoked', { n }), 'succes');
     },
     'save': async () => {
       const pseudo = $<HTMLInputElement>('pseudo-edit').value.trim();
