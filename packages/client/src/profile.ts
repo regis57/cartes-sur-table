@@ -17,6 +17,8 @@ export interface ProfileData {
   profile: { id: string; pseudo: string; avatar: number; createdAt: number; lastSeenAt: number };
   stats: { game: string; matches: number; wins: number; rounds: number }[];
   achievements: { code: string; unlockedAt: number }[];
+  passkeys?: { id: string; name: string; createdAt: number; lastUsedAt: number | null }[];
+  sessions?: number;
 }
 
 function read(key: string): string | null {

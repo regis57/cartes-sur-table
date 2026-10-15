@@ -23,6 +23,19 @@ réseau.
 | Sécurité | Jeton jamais stocké (empreinte seule) ; transport par en-tête Authorization en HTTPS ; serveur sans port ouvert, joignable par tunnel sortant seulement ; conteneur en lecture seule, sans privilèges |
 | Droits | Accès et portabilité (export JSON), rectification (pseudo, avatar), effacement : depuis la page Profil, sans formulaire. Réclamation possible auprès de la CNIL |
 
+## 1 bis. Passkeys et sessions (option du profil)
+
+| | |
+|---|---|
+| Finalité | Permettre au joueur de retrouver son profil par un geste de son appareil (WebAuthn) plutôt qu'en saisissant son code de récupération |
+| Base légale | Exécution du service demandé (ajout volontaire d'une passkey) |
+| Personnes | Joueurs ayant ajouté une passkey |
+| Données | Identifiant de la passkey ; clé publique ; algorithme ; compteur de signatures ; nom donné par le joueur ; date d'ajout et de dernier usage (au jour près). Pour chaque connexion par passkey : empreinte SHA-256 d'un jeton de session, date de création et de dernier usage (au jour près) |
+| Données explicitement absentes | Clé privée (ne quitte jamais l'appareil), attestation du fabricant (non demandée : `attestation: none`), modèle d'appareil |
+| Durée | Passkey : jusqu'à retrait par le joueur ou effacement du profil. Session : 180 jours sans usage, ou révocation par le joueur (« Déconnecter les autres appareils ») |
+| Sécurité | Vérification de l'origine et du domaine, défi à usage unique (5 minutes), compteur de signatures (détection de clone), 30 tentatives par heure et par adresse |
+| Droits | Liste, ajout et retrait depuis la page Profil ; export JSON inclus ; effacement en cascade avec le profil |
+
 ## 2. Parties en cours (invités et profils)
 
 | | |
@@ -56,3 +69,4 @@ journaux applicatifs contenant des adresses IP, sauvegardes au-delà de sept jou
 ## Historique
 
 - 2026-10-15 : création du registre, version initiale du site.
+- 2026-10-16 : ajout des passkeys et des sessions (traitement 1 bis).

@@ -55,6 +55,18 @@ npm run verify                        # typage strict, tests, construction, audi
 La branche `main` est protégée : pull request obligatoire, contrôles verts requis, commits
 signés, squash seulement, pas de force-push (`.github/rulesets/protect-main.json`).
 
+## Sécurité et journal
+
+- [docs/MANIFESTE-SECURITE.md](docs/MANIFESTE-SECURITE.md) : ce que le site promet aux
+  joueurs et ce qu'il s'interdit.
+- [docs/JOURNAL.md](docs/JOURNAL.md) : ce que l'on fait à chaque version. Repris dans le
+  [wiki](https://github.com/regis57/cartes-sur-table/wiki), synchronisé à chaque fusion.
+- [docs/SECURITE.md](docs/SECURITE.md) : les contrôles automatiques, par qui, quand.
+- [SECURITY.md](SECURITY.md) : signaler une faille, variables de configuration.
+
+Toute la documentation est en français, README compris ; le wiki sera porté en anglais
+si le site l'est.
+
 ## Ajouter un jeu
 
 Lire [CONTRIBUTING.md](CONTRIBUTING.md) : le contrat, ligne par ligne, et la liste de ce
@@ -65,7 +77,8 @@ est le modèle à copier.
 
 Rien n'est enregistré pour un invité. Un profil (facultatif) ne contient qu'une empreinte
 de jeton, un pseudo, un avatar, deux dates au jour près, des compteurs et des succès.
-Jamais d'adresse email, de mot de passe ni d'adresse IP. Export JSON et suppression
+Jamais d'adresse email, de mot de passe ni d'adresse IP. Passkeys en option, sans
+rien de plus sur le serveur qu'une clé publique. Export JSON et suppression
 immédiate depuis la page Profil. Détail : la page « Vos données » du site et
 [docs/legal/registre-traitements.md](docs/legal/registre-traitements.md).
 
