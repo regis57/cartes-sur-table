@@ -179,7 +179,9 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     });
   });
 
-  api.post('/passkeys', passkeyLimit, (req, res) => {
+  // CodeQL ne reconnaît que quelques bibliothèques de limitation ; `passkeyLimit` (30/h/IP)
+  // et la limite globale de l'application s'appliquent bien à ces deux routes.
+  api.post('/passkeys', passkeyLimit, (req, res) => { // lgtm[js/missing-rate-limiting]
     const p = profileOf(req);
     const body: unknown = req.body;
     if (!p || !isPlainObject(body)) {
@@ -222,7 +224,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
   });
 
   /** Authentification par passkey : rend un jeton de session, à garder comme un jeton de profil. */
-  api.post('/passkeys/auth', passkeyLimit, (req, res) => {
+  api.post('/passkeys/auth', passkeyLimit, (req, res) => { // lgtm[js/missing-rate-limiting]
     const body: unknown = req.body;
     if (!isPlainObject(body) || !isB64url(body['rawId'])) {
       res.status(400).json({ error: 'requete-invalide' });
