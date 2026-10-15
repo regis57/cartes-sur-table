@@ -34,7 +34,9 @@ Sécurité
   unique de cinq minutes, compteur de signatures (détection de clone), algorithmes
   ES256 et RS256 seulement, attestation non demandée (`none`), 30 tentatives par heure
   et par adresse. Sept tests dont un authentificateur simulé.
-- Scorecard : image de base `node:22.23-alpine` épinglée par empreinte dans le
+- Node 26 (LTS) en production et en CI : image `node:26.10-alpine` épinglée par
+  empreinte, `.nvmrc`, `@types/node` 26 ; mises à jour d'actions (Dependabot).
+- Scorecard : image de base épinglée par empreinte dans le
   `Dockerfile` ; workflow du wiki sans permission au niveau global (`contents: write`
   sur le seul job). Alertes restantes rejetées avec commentaire : revue de code et
   protection de branche (dépôt à un seul mainteneur, protégé par ruleset), ancienneté
