@@ -34,7 +34,8 @@ jobs:
       # --ignore-scripts : aucun script d'installation de dépendance n'est exécuté
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
-      - run: npm test
+      # Les tests d'intégration servent le client construit : construire d'abord.
       - run: npm run build
+      - run: npm test
       - run: npm run audit:prod
       - run: npm run hygiene
