@@ -154,14 +154,14 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     const proto = req.headers['x-forwarded-proto'] === 'https' ? 'https' : req.protocol;
     return { rpId: host.replace(/:\d+$/, ''), origins: [`${proto}://${host}`] };
   };
-  const authed = (req: Request): { id: string; pseudo: string; avatar: number } | null => {
+  const profileOf = (req: Request): { id: string; pseudo: string; avatar: number } | null => {
     const t = bearer(req);
     return t ? store.getByToken(t) : null;
   };
   const passkeyLimit = httpRateLimit({ windowMs: 3_600_000, max: 30, trust: cfg.trustProxy });
 
   api.post('/passkeys/options', passkeyLimit, (req, res) => {
-    const p = authed(req);
+    const p = profileOf(req);
     if (!p) {
       res.status(401).json({ error: 'profil-inconnu' });
       return;
@@ -180,7 +180,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
   });
 
   api.post('/passkeys', passkeyLimit, (req, res) => {
-    const p = authed(req);
+    const p = profileOf(req);
     const body: unknown = req.body;
     if (!p || !isPlainObject(body)) {
       res.status(p ? 400 : 401).json({ error: p ? 'requete-invalide' : 'profil-inconnu' });
@@ -206,7 +206,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
   });
 
   api.delete('/passkeys/:id', (req, res) => {
-    const p = authed(req);
+    const p = profileOf(req);
     if (!p) {
       res.status(401).json({ error: 'profil-inconnu' });
       return;
@@ -258,7 +258,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
 
   /** Déconnecte tous les appareils entrés par passkey (le jeton d'origine reste valable). */
   api.post('/profil/sessions/revoke', (req, res) => {
-    const p = authed(req);
+    const p = profileOf(req);
     if (!p) {
       res.status(401).json({ error: 'profil-inconnu' });
       return;
