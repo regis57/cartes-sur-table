@@ -83,10 +83,19 @@ export interface Achievement {
   unlockedAt: number;
 }
 
+export interface PasskeyInfo {
+  id: string;
+  name: string;
+  createdAt: number;
+  lastUsedAt: number | null;
+}
+
 export interface ProfileExport {
   profile: Profile;
   stats: GameStats[];
   achievements: Achievement[];
+  passkeys: PasskeyInfo[];
+  sessions: number;
 }
 
 /** Succès communs à tous les jeux, attribués par le socle. */
@@ -130,6 +139,24 @@ export class ProfileStore {
         PRIMARY KEY (profil_id, code)
       );
       CREATE INDEX IF NOT EXISTS profils_vu_le ON profils(vu_le);
+      CREATE TABLE IF NOT EXISTS passkeys (
+        id TEXT PRIMARY KEY,
+        profil_id TEXT NOT NULL REFERENCES profils(id) ON DELETE CASCADE,
+        cle_publique TEXT NOT NULL,
+        alg INTEGER NOT NULL,
+        compteur INTEGER NOT NULL DEFAULT 0,
+        nom TEXT NOT NULL,
+        cree_le INTEGER NOT NULL,
+        utilise_le INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS passkeys_profil ON passkeys(profil_id);
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        profil_id TEXT NOT NULL REFERENCES profils(id) ON DELETE CASCADE,
+        cree_le INTEGER NOT NULL,
+        vu_le INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS sessions_profil ON sessions(profil_id);
     `);
   }
 
@@ -165,10 +192,21 @@ export class ProfileStore {
     return { id: row.id, pseudo: row.pseudo, avatar: row.avatar, createdAt: row.cree_le, lastSeenAt: row.vu_le };
   }
 
-  /** Retrouve un profil par son jeton et note la visite (au jour près). */
+  /**
+   * Retrouve un profil par son jeton (le jeton d'origine, ou un jeton de session
+   * remis après une passkey) et note la visite (au jour près).
+   */
   getByToken(token: string): Profile | null {
-    const p = this.getById(profileIdFromToken(token));
-    if (!p) return null;
+    const id = profileIdFromToken(token);
+    let p = this.getById(id);
+    if (!p) {
+      const sess = this.db.prepare('SELECT profil_id FROM sessions WHERE id = ?').get(id) as { profil_id: string } | undefined;
+      if (!sess) return null;
+      p = this.getById(sess.profil_id);
+      if (!p) return null;
+      const t = nowSec();
+      this.db.prepare('UPDATE sessions SET vu_le = ? WHERE id = ?').run(t - (t % DAY), id);
+    }
     const t = nowSec();
     const day = t - (t % DAY);
     if (day > p.lastSeenAt) {
@@ -253,7 +291,79 @@ export class ProfileStore {
   export(id: string): ProfileExport | null {
     const profile = this.getById(id);
     if (!profile) return null;
-    return { profile, stats: this.stats(id), achievements: this.achievements(id) };
+    return { profile, stats: this.stats(id), achievements: this.achievements(id), passkeys: this.passkeys(id), sessions: this.sessionCount(id) };
+  }
+
+  // ---------- passkeys ----------
+
+  passkeys(profileId: string): PasskeyInfo[] {
+    const rows = this.db.prepare('SELECT id, nom, cree_le, utilise_le FROM passkeys WHERE profil_id = ? ORDER BY cree_le').all(profileId) as {
+      id: string;
+      nom: string;
+      cree_le: number;
+      utilise_le: number | null;
+    }[];
+    return rows.map((r) => ({ id: r.id, name: r.nom, createdAt: r.cree_le, lastUsedAt: r.utilise_le }));
+  }
+
+  addPasskey(profileId: string, key: { id: string; publicKeyPem: string; alg: number; signCount: number; name: unknown }): PasskeyInfo | null {
+    if (!this.getById(profileId)) return null;
+    if (this.passkeys(profileId).length >= 10) return null;
+    const t = nowSec();
+    const day = t - (t % DAY);
+    try {
+      this.db
+        .prepare('INSERT INTO passkeys (id, profil_id, cle_publique, alg, compteur, nom, cree_le) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(key.id, profileId, key.publicKeyPem, key.alg, key.signCount, sanitizeName(key.name), day);
+    } catch {
+      return null;
+    }
+    return { id: key.id, name: sanitizeName(key.name), createdAt: day, lastUsedAt: null };
+  }
+
+  findPasskey(id: string): { profileId: string; publicKeyPem: string; alg: number; signCount: number } | null {
+    const r = this.db.prepare('SELECT profil_id, cle_publique, alg, compteur FROM passkeys WHERE id = ?').get(id) as
+      | { profil_id: string; cle_publique: string; alg: number; compteur: number }
+      | undefined;
+    if (!r) return null;
+    return { profileId: r.profil_id, publicKeyPem: r.cle_publique, alg: r.alg, signCount: r.compteur };
+  }
+
+  touchPasskey(id: string, signCount: number): void {
+    const t = nowSec();
+    this.db.prepare('UPDATE passkeys SET compteur = ?, utilise_le = ? WHERE id = ?').run(signCount, t - (t % DAY), id);
+  }
+
+  deletePasskey(profileId: string, id: string): boolean {
+    return this.db.prepare('DELETE FROM passkeys WHERE id = ? AND profil_id = ?').run(id, profileId).changes > 0;
+  }
+
+  // ---------- sessions (après une passkey) ----------
+
+  /** Crée une session pour ce profil et renvoie le jeton (même format qu'un jeton de profil ; jamais stocké). */
+  createSession(profileId: string): string | null {
+    if (!this.getById(profileId)) return null;
+    const token = generateProfileToken();
+    const t = nowSec();
+    const day = t - (t % DAY);
+    this.db.prepare('INSERT INTO sessions (id, profil_id, cree_le, vu_le) VALUES (?, ?, ?, ?)').run(profileIdFromToken(token), profileId, day, day);
+    return token;
+  }
+
+  sessionCount(profileId: string): number {
+    const r = this.db.prepare('SELECT COUNT(*) AS n FROM sessions WHERE profil_id = ?').get(profileId) as { n: number };
+    return r.n;
+  }
+
+  /** Révoque toutes les sessions d'un profil (le jeton d'origine reste valable). */
+  revokeSessions(profileId: string): number {
+    return Number(this.db.prepare('DELETE FROM sessions WHERE profil_id = ?').run(profileId).changes);
+  }
+
+  /** Sessions sans usage depuis `days` jours. */
+  purgeSessions(days: number): number {
+    const limit = nowSec() - days * DAY;
+    return Number(this.db.prepare('DELETE FROM sessions WHERE vu_le < ?').run(limit).changes);
   }
 
   /** Effacement réel et immédiat (les tables liées suivent par cascade). */

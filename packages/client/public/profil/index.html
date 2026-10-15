@@ -29,6 +29,7 @@
       <div class="boutons">
         <button type="button" class="btn btn-laiton" data-action="create" data-i18n="profile.create">Créer un profil</button>
         <button type="button" class="btn btn-craie" data-action="show-restore" data-i18n="profile.restore">J'ai déjà un code de récupération</button>
+        <button type="button" class="btn btn-craie" id="btn-passkey-signin" data-action="passkey-signin" data-i18n="passkeys.signin" hidden>Se connecter avec une passkey</button>
       </div>
       <div id="restaurer" hidden>
         <p></p>
@@ -61,6 +62,22 @@
             <button type="button" class="btn btn-craie" data-action="hide-code" data-i18n="profile.code_hide">Masquer</button>
           </div>
         </div>
+      </div>
+
+      <div class="panneau" id="passkeys" hidden>
+        <h2 data-i18n="passkeys.title">Passkeys</h2>
+        <p data-i18n="passkeys.intro"></p>
+        <p class="attention" data-i18n="passkeys.warning"></p>
+        <div id="passkeys-liste" class="passkeys-liste"></div>
+        <p></p>
+        <label for="passkey-nom" data-i18n="passkeys.name_label">Nom de cet appareil (facultatif)</label>
+        <input id="passkey-nom" class="champ" type="text" maxlength="40" autocomplete="off" spellcheck="false">
+        <p></p>
+        <div class="boutons">
+          <button type="button" class="btn btn-laiton" data-action="passkey-add" data-i18n="passkeys.add">Ajouter une passkey sur cet appareil</button>
+          <button type="button" class="btn btn-craie" id="btn-revoke" data-action="revoke-sessions" data-i18n="passkeys.revoke" hidden>Déconnecter les autres appareils</button>
+        </div>
+        <p><small id="sessions-info"></small></p>
       </div>
 
       <div class="panneau">

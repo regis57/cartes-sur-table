@@ -12,3 +12,4 @@ export * from './table.ts';
 export * from './lobby.ts';
 export * from './profiles.ts';
 export * from './protocol.ts';
+export * from './webauthn.ts';

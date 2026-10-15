@@ -29,9 +29,18 @@
     "copied": "Copié"
   },
   "games": {
-    "huit-americain": { "name": "8 Américain", "blurb": "Le premier à vider sa main gagne la manche. Le 8 change de couleur, le 7 fait rejouer, le 10 inverse le sens." },
-    "belote": { "name": "Belote", "blurb": "À quatre, par équipes, avec l'atout et les annonces." },
-    "tarot": { "name": "Tarot", "blurb": "À quatre ou cinq, avec l'excuse, le petit et le chien." }
+    "huit-americain": {
+      "name": "8 Américain",
+      "blurb": "Le premier à vider sa main gagne la manche. Le 8 change de couleur, le 7 fait rejouer, le 10 inverse le sens."
+    },
+    "belote": {
+      "name": "Belote",
+      "blurb": "À quatre, par équipes, avec l'atout et les annonces."
+    },
+    "tarot": {
+      "name": "Tarot",
+      "blurb": "À quatre ou cinq, avec l'excuse, le petit et le chien."
+    }
   },
   "lobby": {
     "solo": "Partie solo",
@@ -132,15 +141,42 @@
   },
   "achievements": {
     "unlocked": "Succès débloqué : {name}",
-    "premiere-partie": { "name": "Première partie", "desc": "Finir une partie complète." },
-    "premiere-victoire": { "name": "Première victoire", "desc": "Gagner une partie." },
-    "dix-victoires": { "name": "Dix victoires", "desc": "Gagner dix parties, tous jeux confondus." },
-    "cinquante-parties": { "name": "Habitué de la table", "desc": "Finir cinquante parties." },
-    "touche-a-tout": { "name": "Touche-à-tout", "desc": "Jouer à deux jeux différents." },
-    "huit-americain:huit-magique": { "name": "Huit magique", "desc": "Gagner une manche en posant un 8 en dernier." },
-    "huit-americain:sans-pioche": { "name": "Sans pioche", "desc": "Gagner une manche sans piocher une seule carte." },
-    "huit-americain:coup-du-sept": { "name": "Le coup du 7", "desc": "Gagner une manche sur un 7, en rejouant." },
-    "huit-americain:manche-parfaite": { "name": "Zéro pointé", "desc": "Gagner une partie avec zéro point au compteur." }
+    "premiere-partie": {
+      "name": "Première partie",
+      "desc": "Finir une partie complète."
+    },
+    "premiere-victoire": {
+      "name": "Première victoire",
+      "desc": "Gagner une partie."
+    },
+    "dix-victoires": {
+      "name": "Dix victoires",
+      "desc": "Gagner dix parties, tous jeux confondus."
+    },
+    "cinquante-parties": {
+      "name": "Habitué de la table",
+      "desc": "Finir cinquante parties."
+    },
+    "touche-a-tout": {
+      "name": "Touche-à-tout",
+      "desc": "Jouer à deux jeux différents."
+    },
+    "huit-americain:huit-magique": {
+      "name": "Huit magique",
+      "desc": "Gagner une manche en posant un 8 en dernier."
+    },
+    "huit-americain:sans-pioche": {
+      "name": "Sans pioche",
+      "desc": "Gagner une manche sans piocher une seule carte."
+    },
+    "huit-americain:coup-du-sept": {
+      "name": "Le coup du 7",
+      "desc": "Gagner une manche sur un 7, en rejouant."
+    },
+    "huit-americain:manche-parfaite": {
+      "name": "Zéro pointé",
+      "desc": "Gagner une partie avec zéro point au compteur."
+    }
   },
   "profile": {
     "title": "Votre profil",
@@ -178,5 +214,28 @@
     "deleted": "Profil supprimé.",
     "guest_title": "Jouer en invité",
     "guest_hint": "Pseudo et avatar restent dans ce navigateur. Rien n'est envoyé ailleurs que dans la partie."
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "intro": "Une passkey remplace le code de récupération au quotidien : votre appareil (empreinte, visage ou code de verrouillage) prouve que c'est bien vous. Le serveur ne reçoit qu'une clé publique.",
+    "warning": "Une passkey est liée à une famille d'appareils (Apple, Google, Windows ou votre gestionnaire de mots de passe). Si vous changez de tablette ou d'ordinateur, elle ne vous suit pas forcément : gardez votre code de récupération, c'est lui la vraie clé de secours.",
+    "unsupported": "Ce navigateur ne propose pas les passkeys.",
+    "none": "Aucune passkey pour l'instant.",
+    "name_label": "Nom de cet appareil (facultatif)",
+    "default_name": "Mon appareil",
+    "add": "Ajouter une passkey sur cet appareil",
+    "add_failed": "La passkey n'a pas pu être ajoutée. Vérifiez que l'appareil est verrouillable (code, empreinte ou visage), puis réessayez.",
+    "added_ok": "Passkey ajoutée.",
+    "added": "Ajoutée le {date}",
+    "used": "Ajoutée le {date}, utilisée le {last}",
+    "remove": "Retirer",
+    "remove_confirm": "Retirer la passkey « {name} » ? Elle ne permettra plus de retrouver ce profil.",
+    "removed": "Passkey retirée.",
+    "signin": "Se connecter avec une passkey",
+    "signin_failed": "Aucune passkey reconnue pour ce site sur cet appareil.",
+    "signed_in": "Profil retrouvé.",
+    "sessions": "{n} connexion(s) par passkey active(s) sur vos appareils.",
+    "revoke": "Déconnecter les autres appareils",
+    "revoked": "{n} connexion(s) fermée(s). Le code de récupération et les passkeys restent valables."
   }
 }

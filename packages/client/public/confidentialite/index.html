@@ -23,6 +23,7 @@
     <ul>
       <li><strong>Rien</strong>, si vous jouez en invité.</li>
       <li>Si vous créez un profil : l'empreinte de votre jeton secret, votre pseudo, votre avatar, deux dates au jour près, vos compteurs de parties par jeu et vos succès.</li>
+      <li>Si vous ajoutez une passkey : sa clé publique, son nom, un compteur d'usage, et l'empreinte des jetons de session ouverts avec elle.</li>
     </ul>
     <p>Le site ne garde ni mot de passe (il n'y en a pas), ni adresse email (elle n'est jamais demandée), ni nom, ni adresse IP.</p>
 
@@ -43,6 +44,7 @@
     <h2>Combien de temps</h2>
     <ul>
       <li>Votre profil : tant qu'il existe, et douze mois au plus après votre dernière visite.</li>
+      <li>Vos passkeys : jusqu'à ce que vous les retiriez (ou avec le profil). Les sessions ouvertes par passkey : six mois sans usage.</li>
       <li>Les journaux techniques du serveur ne contiennent pas d'adresse IP. Ceux de l'intermédiaire réseau relèvent de sa propre politique.</li>
       <li>Les sauvegardes de la base : sept jours au plus. Un profil effacé en disparaît donc au plus tard sept jours après.</li>
     </ul>
@@ -55,7 +57,7 @@
     <p>Le site ne demande pas d'âge, parce qu'il ne demande rien. Il n'y a pas de messagerie entre joueurs : les seules interactions sont des réactions et des phrases choisies dans un catalogue fermé, relu par l'éditeur.</p>
 
     <h2>Sécurité</h2>
-    <p>Pas de mot de passe, donc rien à voler. Le jeton de profil n'est conservé que sous forme d'empreinte. Le serveur n'est pas joignable directement depuis Internet. Le code du site est public et peut être audité par quiconque.</p>
+    <p>Pas de mot de passe, donc rien à voler. Le jeton de profil n'est conservé que sous forme d'empreinte. Les passkeys reposent sur la norme WebAuthn : la clé privée reste dans votre appareil, le serveur ne vérifie qu'une signature. Le serveur n'est pas joignable directement depuis Internet. Le code du site est public et peut être audité par quiconque.</p>
 
     <footer class="pied">
       <a href="/">Accueil</a>
