@@ -5,6 +5,7 @@
  * Aucune donnée reçue du réseau n'est interprétée comme du HTML : textContent et
  * createElement seulement. Les réactions sont des codes, dessinés depuis /img/emotes.
  */
+import './theme.ts';
 import { $, h, img, show, hide, fill, toast, onAction, openDialog, closeDialog } from './ui.ts';
 import { loadLocale, t, has } from './i18n.ts';
 import { identity, getGuest } from './profile.ts';
