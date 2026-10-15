@@ -1,24 +1,32 @@
 version: 2
 updates:
   # Actions GitHub (épinglées par SHA, Dependabot met à jour SHA + commentaire de version)
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "weekly"
+      interval: weekly
+    # Une version doit avoir sept jours d'âge avant d'être proposée : le temps que
+    # les versions piégées soient retirées (voir Trivy et Opengrep en mars 2026).
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
     commit-message:
       prefix: "ci"
-
-  # Décommente selon la stack choisie
-  # - package-ecosystem: "npm"
-  #   directory: "/"
-  #   schedule: { interval: "weekly" }
-  #   open-pull-requests-limit: 10
-  # - package-ecosystem: "pip"
-  #   directory: "/"
-  #   schedule: { interval: "weekly" }
-  # - package-ecosystem: "docker"
-  #   directory: "/"
-  #   schedule: { interval: "weekly" }
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

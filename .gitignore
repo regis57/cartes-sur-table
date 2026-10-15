@@ -9,15 +9,21 @@ secrets/
 
 # Dépendances et builds
 node_modules/
+packages/client/public/js/
 dist/
 build/
-__pycache__/
-*.pyc
-.venv/
 coverage/
+
+# Base locale
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
 
 # Éditeurs / OS
 .vscode/
 .idea/
+*.log
 .DS_Store
 Thumbs.db

@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  Jeux de cartes — Copyright (C) 2026 regis57
+  Licensed under the GNU Affero General Public License v3.0 or later.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vos données — Jeux de cartes</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <a class="drapeau" href="/" aria-label="Jeux de cartes, accueil"><span></span><span></span><span></span></a>
+  <main class="page etroite prose">
+    <h1>Vos données</h1>
+    <p>Cette page dit, sans détour, ce que le site sait de vous. C'est court, parce que c'est peu.</p>
+
+    <h2>Si vous jouez en invité</h2>
+    <p>Rien n'est enregistré sur le serveur. Votre pseudo et votre avatar restent dans votre navigateur (stockage local), et ne partent que vers la table où vous jouez, le temps de la partie. Fermez l'onglet : il ne reste rien côté serveur.</p>
+
+    <h2>Si vous créez un profil</h2>
+    <table>
+      <tr><th>Ce qui est gardé</th><th>Pourquoi</th><th>Combien de temps</th></tr>
+      <tr><td>L'empreinte (SHA-256) de votre jeton secret</td><td>Vous reconnaître sans mot de passe ni email</td><td>Tant que le profil existe</td></tr>
+      <tr><td>Votre pseudo et le numéro de votre avatar</td><td>Les afficher à la table</td><td>Tant que le profil existe</td></tr>
+      <tr><td>La date de création et celle de la dernière visite, au jour près</td><td>Effacer les profils abandonnés</td><td>Tant que le profil existe</td></tr>
+      <tr><td>Par jeu : parties jouées, gagnées, manches</td><td>Vos statistiques</td><td>Tant que le profil existe</td></tr>
+      <tr><td>Vos succès et la date du jour où vous les avez obtenus</td><td>Les afficher sur votre profil</td><td>Tant que le profil existe</td></tr>
+    </table>
+    <p>Et c'est tout. Pas d'adresse email, pas de mot de passe, pas d'adresse IP, pas d'historique de parties, pas d'empreinte de navigateur, pas de mesure d'audience. Le jeton secret lui-même n'est jamais stocké sur le serveur : seule son empreinte l'est, et on ne peut pas remonter de l'une à l'autre.</p>
+    <p>Un profil sans visite depuis <strong>douze mois</strong> est effacé automatiquement.</p>
+
+    <h2>Vos droits, sans formulaire</h2>
+    <p>Depuis la page <a href="/profil/">Profil</a>, à tout moment : télécharger toutes vos données dans un fichier lisible (JSON), corriger votre pseudo et votre avatar, et supprimer votre profil, immédiatement et définitivement. La suppression efface le profil, ses statistiques et ses succès dans la même seconde.</p>
+    <p>Pour toute autre demande, écrivez à l'adresse indiquée dans les <a href="/mentions-legales/">mentions légales</a>. Vous pouvez aussi saisir la CNIL (<a href="https://www.cnil.fr" rel="noopener noreferrer">cnil.fr</a>).</p>
+
+    <h2>Ce qui circule pendant une partie</h2>
+    <p>Votre pseudo, votre avatar et vos coups vont au serveur, qui vérifie chaque coup et envoie à chacun ce qu'il a le droit de voir : jamais les cartes des autres. Les réactions sont choisies dans un catalogue fermé ; il n'y a pas de messagerie, donc aucun texte libre ne circule entre joueurs. Votre adresse IP est vue en transit par Cloudflare et par le serveur, qui l'utilise en mémoire pour limiter les abus (nombre de connexions) et ne l'écrit nulle part.</p>
+
+    <footer class="pied">
+      <a href="/">Accueil</a>
+      <a href="/profil/">Profil</a>
+      <a href="/a-propos/">À propos</a>
+      <a href="/soutenir/">Soutenir</a>
+      <a href="/donnees/">Vos données</a>
+      <a href="/confidentialite/">Confidentialité</a>
+      <a href="/mentions-legales/">Mentions légales</a>
+      <a href="https://github.com/regis57/cartes-sur-table" rel="noopener noreferrer">Code source (AGPL-3.0)</a>
+    </footer>
+  </main>
+</body>
+</html>

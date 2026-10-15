@@ -1,0 +1,13 @@
+name: Problème
+description: Quelque chose ne marche pas
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Ce qui se passe
+      description: Jeu, mode (solo, en ligne, entre amis), appareil et navigateur.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Ce qui devrait se passer

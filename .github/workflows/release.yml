@@ -1,0 +1,212 @@
+name: Release
+
+# Construit l'image du serveur et, sur `main`, la publie sur le registre GitHub avec
+# une attestation de provenance : une preuve signée que cette image précise a été
+# produite par ce dépôt, à partir de ce commit, par ce workflow.
+#
+# Sur une pull request, l'image est construite mais jamais publiée : c'est une
+# vérification du Dockerfile, rien de plus.
+#
+# Avant toute publication, Trivy passe l'image au crible : une faille critique
+# connue et déjà corrigée en amont bloque la publication. Le reste (élevé,
+# critique sans correctif) est listé dans le résumé, pour être suivi.
+#
+# Aucune action tierce : seulement des actions `actions/*`, épinglées par SHA, et le
+# client Docker fourni par le runner. Trivy n'est pas pris par son action GitHub
+# (compromise en mars 2026) mais par son binaire officiel, version et empreinte
+# SHA-256 fixées ici.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+  # Trivy 0.69.3 : la dernière version saine avant la compromission de mars 2026
+  # (0.69.4 était piégée). Empreinte relevée dans trivy_0.69.3_checksums.txt.
+  TRIVY_VERSION: "0.69.3"
+  TRIVY_SHA256: "1816b632dfe529869c740c0913e36bd1629cb7688bd5634f4a858c1d57c88b75"
+
+jobs:
+  build:
+    name: docker
+    runs-on: ubuntu-24.04
+    # Les droits d'écriture ne sont demandés que par ce job, et seulement ceux-ci.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Préparer buildx
+        run: docker buildx create --use --name jeuxdecartes --driver docker-container
+
+      - name: Calculer les étiquettes
+        id: meta
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          SHA: ${{ github.sha }}
+        run: |
+          short="${SHA::12}"
+          tags="${IMAGE}:sha-${short}"
+          if [ "$REF_TYPE" = "tag" ]; then
+            tags="${tags},${IMAGE}:${REF_NAME#v},${IMAGE}:latest"
+          elif [ "$REF_NAME" = "main" ]; then
+            tags="${tags},${IMAGE}:latest"
+          fi
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+          echo "short=${short}" >> "$GITHUB_OUTPUT"
+          # Ce que l'image dira d'elle-même : la version du dépôt (ou celle de
+          # l'étiquette), le commit exact, la date de construction. Le serveur les
+          # sert sur /api/version.
+          if [ "$REF_TYPE" = "tag" ]; then version="${REF_NAME#v}"; else version="$(node -p "require('./package.json').version")"; fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      # Construite et chargée localement d'abord, à chaque fois — PR comme main :
+      # on vérifie avant de publier, jamais après.
+      - name: Construire (sans publier)
+        env:
+          APP_VERSION: ${{ steps.meta.outputs.version }}
+          APP_REVISION: ${{ steps.meta.outputs.short }}
+          APP_BUILT_AT: ${{ steps.meta.outputs.built_at }}
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg APP_VERSION="$APP_VERSION" \
+            --build-arg APP_REVISION="$APP_REVISION" \
+            --build-arg APP_BUILT_AT="$APP_BUILT_AT" \
+            --tag jeuxdecartes:verif \
+            --load \
+            .
+
+      - name: Vérifier que l'image démarre et répond
+        run: |
+          id=$(docker run -d --read-only --tmpfs /tmp -p 3000:3000 \
+            -e PUBLIC_ORIGIN=https://jeuxdecartes.test \
+            jeuxdecartes:verif)
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:3000/healthz; then ok=1; break; fi
+            sleep 1
+          done
+          docker logs "$id"
+          docker rm -f "$id" >/dev/null
+          [ "${ok:-0}" = "1" ]
+          # Et qu'elle n'embarque plus de gestionnaire de paquets.
+          docker run --rm --entrypoint sh jeuxdecartes:verif -c \
+            'for c in npm npx corepack yarn; do if command -v "$c"; then echo "$c est encore là"; exit 1; fi; done'
+
+      - name: Installer Trivy (binaire officiel, empreinte vérifiée)
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/trivy.tgz" \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  $RUNNER_TEMP/trivy.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/trivy"
+          tar -xzf "$RUNNER_TEMP/trivy.tgz" -C "$RUNNER_TEMP/trivy" trivy
+          "$RUNNER_TEMP/trivy/trivy" --version
+
+      - name: Trivy — l'inventaire (élevé et critique)
+        run: |
+          "$RUNNER_TEMP/trivy/trivy" image --quiet --timeout 10m \
+            --scanners vuln,secret --severity HIGH,CRITICAL \
+            --format table --output trivy.txt jeuxdecartes:verif
+          {
+            echo "## Trivy — failles élevées et critiques de l'image"
+            echo
+            echo "Trivy ${TRIVY_VERSION}, base de données du jour. Seules les failles **critiques avec correctif** bloquent."
+            echo
+            echo '```'
+            if [ -s trivy.txt ]; then cat trivy.txt; else echo "Aucune faille élevée ou critique connue."; fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Trivy — le verdict (aucune faille critique corrigée en amont)
+        run: |
+          "$RUNNER_TEMP/trivy/trivy" image --quiet --timeout 10m \
+            --skip-db-update \
+            --scanners vuln,secret --severity CRITICAL --ignore-unfixed \
+            --exit-code 1 jeuxdecartes:verif
+
+      - name: Se connecter au registre
+        if: github.event_name != 'pull_request'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+
+      - name: Construire et publier
+        if: github.event_name != 'pull_request'
+        id: push
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          APP_VERSION: ${{ steps.meta.outputs.version }}
+          APP_REVISION: ${{ steps.meta.outputs.short }}
+          APP_BUILT_AT: ${{ steps.meta.outputs.built_at }}
+        run: |
+          args=""
+          IFS=',' read -ra list <<< "$TAGS"
+          for t in "${list[@]}"; do args="$args --tag $t"; done
+          # --sbom et --provenance attachent à l'image un inventaire de ses composants
+          # et une trace de construction, lisibles par `docker buildx imagetools inspect`.
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg APP_VERSION="$APP_VERSION" \
+            --build-arg APP_REVISION="$APP_REVISION" \
+            --build-arg APP_BUILT_AT="$APP_BUILT_AT" \
+            --sbom=true \
+            --provenance=mode=max \
+            --push \
+            --metadata-file metadata.json \
+            $args \
+            .
+          digest=$(jq -r '."containerimage.digest"' metadata.json)
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "Image publiée : ${IMAGE}@${digest}"
+
+      - name: Attester la provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Résumé
+        if: github.event_name != 'pull_request'
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          {
+            echo "## Image publiée"
+            echo
+            echo '```'
+            echo "${IMAGE}@${DIGEST}"
+            echo '```'
+            echo
+            echo "Étiquettes : \`${TAGS//,/\`, \`}\`"
+            echo
+            echo "Vérifier la provenance depuis n'importe quelle machine :"
+            echo
+            echo '```'
+            echo "gh attestation verify oci://${IMAGE}@${DIGEST} --owner $OWNER"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

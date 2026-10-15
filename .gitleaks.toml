@@ -1,0 +1,16 @@
+# Configuration gitleaks : règles par défaut, plus une liste blanche documentée.
+title = "cartes-sur-table"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valeurs de test, sans aucun secret"
+regexes = [
+  # UUID v4 de test utilisé comme clé de reprise invalide dans les tests du serveur.
+  '''123e4567-e89b-42d3-a456-426614174000''',
+]
+paths = [
+  # Jetons de profil générés à la volée dans les tests (base32, jamais réels).
+  '''packages/.*/test/.*\.test\.ts$''',
+]

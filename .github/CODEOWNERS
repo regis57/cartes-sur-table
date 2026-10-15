@@ -3,3 +3,7 @@
 # Fichiers sensibles pour la chaîne CI/CD
 /.github/            @regis57
 /SECURITY.md         @regis57
+/Dockerfile          @regis57
+/docker-compose.yml  @regis57
+/packages/core/src/security.ts   @regis57
+/packages/core/src/profiles.ts   @regis57

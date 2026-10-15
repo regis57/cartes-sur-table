@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "rootDir": "." },
+  "include": ["packages/core/**/*.ts", "packages/games/**/*.ts", "packages/server/**/*.ts", "scripts/**/*.ts"],
+  "exclude": ["node_modules", "**/dist/**", "packages/client/**"]
+}

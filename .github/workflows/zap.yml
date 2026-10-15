@@ -1,0 +1,122 @@
+name: ZAP
+
+# OWASP ZAP, en passif seulement : l'image du site est construite et
+# démarrée ici, sur le runner, comme sur le NAS ; ZAP la visite, lit chaque
+# réponse et signale ce qui cloche. Il n'attaque rien et n'envoie aucun
+# formulaire (voir .github/zap/plan.yaml).
+#
+# Échoue sur la moindre alerte « moyenne » ou « haute » qui n'a pas été
+# examinée à la main et déclarée faux positif, avec sa raison, dans le plan.
+#
+# Le site en ligne (après Cloudflare) est visité par le même ZAP,
+# chaque lundi, dans .github/workflows/securite.yml : jamais sur une PR.
+#
+# Aucune action tierce : ZAP est pris dans sa release GitHub officielle,
+# version et empreinte SHA-256 fixées ici (celles publiées par le projet dans
+# ZapVersions.xml), et tourne sur le Java déjà présent sur le runner.
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - package.json
+      - package-lock.json
+      - packages/**
+      - .github/zap/**
+      - .github/workflows/zap.yml
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 5 * * 1' # lundi 05:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zap-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZAP_VERSION: "2.17.0"
+  ZAP_SHA256: "efe799aaa3627db683b43f00c9c210aea0b75c00cc8f0a0f0434d12bb3ddde5a"
+
+jobs:
+  passif:
+    name: zap (passif)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Construire l'image
+        run: docker build --tag jeuxdecartes:zap .
+
+      - name: Démarrer le site (production, comme sur le NAS)
+        run: |
+          docker run -d --name jeuxdecartes --read-only --tmpfs /tmp -p 127.0.0.1:3000:3000 \
+            -e PUBLIC_ORIGIN=https://jeuxdecartes.test \
+            jeuxdecartes:zap
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/healthz; then exit 0; fi
+            sleep 1
+          done
+          docker logs jeuxdecartes
+          exit 1
+
+      - name: Installer ZAP (release officielle, empreinte vérifiée)
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/zap.tgz" \
+            "https://github.com/zaproxy/zaproxy/releases/download/v${ZAP_VERSION}/ZAP_${ZAP_VERSION}_Linux.tar.gz"
+          echo "${ZAP_SHA256}  $RUNNER_TEMP/zap.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/zap.tgz" -C "$RUNNER_TEMP"
+          java -version
+
+      - name: Visiter et lire (passif)
+        env:
+          ZAP_CIBLE: http://127.0.0.1:3000
+          ZAP_RAPPORTS: ${{ runner.temp }}/rapports
+        run: |
+          mkdir -p "$ZAP_RAPPORTS" "$RUNNER_TEMP/zap-home"
+          # -silent : ZAP ne contacte rien d'autre que la cible (ni mises à jour, ni nouvelles).
+          "$RUNNER_TEMP/ZAP_${ZAP_VERSION}/zap.sh" -cmd -silent \
+            -dir "$RUNNER_TEMP/zap-home" \
+            -autorun "$GITHUB_WORKSPACE/.github/zap/plan.yaml"
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "## OWASP ZAP — passif"
+            echo
+            if [ -f "$RUNNER_TEMP/rapports/zap-rapport.md" ]; then
+              cat "$RUNNER_TEMP/rapports/zap-rapport.md"
+            else
+              echo "Pas de rapport : ZAP n'est pas allé au bout (voir le journal du job)."
+            fi
+            # Les erreurs que ZAP a notées dans son journal (l'« insight » « ZAP errors
+            # logged ») : lues ici, et le journal entier part avec les rapports.
+            if [ -f "$RUNNER_TEMP/zap-home/zap.log" ]; then
+              cp "$RUNNER_TEMP/zap-home/zap.log" "$RUNNER_TEMP/rapports/zap.log"
+              echo
+              echo "### Erreurs du journal de ZAP"
+              echo
+              echo '```'
+              grep -E " (ERROR|FATAL) " "$RUNNER_TEMP/zap-home/zap.log" | cut -c1-300 | head -n 20 || echo "aucune"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          docker logs jeuxdecartes 2>&1 | tail -n 20 || true
+
+      - name: Garder les rapports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zap-rapports
+          path: ${{ runner.temp }}/rapports
+          retention-days: 30
+          if-no-files-found: warn
+

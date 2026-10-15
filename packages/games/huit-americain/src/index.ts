@@ -1,0 +1,8 @@
+/*
+ * Jeux de cartes — Copyright (C) 2026 regis57
+ * Licensed under the GNU Affero General Public License v3.0 or later.
+ */
+export * from './rules.ts';
+import type { RegisteredGame } from '@jdc/core';
+import { huitAmericain, META } from './rules.ts';
+export const game: RegisteredGame = { meta: META, def: huitAmericain as unknown as RegisteredGame['def'] };

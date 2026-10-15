@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Faille de sécurité
+    url: https://github.com/regis57/cartes-sur-table/security/advisories/new
+    about: Ne créez pas de ticket public pour une faille ; utilisez le signalement privé.

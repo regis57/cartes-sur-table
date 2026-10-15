@@ -1,0 +1,93 @@
+name: Opengrep
+
+# Opengrep lit le code source à la recherche de motifs dangereux : HTML écrit
+# sans précaution, secrets oubliés, Dockerfile ou workflows fragiles. C'est la
+# reprise libre (LGPL) de Semgrep, avec les règles communautaires.
+#
+# Échoue sur toute trouvaille de niveau ERROR. Les avertissements et les
+# informations sont listés dans le résumé, pour être lus, pas pour bloquer.
+#
+# Aucune action tierce : le binaire officiel (signé par la CI d'Opengrep, avec
+# Sigstore) est épinglé par son empreinte SHA-256, et les règles par leur commit.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opengrep-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LANG: C.UTF-8
+  # v1.30.1 (21/09/2026). Empreinte relevée sur le binaire dont la signature
+  # Sigstore a été vérifiée (identité : workflow rolling-release du dépôt opengrep).
+  OPENGREP_VERSION: v1.30.1
+  OPENGREP_SHA256: d3195b9d8d5ae93179f6aa5f5daaba6a920a5a09d38c5d5ae5e60924050210c4
+  # opengrep/opengrep-rules, dernier commit (26/01/2025).
+  REGLES_SHA: f1d2b562b414783763fd02a6ed2736eaed622efa
+
+jobs:
+  scan:
+    name: opengrep
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Installer Opengrep (binaire officiel, empreinte vérifiée)
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/opengrep" \
+            "https://github.com/opengrep/opengrep/releases/download/${OPENGREP_VERSION}/opengrep_manylinux_x86"
+          echo "${OPENGREP_SHA256}  $RUNNER_TEMP/opengrep" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/opengrep"
+          "$RUNNER_TEMP/opengrep" --version
+
+      - name: Prendre les règles (commit épinglé)
+        run: |
+          R="$RUNNER_TEMP/regles"
+          git init -q "$R"
+          git -C "$R" fetch -q --depth 1 https://github.com/opengrep/opengrep-rules "$REGLES_SHA"
+          git -C "$R" checkout -q FETCH_HEAD
+          # Écartées, une par une, avec leur raison :
+          # - jQuery : le dépôt n'en a pas ; « $ » y est un raccourci pour getElementById.
+          rm -r "$R/javascript/jquery"
+          # - React et i18next : ni l'un ni l'autre ici ; le dictionnaire est maison.
+          rm -r "$R/typescript/react"
+          # - replaceAll « non portable » : Node 22 et tous les navigateurs actuels l'ont.
+          rm -f "$R/javascript/lang/correctness/no-replaceall.yaml"
+
+      - name: Lire le code
+        run: |
+          R="$RUNNER_TEMP/regles"
+          "$RUNNER_TEMP/opengrep" scan --quiet \
+            --config "$R/javascript" --config "$R/typescript" --config "$R/html" \
+            --config "$R/generic/secrets" --config "$R/dockerfile" --config "$R/yaml/github-actions" \
+            --exclude packages/client/public/js --exclude node_modules \
+            --json . > "$RUNNER_TEMP/opengrep.json"
+
+      - name: Résumé et verdict
+        run: |
+          J="$RUNNER_TEMP/opengrep.json"
+          total=$(jq '.results | length' "$J")
+          erreurs=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' "$J")
+          {
+            echo "## Opengrep ${OPENGREP_VERSION}"
+            echo
+            echo "**${total}** trouvailles, dont **${erreurs}** de niveau ERROR (bloquant)."
+            echo
+            if [ "$total" -gt 0 ]; then
+              echo "| Niveau | Règle | Où |"
+              echo "|---|---|---|"
+              jq -r '.results | sort_by(.extra.severity) | .[] | "| \(.extra.severity) | `\(.check_id | split(".") | last)` | `\(.path):\(.start.line)` |"' "$J"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.results[] | select(.extra.severity == "ERROR") | "::error file=\(.path),line=\(.start.line)::\(.check_id | split(".") | last) — \(.extra.message | gsub("\n"; " "))"' "$J"
+          [ "$erreurs" -eq 0 ]

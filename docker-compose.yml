@@ -1,0 +1,65 @@
+# Déploiement sur le Synology DS218+ (Container Manager → Projet), à côté d'Altiplume.
+#
+# Principe : aucun port n'est publié, ni sur le réseau local ni sur Internet. Le seul
+# chemin d'entrée est le tunnel Cloudflare dédié `nas-jeuxdecartes`, qui ouvre une
+# connexion SORTANTE depuis le NAS. La box reste close. Voir docs/DEPLOIEMENT.md.
+#
+# Les secrets vivent dans un fichier `.env` posé À CÔTÉ de ce fichier, sur le NAS.
+# Il n'entre jamais dans Git.
+
+services:
+  api:
+    # `latest` = dernière fusion sur main. Pour figer une version précise :
+    # ghcr.io/regis57/cartes-sur-table@sha256:<empreinte> (donnée par le workflow Release).
+    image: ghcr.io/regis57/cartes-sur-table:latest
+    container_name: jeuxdecartes-api
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DATABASE_PATH: /data/jeuxdecartes.db
+      # Derrière Cloudflare, l'adresse du joueur est dans CF-Connecting-IP, jamais dans
+      # X-Forwarded-For (falsifiable). Sans ce réglage, tous les joueurs auraient
+      # l'adresse du tunnel et la limite par IP bloquerait le 11e joueur du site.
+      TRUST_PROXY: cloudflare
+      ALLOWED_ORIGINS: ${PUBLIC_ORIGIN}
+    volumes:
+      - jeuxdecartes-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    pids_limit: 128
+    mem_limit: 512m
+    networks: [jeuxdecartes]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: jeuxdecartes-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?definir TUNNEL_TOKEN dans .env}
+    depends_on: [api]
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks: [jeuxdecartes]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+networks:
+  jeuxdecartes:
+    driver: bridge
+
+volumes:
+  jeuxdecartes-data:

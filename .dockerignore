@@ -1,0 +1,13 @@
+.git
+.github
+.githooks
+node_modules
+packages/client/public/js
+**/test
+docs
+scripts
+*.md
+!README.md
+.env*
+*.db*
+data

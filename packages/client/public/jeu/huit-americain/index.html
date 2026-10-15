@@ -1,0 +1,148 @@
+<!doctype html>
+<!--
+  Jeux de cartes — Copyright (C) 2026 regis57
+  Licensed under the GNU Affero General Public License v3.0 or later.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>8 Américain — Jeux de cartes</title>
+  <meta name="description" content="Jouez au 8 Américain en ligne : solo contre des bots, à plusieurs, ou entre amis avec un code.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/jeu.css">
+  <script type="module" src="/js/jeu-huit-americain.js"></script>
+</head>
+<body class="jeu" data-game="huit-americain">
+  <a class="drapeau petit" href="/" aria-label="Jeux de cartes, accueil"><span></span><span></span><span></span></a>
+
+  <section id="lobby" class="lobby">
+    <h1 data-i18n="games.huit-americain.name">8 Américain</h1>
+    <p data-i18n="games.huit-americain.blurb"></p>
+    <p id="lobby-identite"></p>
+    <div id="modes" class="modes">
+      <button type="button" class="mode" data-action="solo"><b data-i18n="lobby.solo">Partie solo</b><span data-i18n="lobby.solo_hint"></span></button>
+      <button type="button" class="mode" data-action="online"><b data-i18n="lobby.online">Partie en ligne</b><span data-i18n="lobby.online_hint"></span></button>
+      <button type="button" class="mode" data-action="private"><b data-i18n="lobby.private">Table entre amis</b><span data-i18n="lobby.private_hint"></span></button>
+    </div>
+    <div class="ligne">
+      <label for="niveau" data-i18n="lobby.level">Niveau des bots</label>
+      <select id="niveau" class="champ">
+        <option value="normal" data-i18n="lobby.level_normal">Normal</option>
+        <option value="facile" data-i18n="lobby.level_facile">Facile</option>
+      </select>
+    </div>
+
+    <div id="file" hidden>
+      <h2 data-i18n="lobby.searching">Recherche de joueurs…</h2>
+      <div class="compte" id="compte">60</div>
+      <p data-i18n="lobby.waiting">À la table :</p>
+      <ul class="sans attente-liste" id="file-liste"></ul>
+      <div class="boutons">
+        <button type="button" class="btn btn-laiton" data-action="force-start" data-i18n="lobby.start_now">Lancer maintenant avec des bots</button>
+        <button type="button" class="btn btn-craie" data-action="leave-queue" data-i18n="lobby.leave_queue">Quitter la file</button>
+      </div>
+    </div>
+
+    <div id="privee-choix" hidden>
+      <div class="boutons">
+        <button type="button" class="btn btn-laiton" data-action="create-private" data-i18n="lobby.create_private">Créer une table</button>
+      </div>
+      <p></p>
+      <label for="code" data-i18n="lobby.code_label">Code de la table</label>
+      <div class="ligne">
+        <input id="code" class="champ code" type="text" maxlength="7" autocomplete="off" spellcheck="false" autocapitalize="characters">
+        <button type="button" class="btn btn-craie" data-action="join-private" data-i18n="lobby.join_private">Rejoindre avec un code</button>
+      </div>
+      <p><small data-i18n="lobby.code_hint"></small></p>
+      <button type="button" class="btn btn-craie" data-action="back-modes" data-i18n="site.cancel">Annuler</button>
+    </div>
+
+    <div id="privee-attente" hidden>
+      <p data-i18n="lobby.your_code">Code à partager :</p>
+      <p><span class="code-partage" id="code-partage"></span></p>
+      <div class="boutons"><button type="button" class="btn btn-craie" data-action="copy-code" data-i18n="lobby.copy_code">Copier le code</button></div>
+      <p data-i18n="lobby.waiting">À la table :</p>
+      <ul class="sans attente-liste" id="privee-liste"></ul>
+      <p id="privee-conseil"></p>
+      <div class="boutons">
+        <button type="button" class="btn btn-laiton" id="btn-lancer" data-action="start-private" data-i18n="lobby.launch" hidden>Lancer la partie</button>
+        <button type="button" class="btn btn-craie" data-action="leave-private" data-i18n="lobby.leave_private">Quitter la table</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="table" hidden>
+    <div class="barre"><div class="statut" id="statut" role="status" aria-live="polite"></div></div>
+    <button type="button" class="menu-btn" data-action="menu" aria-label="Menu"><i></i><i></i><i></i></button>
+    <div class="table-jeu-grille">
+      <div class="siege haut" id="siege-2"><div class="etiquette"></div><div class="main horizontale"></div></div>
+      <div class="siege gauche" id="siege-1"><div class="etiquette"></div><div class="main verticale"></div></div>
+      <div class="centre">
+        <div class="couleur" id="couleur"></div>
+        <div class="piles">
+          <div class="carte dos pioche" id="pioche" role="button" tabindex="0" data-action="draw"><span class="compteur" id="pioche-n"></span></div>
+          <div id="defausse"></div>
+        </div>
+        <div class="sens" id="sens"></div>
+      </div>
+      <div class="siege droite" id="siege-3"><div class="etiquette"></div><div class="main verticale"></div></div>
+      <div class="siege bas" id="siege-0"><div class="etiquette"></div><div class="main horizontale moi" id="ma-main"></div></div>
+    </div>
+    <div class="reactions">
+      <button type="button" data-action="open-emojis" data-i18n="table.emotes">Réactions</button>
+      <button type="button" data-action="open-phrases" data-i18n="table.phrases">Phrases</button>
+    </div>
+  </section>
+
+  <dialog id="dlg-menu">
+    <h2 data-i18n="table.menu">Menu</h2>
+    <div class="boutons">
+      <button type="button" class="btn btn-craie" data-action="close-menu" data-i18n="table.resume">Reprendre le jeu</button>
+      <button type="button" class="btn btn-rouge" data-action="quit" data-i18n="table.quit">Quitter la table</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-couleur">
+    <h2 data-i18n="table.choose_suit">Choisissez la couleur de votre 8</h2>
+    <div class="couleurs">
+      <div class="carte" role="button" tabindex="0" data-suit="♠"><span class="centre">♠</span></div>
+      <div class="carte rouge" role="button" tabindex="0" data-suit="♥"><span class="centre">♥</span></div>
+      <div class="carte" role="button" tabindex="0" data-suit="♣"><span class="centre">♣</span></div>
+      <div class="carte rouge" role="button" tabindex="0" data-suit="♦"><span class="centre">♦</span></div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-emojis">
+    <h2 data-i18n="table.emotes">Réactions</h2>
+    <div class="choix-grille" id="emojis"></div>
+    <p></p><button type="button" class="btn btn-craie" data-action="close-emotes" data-i18n="site.close">Fermer</button>
+  </dialog>
+
+  <dialog id="dlg-phrases">
+    <h2 data-i18n="table.phrases">Phrases</h2>
+    <div class="choix-liste" id="phrases"></div>
+    <p></p><button type="button" class="btn btn-craie" data-action="close-emotes" data-i18n="site.close">Fermer</button>
+  </dialog>
+
+  <dialog id="dlg-manche">
+    <h2 id="manche-titre"></h2>
+    <p id="manche-sous"></p>
+    <div id="manche-tableau"></div>
+    <div class="boutons">
+      <button type="button" class="btn btn-laiton" data-action="next-round" id="btn-manche" data-i18n="table.next_round">Manche suivante</button>
+      <button type="button" class="btn btn-laiton" data-action="restart" id="btn-rejouer" data-i18n="table.play_again" hidden>Rejouer une partie</button>
+      <a class="btn btn-craie" href="/" data-i18n="site.back_home">Retour à l'accueil</a>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-info">
+    <p id="info-texte"></p>
+    <div class="boutons">
+      <button type="button" class="btn btn-laiton" data-action="rejoin" id="btn-reprendre" data-i18n="table.rejoin" hidden>Reprendre mon siège</button>
+      <a class="btn btn-craie" href="/" data-i18n="site.back_home">Retour à l'accueil</a>
+    </div>
+  </dialog>
+</body>
+</html>

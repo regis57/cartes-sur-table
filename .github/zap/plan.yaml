@@ -1,0 +1,72 @@
+# Plan OWASP ZAP — passif seulement.
+#
+# ZAP visite le site comme un joueur curieux : il suit les liens, lit chaque réponse et
+# signale ce qui cloche (en-têtes, cookies, fuites d'information). Il n'attaque rien :
+# pas de scan actif, pas de formulaire envoyé.
+#
+# La cible vient de l'environnement : ZAP_CIBLE (par défaut le conteneur démarré par
+# .github/workflows/zap.yml) et ZAP_RAPPORTS (dossier des rapports).
+env:
+  contexts:
+    - name: jeuxdecartes
+      urls:
+        - ${ZAP_CIBLE}
+      includePaths:
+        - ${ZAP_CIBLE}.*
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: passiveScan-config
+    parameters:
+      scanOnlyInScope: true
+      maxAlertsPerRule: 10
+    rules:
+      # « Modern Web Application » : une simple information, pas un défaut.
+      - id: 10109
+        threshold: off
+
+  # Les adresses que le spider ne trouve pas seul : l'API.
+  - type: requestor
+    requests:
+      - url: ${ZAP_CIBLE}/api/version
+      - url: ${ZAP_CIBLE}/api/jeux
+      - url: ${ZAP_CIBLE}/healthz
+      # Sans jeton : doit répondre 401, proprement.
+      - url: ${ZAP_CIBLE}/api/profil
+        responseCode: 401
+
+  - type: spider
+    parameters:
+      context: jeuxdecartes
+      maxDuration: 3
+      # Ne rien envoyer : aucun formulaire.
+      postForm: false
+      processForm: false
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  # Le verdict : la moindre alerte « moyenne » ou « haute » fait échouer le contrôle.
+  - type: exitStatus
+    parameters:
+      errorLevel: Medium
+      warnLevel: Low
+
+  - type: report
+    parameters:
+      template: traditional-md
+      reportDir: ${ZAP_RAPPORTS}
+      reportFile: zap-rapport.md
+      reportTitle: Jeux de cartes — OWASP ZAP (passif)
+    risks: [info, low, medium, high]
+    confidences: [low, medium, high, confirmed]
+
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: ${ZAP_RAPPORTS}
+      reportFile: zap-rapport.json

@@ -1,0 +1,26 @@
+#!/bin/sh
+# Bloque un commit qui contient probablement un secret.
+# Activation (une fois par clone) :  git config core.hooksPath .githooks
+
+# 1) Fichiers qui ne doivent jamais être versionnés
+bad_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)(\.env(\..*)?|id_(rsa|ed25519|ecdsa)(\.pub)?|.*\.(pem|key|p12|pfx|kdbx))$' | grep -v '\.env\.example$')
+if [ -n "$bad_files" ]; then
+  echo "Commit refusé : fichier(s) sensible(s) :"; echo "$bad_files"; exit 1
+fi
+
+# 2) Motifs de secrets dans les lignes ajoutées
+patterns='-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9]{20,}|(password|passwd|secret|api[_-]?key|token)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{6,}["'"'"']'
+added=$(git diff --cached -U0 --no-color | grep -E '^\+' | grep -vE '^\+\+\+')
+# -e : le motif commence par des tirets ; code 2 = erreur de grep => on refuse (échec sûr)
+hits=$(printf '%s\n' "$added" | grep -Ei -e "$patterns")
+status=$?
+if [ "$status" -gt 1 ]; then
+  echo "Commit refusé : le scan de secrets a échoué (grep code $status)."; exit 1
+fi
+if [ "$status" -eq 0 ]; then
+  echo "Commit refusé : un secret potentiel a été détecté dans les lignes ajoutées :"
+  echo "$hits" | cut -c1-120
+  echo "Retirez-le (ou, si c'est un faux positif : git commit --no-verify)."
+  exit 1
+fi
+exit 0
