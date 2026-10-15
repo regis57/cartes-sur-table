@@ -58,7 +58,7 @@ Seule la branche `main` (et l'image `latest` qui en est publiée) reçoit des co
 | `HOST` | `127.0.0.1` | Interface d'écoute (`0.0.0.0` seulement derrière le tunnel ou un proxy) |
 | `TRUST_PROXY` | `none` | `cloudflare` (CF-Connecting-IP) ou `xff` (X-Forwarded-For, proxy local de confiance) |
 | `ALLOWED_ORIGINS` | *(même origine, ou PUBLIC_ORIGIN)* | Origines autorisées, séparées par des virgules |
-| `PUBLIC_ORIGIN` | *(aucune)* | Origine publique : redirection HTTP → HTTPS derrière le tunnel |
+| `PUBLIC_ORIGIN` | *(aucune)* | Origine publique : redirection HTTP → HTTPS derrière le tunnel ; domaine et origine attendus par les passkeys (sans elle, en production, aucune passkey n'est acceptée) |
 | `DATABASE_PATH` | `:memory:` | Base SQLite des profils |
 | `MAX_CONN_PER_IP` | `10` | Connexions simultanées par IP |
 | `MAX_TABLES` | `300` | Tables simultanées |
