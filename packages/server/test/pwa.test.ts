@@ -58,7 +58,7 @@ test("PWA : manifeste complet, icônes présentes, agent de service servi depuis
 
     // Sa version suit celle du projet : sinon un ancien cache survivrait à une mise à jour.
     const pkg = JSON.parse(readFileSync(path.join(CLIENT_DIR, '..', '..', '..', 'package.json'), 'utf8')) as { version: string };
-    assert.match(sw.body, new RegExp(`const VERSION = '${pkg.version.replace(/\./g, '\\.')}'`), 'sw.js : VERSION à aligner sur package.json');
+    assert.ok(sw.body.includes(`const VERSION = '${pkg.version}'`), 'sw.js : VERSION à aligner sur package.json');
 
     // La page de secours hors ligne et la page d'installation existent.
     assert.equal((await req(port, '/hors-ligne/')).status, 200);

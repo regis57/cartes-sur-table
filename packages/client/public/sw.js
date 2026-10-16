@@ -72,8 +72,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-/** La page demande d'appliquer tout de suite une mise à jour en attente. */
+/**
+ * La page demande d'appliquer tout de suite une mise à jour en attente.
+ * Un agent de service ne reçoit en principe que des messages de ses propres pages, mais
+ * on vérifie l'origine explicitement : une règle qu'on applique, on ne la suppose pas.
+ */
 self.addEventListener('message', (event) => {
+  if (event.origin && event.origin !== self.location.origin) return;
   if (event.data === 'appliquer-maj') self.skipWaiting();
 });
 
