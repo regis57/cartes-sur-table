@@ -290,6 +290,8 @@ Chaque fusion sur `main` publie une nouvelle image `latest`, passée au crible d
 avant publication. Le NAS ne se met **pas** à jour tout seul : c'est voulu, vous choisissez
 le moment.
 
+### 6.1 À la main
+
 Container Manager → **Projet** → `jeuxdecartes` → bouton **Action** :
 
 1. **Arrêter** ;
@@ -300,9 +302,44 @@ Container Manager → **Projet** → `jeuxdecartes` → bouton **Action** :
 Une minute d'indisponibilité ; les profils, passkeys et succès sont dans le volume, rien
 n'est perdu.
 
-Côté navigateurs, l'agent de service porte le numéro de version du projet : à la première
+### 6.2 En une tâche planifiée (recommandé)
+
+Le script `deploiement/synology/jeuxdecartes-maj.sh` du dépôt fait la même chose sans un
+clic, puis vérifie que le jeu répond **et** que le tunnel s'est reconnecté. Il ne touche
+jamais Altiplume : toutes ses commandes portent le nom du projet, et il ne supprime pas
+l'image `cloudflared`, partagée par les deux tunnels.
+
+1. **File Station** → `docker/jeuxdecartes` → **Charger** le fichier
+   `jeuxdecartes-maj.sh`, **tel quel**. Ne l'ouvrez pas dans le Bloc-notes avant : un
+   éditeur Windows y mettrait des fins de ligne CRLF, et `sh` échouerait avec des erreurs
+   incompréhensibles. Si c'est arrivé : `sed -i 's/\r$//' <fichier>`, une fois.
+2. **Panneau de configuration → Planificateur de tâches → Créer → Tâche planifiée →
+   Script défini par l'utilisateur**. Onglet *Général* : nom `Jeux de cartes - mise à
+   jour`, utilisateur **root**, **désactivée** (on la lance à la main ; une mise à jour
+   reste un choix). Onglet *Paramètres de tâche*, une seule ligne :
+
+   ```
+   sh /volume1/docker/jeuxdecartes/jeuxdecartes-maj.sh
+   ```
+
+   **Ne collez pas le script entier dans cette boîte** : la requête devient trop grosse et
+   DSM refuse d'enregistrer, avec un message trompeur — « La connexion a échoué. Vérifiez
+   vos paramètres réseau ». Une ligne qui appelle un fichier, c'est aussi un script qu'on
+   peut lire, corriger et sauvegarder.
+3. Pour lancer : sélectionner la tâche → **Exécuter**. Pour lire le résultat : **Action →
+   Afficher les résultats**. La dernière ligne doit être `== OK — exit 0`.
+
+La case « Envoyer les détails d'exécution par e-mail » ne fonctionne que si le courriel du
+NAS est configuré (*Panneau de configuration → Notification → E-mail*, avec son bouton de
+test). Sinon, laissez-la décochée : la sortie reste lisible dans DSM.
+
+### 6.3 Ce que voient les joueurs
+
+L'agent de service porte le numéro de version du projet : à la première
 visite qui suit la mise à jour, il remplace son cache et sert la nouvelle version. Les
 personnes qui ont installé l'application n'ont donc rien à réinstaller.
+
+### 6.4 Figer une version
 
 Pour figer une version précise plutôt que `latest` : dans le compose, remplacez
 `image: ghcr.io/regis57/cartes-sur-table:latest` par `…@sha256:<empreinte>` (donnée par le
@@ -314,15 +351,92 @@ n'importe quelle machine :
 
 ## 7. Sauvegarde et retrait
 
-- **Sauvegarde** : le volume `jeuxdecartes_jeuxdecartes-data` contient la seule donnée qui
-  compte (profils, passkeys, succès). Deux options :
-  - **Hyper Backup** → tâche existante → *Modifier → Dossiers* → ajouter
-    `/volume1/@docker/volumes/jeuxdecartes_jeuxdecartes-data` ;
-  - ou **Panneau de configuration → Planificateur de tâches → Créer → Tâche planifiée →
-    Script défini par l'utilisateur**, utilisateur `root`, chaque nuit :
-    `cp /volume1/@docker/volumes/jeuxdecartes_jeuxdecartes-data/_data/jeuxdecartes.db /volume1/docker/jeuxdecartes/sauvegarde-$(date +%u).db`
-    (sept fichiers tournants, un par jour de la semaine : c'est la rétention de sept jours
-    annoncée aux joueurs). La base fait quelques Mo.
+### 7.1 Ce qu'il faut sauvegarder, et ce qu'il ne faut surtout pas faire
+
+Une seule donnée compte : la base SQLite des profils (pseudos, empreintes de jetons,
+clés publiques des passkeys, statistiques, succès). Le reste se reconstruit : le compose
+est dans le dépôt, le `.env` tient en deux lignes et le jeton du tunnel se récupère chez
+Cloudflare.
+
+**Ne copiez jamais le fichier `.db` à chaud, ni le dossier du volume.** La base tourne en
+mode WAL : les écritures récentes vivent dans un fichier à côté jusqu'au prochain point de
+contrôle. Copier le `.db` seul pendant que le jeu tourne donne une base incomplète — à
+l'essai, une base **vide**, les trois cents profils étant encore tous dans le journal. Une
+première version de ce guide préconisait exactement cela ; c'était une erreur. Sauvegarder
+le dossier du volume avec Hyper Backup n'est pas plus sûr : le `.db` et son journal y sont
+lus à des instants différents.
+
+### 7.2 La sauvegarde quotidienne
+
+Le script `deploiement/synology/jeuxdecartes-sauvegarde.sh` demande à SQLite lui-même une
+copie cohérente (`VACUUM INTO`), jeu en marche, en **vérifie l'intégrité**, puis la range :
+
+| Dossier | Contenu | Rôle |
+|---|---|---|
+| `docker/jeuxdecartes/sauvegardes/` | `jeuxdecartes-1.db` … `-7.db`, une par jour de la semaine | Restauration rapide, depuis File Station |
+| `docker/jeuxdecartes/sauvegardes-usb/` | `jeuxdecartes.db`, la dernière seulement | Ce que la tâche Hyper Backup emporte sur la clé (§ 7.3) |
+
+Chaque copie est écrasée sept jours plus tard : c'est **la durée de conservation promise
+aux joueurs** par la page « Confidentialité » et par le registre des traitements — un
+profil effacé disparaît des sauvegardes au plus tard sept jours après.
+
+1. **File Station** → `docker/jeuxdecartes` → **Charger** `jeuxdecartes-sauvegarde.sh`,
+   tel quel (mêmes précautions qu'au § 6.2).
+2. **Planificateur de tâches → Créer → Tâche planifiée → Script défini par
+   l'utilisateur** : nom `Jeux de cartes - sauvegarde`, utilisateur **root**, **activée**,
+   tous les jours à **03:30** (après la sauvegarde USB d'Altiplume, bien avant l'arrêt
+   programmé du NAS). Une seule ligne :
+
+   ```
+   sh /volume1/docker/jeuxdecartes/jeuxdecartes-sauvegarde.sh
+   ```
+3. **Exécuter** une fois à la main, puis **Afficher les résultats** : on doit lire le
+   nombre de profils, la taille, `intégrité ok` et `== OK — exit 0`.
+
+Ne planifiez pas la mise à jour (§ 6.2) à la même heure : pendant une mise à jour, le
+conteneur est arrêté et la sauvegarde échouerait — proprement, avec un message, mais
+inutilement.
+
+### 7.3 La copie chiffrée sur clé USB (Hyper Backup)
+
+Une tâche **à part** de celle d'Altiplume, parce que sa durée de conservation est
+différente : elle doit rester à sept jours.
+
+1. **Hyper Backup → + → Tâche de sauvegarde des données → Dossier local et USB** (ou
+   *Périphérique USB local*, selon la version de DSM) → choisir la même clé que pour
+   Altiplume → **Créer une tâche de sauvegarde**, répertoire `jeuxdecartes`.
+2. **Dossiers** : cocher **uniquement** `docker/jeuxdecartes/sauvegardes-usb`. Pas tout
+   `docker/jeuxdecartes` : le `.env` contient le jeton du tunnel, et il se récupère chez
+   Cloudflare ; inutile de le promener sur une clé.
+3. **Applications** : aucune.
+4. **Paramètres** :
+   - nom `Jeux de cartes - USB` ;
+   - **Activer la planification** : tous les jours à **03:45**, après le script ;
+   - **Activer la vérification de l'intégrité de la sauvegarde** : oui, une fois par
+     semaine ;
+   - **Activer le chiffrement côté client** : oui. Choisissez un mot de passe, puis
+     **téléchargez la clé de chiffrement** (fichier `.pem`) que DSM propose. Rangez le mot
+     de passe dans votre gestionnaire et la clé `.pem` **ailleurs que sur le NAS et que sur
+     la clé USB**. Sans eux, la sauvegarde est irrécupérable, y compris pour vous.
+5. **Paramètres de rotation** : **Activer la rotation des versions** → *À partir des
+   versions les plus anciennes* → **Nombre maximal de versions conservées : 7**. Une
+   version par jour, sept versions : jamais plus de sept jours. Ne choisissez pas la
+   *rotation intelligente*, qui garde des versions hebdomadaires et mensuelles : elle
+   conserverait des profils effacés bien au-delà de ce qui est promis.
+6. **Sauvegarder maintenant**, puis vérifier dans **Hyper Backup Explorer** que
+   `jeuxdecartes.db` y figure.
+
+**Restaurer** : arrêter le projet (*Container Manager → Projet → Action → Arrêter*),
+remplacer `jeuxdecartes.db` dans le volume par la copie choisie — en supprimant les
+fichiers `-wal` et `-shm` qui l'accompagnent —, redémarrer. Faites-le une fois à blanc :
+une sauvegarde qu'on n'a jamais restaurée n'est qu'une hypothèse.
+
+**La limite à connaître** : une clé branchée en permanence n'est pas hors ligne. Un
+logiciel malveillant qui prendrait la main sur le NAS l'atteindrait aussi. La parade est
+de débrancher la clé de temps en temps, ou d'en faire tourner deux.
+
+### 7.4 Retrait
+
 - **Retrait d'urgence** : Container Manager → Projet → `jeuxdecartes` → *Action →
   Arrêter*. Le tunnel se coupe, le site répond une page d'erreur Cloudflare, Altiplume
   continue. Rien d'autre à fermer : aucun port n'a jamais été ouvert. Variante sans toucher

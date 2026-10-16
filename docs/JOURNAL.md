@@ -6,6 +6,41 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+## 0.4.2 — 16 octobre 2026
+
+**Sauvegarde et mise à jour du NAS, en tâches planifiées.**
+
+Corrigé
+- **La méthode de sauvegarde du guide de déploiement était fausse.** Elle copiait le
+  fichier de la base à chaud. Or la base tourne en mode WAL : les écritures récentes vivent
+  dans un journal à côté jusqu'au prochain point de contrôle. Reproduit à l'essai avec une
+  application en marche : la copie obtenue était **vide**, les trois cents profils étant
+  encore tous dans le journal. La seconde option du guide, sauvegarder le dossier du volume
+  avec Hyper Backup, avait le même défaut, et sa rotation par défaut aurait conservé des
+  profils effacés bien au-delà des sept jours promis.
+
+Ajouté
+- `deploiement/synology/jeuxdecartes-sauvegarde.sh` : SQLite produit lui-même une copie
+  cohérente (`VACUUM INTO`), jeu en marche ; son intégrité est vérifiée avant qu'on la
+  garde ; sept copies tournantes sur le NAS, et la dernière isolée pour la clé USB. Rien ne
+  traîne en cas d'échec. Éprouvé contre une base vivante dont tout le contenu était encore
+  dans le journal : trois cents profils sur trois cents.
+- `deploiement/synology/jeuxdecartes-maj.sh` : la mise à jour sans un clic, qui refuse de
+  partir sans `PUBLIC_ORIGIN` (sinon les passkeys seraient refusées sans bruit), attend que
+  le jeu soit sain **et** que le tunnel se soit reconnecté, et ne touche jamais Altiplume —
+  ni ses conteneurs, ni l'image `cloudflared` que les deux tunnels partagent.
+- Guide de déploiement : tâches planifiées pas à pas, copie chiffrée sur clé USB par Hyper
+  Backup (tâche distincte de celle d'Altiplume, sept versions, chiffrement côté client, clé
+  de chiffrement rangée hors du NAS), restauration, et la limite d'une clé branchée en
+  permanence.
+- Registre des traitements : les sauvegardes y sont décrites.
+
+À savoir
+- DSM refuse d'enregistrer une tâche dont le script est collé en entier (« La connexion a
+  échoué ») : la tâche ne contient qu'une ligne, qui appelle le fichier.
+
+---
+
 ## 0.4.1 — 16 octobre 2026
 
 **Pages : une page de règles dédiée, soutien, mentions légales.**
