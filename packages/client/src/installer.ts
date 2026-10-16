@@ -111,10 +111,44 @@ export async function installer(): Promise<boolean | null> {
  * et pas de démarrage sur réseau capricieux. L'échec n'est jamais bloquant : le site
  * fonctionne exactement pareil sans.
  */
+/** Une nouvelle version du site vient de prendre la main : la page le signale, et se recharge si rien n'est en cours. */
+export const EVENEMENT_NOUVELLE_VERSION = 'jdc-nouvelle-version';
+
 export function enregistrerAgent(): void {
   if (!('serviceWorker' in navigator)) return;
+  const sw = navigator.serviceWorker;
+  // Quand la nouvelle version a pris la main, les scripts déjà chargés sont périmés : un
+  // vieux client face à un serveur neuf affiche des étiquettes fausses (vu au tarot). Hors
+  // table, on recharge sans attendre ; à table, la salle recharge au prochain écran.
+  let dejaControle = Boolean(sw.controller);
+  sw.addEventListener('controllerchange', () => {
+    if (!dejaControle) {
+      dejaControle = true; // première installation : rien à recharger
+      return;
+    }
+    window.dispatchEvent(new Event(EVENEMENT_NOUVELLE_VERSION));
+    const table = document.getElementById('table');
+    if (!table || table.hidden) location.reload();
+  });
   const poser = (): void => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+    sw.register('/sw.js', { scope: '/' }).then((reg) => {
+      // Une version en attente s'applique tout de suite ; une version qui arrive aussi.
+      const appliquer = (w: ServiceWorker | null): void => {
+        if (w && sw.controller) w.postMessage('appliquer-maj');
+      };
+      appliquer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        w?.addEventListener('statechange', () => {
+          if (w.state === 'installed') appliquer(w);
+        });
+      });
+      // Et on vérifie à chaque retour sur la page : une mise à jour du serveur ne doit
+      // pas attendre le lendemain.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => undefined);
+      });
+    }).catch(() => {
       /* navigation privée, stockage refusé, ou site servi sans HTTPS : tant pis */
     });
   };
