@@ -1,6 +1,6 @@
 # Bilan : sécurité par conception et durcissement
 
-État au 16 octobre 2026, version 0.3.0. Ce document recense ce qui est **réellement en
+État au 16 octobre 2026, version 0.4.0 — site en ligne. Ce document recense ce qui est **réellement en
 place dans le code**, couche par couche, avec le fichier où le vérifier. Le
 [manifeste](MANIFESTE-SECURITE.md) dit ce que le projet promet ; ce bilan dit comment.
 Les contrôles automatiques qui surveillent le tout sont dans [SECURITE.md](SECURITE.md).
@@ -58,6 +58,9 @@ la surface** (deux dépendances, aucun port ouvert, aucune ressource tierce).
 | Contrôle d'origine à l'établissement de la connexion WebSocket | `allowRequest` → `isOriginAllowed` : bloque le détournement depuis un site tiers (CSWSH) |
 | Aucun cookie | Donc aucun bandeau à accepter, et aucune CSRF possible |
 | Fichiers statiques : pas de fichiers cachés, pas d'échappement du dossier | `express.static` avec `dotfiles: 'ignore'` |
+| Au bord du réseau : limitation de débit par adresse sur le chemin temps réel, contournement du cache sur ce qui est vivant, protection DDoS et jeu de règles managé actifs, contrôle d'intégrité du navigateur | Configuré chez l'intermédiaire réseau, décrit dans [DEPLOIEMENT.md](DEPLOIEMENT.md) § 2 |
+| Aucune option de l'intermédiaire n'injecte de JavaScript dans les pages | Vérifié à la mise en ligne : ces options contrediraient la CSP |
+| Aucune adresse n'est dispensée des contrôles | Les exemptions héritées d'anciennes configurations ont été auditées et supprimées |
 | Agent de service (installation) : met en cache **uniquement** les fichiers publics ; `/api/`, `/socket.io/` et `/healthz` sont exclus par liste noire explicite | `public/sw.js` — aucune donnée de profil ni de partie ne touche le cache du navigateur |
 | `/sw.js` servi sans cache, avec `Service-Worker-Allowed: /` | Une version corrigée de l'agent s'applique immédiatement, jamais dans une heure |
 
@@ -134,8 +137,14 @@ auraient l'adresse du tunnel et la limite par IP bloquerait le 11ᵉ joueur du s
   PR que le code qu'il décrit.
 - Pages « Vos données », « Confidentialité » et « Mentions légales » écrites en français
   clair, avec un tableau « ce qui est gardé / pourquoi / combien de temps ».
-- Hygiène DNS du sous-domaine : SPF `-all`, MX nul, DMARC `reject` — personne ne peut
-  usurper une adresse `@jeuxdecartes.altiplume.com`.
+- **DNSSEC actif** : les réponses DNS du domaine sont signées, une réponse forgée ne peut
+  pas détourner les visiteurs vers un faux serveur.
+- **Émission de certificats restreinte** (CAA, noms exacts et joker) : seules les autorités
+  employées par l'intermédiaire réseau peuvent délivrer un certificat pour le domaine ;
+  toute autre doit refuser. À revoir si un service tiers doit un jour présenter un
+  certificat sur un sous-domaine.
+- **Le sous-domaine du jeu déclare n'envoyer ni ne recevoir de courrier** : usurper une
+  adresse à son nom ne mène nulle part.
 - Code sous AGPL-3.0 : toute version modifiée accessible par le réseau doit publier son
   code.
 

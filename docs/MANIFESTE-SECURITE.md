@@ -54,6 +54,11 @@ version elle est devenue vraie. Le détail des contrôles automatiques est dans
   HSTS, `nosniff`, `frame-ancestors 'none'`, `Referrer-Policy: no-referrer`.
 - Adresse du joueur lue dans `CF-Connecting-IP` seulement, pour limiter les abus en
   mémoire ; jamais écrite.
+- Au bord du réseau, devant le tunnel : limitation de débit par adresse sur le chemin
+  temps réel, contournement du cache pour tout ce qui est vivant, protection DDoS et jeu
+  de règles managé actifs, contrôle d'intégrité du navigateur. Les options de
+  l'intermédiaire qui injectent du JavaScript dans les pages sont **toutes désactivées** :
+  elles contrediraient la CSP, et le site n'exécute que son propre code.
 
 ## 6. Une chaîne de fabrication qui se vérifie
 
@@ -67,7 +72,20 @@ version elle est devenue vraie. Le détail des contrôles automatiques est dans
 - Chaque lundi, le site en ligne est contrôlé de l'extérieur (en-têtes, DNS, cookies,
   version, ZAP) et l'image rescannée.
 
-## 7. Transparence
+## 7. Le nom de domaine lui-même
+
+- **DNSSEC actif** : les réponses DNS sont signées, une réponse forgée ne peut pas
+  détourner le domaine vers un faux serveur.
+- **Émission de certificats restreinte** (enregistrements CAA) : seules les autorités
+  employées par l'intermédiaire réseau peuvent émettre un certificat pour le domaine et
+  ses sous-domaines ; toute autre doit refuser, y compris pour un certificat joker.
+- **Le sous-domaine du jeu déclare qu'il n'écrit ni ne reçoit de courrier** : aucun
+  message ne peut être envoyé en son nom sans être rejeté par le destinataire.
+- Les règles d'exemption héritées d'anciennes configurations, qui court-circuitaient une
+  partie des contrôles pour certaines adresses, ont été **auditées et supprimées** : plus
+  aucune adresse n'est dispensée des vérifications.
+
+## 8. Transparence
 
 - Code sous AGPL-3.0 : quiconque héberge une version modifiée doit en donner le code.
 - Le [registre des traitements](legal/registre-traitements.md), la page « Vos données »
