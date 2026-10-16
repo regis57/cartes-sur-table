@@ -27,3 +27,4 @@ data/
 *.log
 .DS_Store
 Thumbs.db
+.wiki-out/

@@ -6,6 +6,19 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.5.1"></a>
+## 0.5.1 — 16 octobre 2026
+
+**Le lien de version pointe sur le journal.**
+
+Changé
+- « À propos » renvoie vers l'entrée de la version dans ce journal, sous une ancre stable
+  (`#vX.Y.Z`), plutôt que vers une étiquette du dépôt : l'étiquette n'est pas toujours posée,
+  le journal est toujours là. Les titres de toutes les versions portent l'ancre.
+
+---
+
+<a name="v0.5.0"></a>
 ## 0.5.0 — 16 octobre 2026
 
 **La belote, et la version affichée dans « À propos ».**
@@ -24,9 +37,8 @@ Ajouté
   partenaires comptent la partie comme gagnée, dans les statistiques comme dans les succès ;
   l'écran de fin nomme les deux. Rien ne change pour les jeux à un vainqueur.
 - **La version dans « À propos »** : la page lit `/api/version` et affiche la version en
-  cours (et la révision), avec un lien vers l'étiquette `vX.Y.Z` de cette version dans le
-  dépôt. Chaque version fusionnée sur `main` est donc étiquetée, ce qui lance aussi la
-  publication de l'image portant ce numéro.
+  cours (et la révision), avec un lien vers l'entrée de cette version dans ce journal, sur
+  le dépôt. Chaque titre de version porte pour cela une ancre stable (`#vX.Y.Z`).
 - Raccourci « Jouer à la belote » dans l'application installée.
 
 À savoir
@@ -37,6 +49,7 @@ Ajouté
 
 ---
 
+<a name="v0.4.2"></a>
 ## 0.4.2 — 16 octobre 2026
 
 **Sauvegarde et mise à jour du NAS, en tâches planifiées.**
@@ -72,6 +85,7 @@ Ajouté
 
 ---
 
+<a name="v0.4.1"></a>
 ## 0.4.1 — 16 octobre 2026
 
 **Pages : une page de règles dédiée, soutien, mentions légales.**
@@ -102,6 +116,7 @@ Corrigé
 
 ---
 
+<a name="v0.4.0"></a>
 ## 0.4.0 — 16 octobre 2026
 
 **Le tarot, et un parcours unique pour tous les jeux.**
@@ -167,6 +182,7 @@ dans [DEPLOIEMENT.md](DEPLOIEMENT.md).
 
 ---
 
+<a name="v0.3.1"></a>
 ## 0.3.1 — 16 octobre 2026
 
 **Correction : les valeurs des cartes se lisent toujours à l'endroit.**
@@ -183,6 +199,7 @@ Corrigé
 
 ---
 
+<a name="v0.3.0"></a>
 ## 0.3.0 — 16 octobre 2026
 
 **Application installable, sur ordinateur comme sur téléphone.**
@@ -215,6 +232,7 @@ Sécurité et vie privée
 
 ---
 
+<a name="v0.2.0"></a>
 ## 0.2.0 — 16 octobre 2026
 
 **Passkeys, mode jour / nuit, lisibilité, documentation.**
@@ -255,6 +273,7 @@ Sécurité
 
 ---
 
+<a name="v0.1.0"></a>
 ## 0.1.0 — 15 octobre 2026
 
 **Version initiale : le socle, le 8 Américain, la chaîne de fabrication.**
