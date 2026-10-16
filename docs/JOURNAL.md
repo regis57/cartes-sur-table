@@ -6,6 +6,22 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+## 0.3.1 — 16 octobre 2026
+
+**Correction : les valeurs des cartes se lisent toujours à l'endroit.**
+
+Corrigé
+- Une carte portait deux index, dont celui du bas pivoté à 180°, comme sur une vraie
+  carte tenue en éventail. Sur un écran, la carte ne tourne jamais : **un 6 pivoté se
+  lisait « 9 »**. L'index retourné remontait de surcroît à côté de celui du haut, faute
+  de placement de grille explicite, et dépassait sous la carte voisine dans la main —
+  d'où un mélange d'indices à l'endroit et à l'envers, signalé depuis une tablette.
+- Une carte porte désormais **un index unique, en haut à gauche, toujours à l'endroit**,
+  agrandi, placé explicitement : c'est la seule zone qu'aucune carte voisine ne recouvre
+  dans une main en éventail. Captures d'écran du manifeste refaites en conséquence.
+
+---
+
 ## 0.3.0 — 16 octobre 2026
 
 **Application installable, sur ordinateur comme sur téléphone.**
