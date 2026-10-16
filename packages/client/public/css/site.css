@@ -288,9 +288,20 @@ dialog h2 { margin-top: 0; }
   user-select: none;
   position: relative;
 }
-.carte .coin { display: flex; flex-direction: column; align-items: center; width: 1.1em; }
-.carte .coin.bas { align-self: end; justify-self: end; transform: rotate(180deg); }
-.carte .centre { align-self: center; justify-self: center; font-size: 1.9em; }
+/*
+ * Une carte porte UN index, en haut à gauche, toujours à l'endroit.
+ * Une vraie carte en porte deux, dont un retourné, pour se lire dans une main tenue en
+ * éventail. Sur un écran la carte ne tourne jamais : l'index retourné n'apporte rien, et
+ * un 6 pivoté se lit « 9 ». Il dépassait en plus sous la carte voisine dans la main, et
+ * ne tenait pas dans la hauteur d'une carte aux tailles de police d'ici. Un seul index,
+ * donc, plus grand, placé là où aucune carte ne vient le recouvrir.
+ */
+.carte { grid-template-columns: 1fr; }
+.carte .coin {
+  grid-area: 1 / 1; justify-self: start;
+  display: flex; flex-direction: column; align-items: center; width: 1.1em;
+}
+.carte .centre { grid-area: 2 / 1; align-self: center; justify-self: center; font-size: 2.1em; }
 .carte.rouge { color: var(--carte-rouge); }
 .carte.dos {
   background:
