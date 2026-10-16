@@ -6,6 +6,32 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.0"></a>
+## 0.6.0 — 16 octobre 2026
+
+**La Pousse au tarot, la feuille de marque pour tous les jeux, et une carte qui se cachait.**
+
+Ajouté
+- **Tarot : le contrat Pousse**, entre la Petite et la Garde. Il se joue comme la Petite
+  (chien montré, écart, multiplicateur ×1) mais la donne vaut **45 points de base au lieu
+  de 25** : vingt points de plus, gagnés ou perdus. Les enchères, l'écart, le décompte, le
+  bot, les textes des règles et les succès (« Garde sans filet » et « Défense de fer »
+  gardent leur sens : Garde sans et au-delà, Garde et au-delà) sont cohérents ; un test
+  joue la même donne en Petite et en Pousse et vérifie l'écart de vingt points.
+- **La feuille de marque**, dans le menu de table de tous les jeux (« Marque ») : une ligne
+  par manche finie avec le mot du jeu (contrat et preneur au tarot, atout et preneur à la
+  belote), les points de chacun, et les totaux. Le socle la tient lui-même à partir du
+  bilan de chaque manche (`RoundSummary.label`, `SeatView.rounds`) : un nouveau jeu l'a sans
+  rien écrire.
+
+Corrigé
+- **Tarot et belote : la carte d'entame restait invisible** quand on devait jouer juste
+  après un pli. Le dernier pli est montré une seconde et demie puis effacé par une minuterie ;
+  celle-ci redessinait le centre à partir de la vue qu'elle avait capturée, déjà périmée, et
+  gommait la carte posée entre-temps. Elle relit maintenant la vue du moment.
+
+---
+
 <a name="v0.5.1"></a>
 ## 0.5.1 — 16 octobre 2026
 

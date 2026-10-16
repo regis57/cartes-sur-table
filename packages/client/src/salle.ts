@@ -204,7 +204,11 @@ function buildDialogs(jeu: SalleJeu<unknown>): void {
     document.body.append(d);
     return d;
   };
-  dlg('dlg-menu', h('h2', '', t('table.menu')), boutons([['close-menu', 'table.resume', 'craie'], ['rules', 'lobby.rules', 'craie'], ['quit', 'table.quit', 'rouge']]));
+  dlg('dlg-menu', h('h2', '', t('table.menu')), boutons([['close-menu', 'table.resume', 'craie'], ['scoresheet', 'table.scoresheet', 'craie'], ['rules', 'lobby.rules', 'craie'], ['quit', 'table.quit', 'rouge']]));
+
+  const marque = h('div', 'marque');
+  marque.id = 'marque-tableau';
+  dlg('dlg-marque', h('h2', '', t('table.scoresheet_title')), marque, boutons([['close-scoresheet', 'site.close', 'craie']]));
 
   const regles = h('div', 'regles');
   regles.id = 'regles-texte';
@@ -326,6 +330,51 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     openDialog('dlg-manche');
   };
 
+  /**
+   * La feuille de marque, commune à tous les jeux : une ligne par manche finie (avec le mot du
+   * jeu : contrat, atout…), les points de chacun, et les totaux. Les noms des sièges remplacent
+   * les jetons « {n} » de la ligne, qui vient des règles et ne connaît pas les noms.
+   */
+  const renderScoresheet = (): void => {
+    const box = $('marque-tableau');
+    box.textContent = '';
+    if (!view) return;
+    const seats = view.seats;
+    const names = (txt: string): string => txt.replace(/\{(\d+)\}/g, (_m, n: string) => seats[Number(n)]?.name ?? '');
+    if (view.rounds.length === 0) {
+      box.append(h('p', '', t('table.scoresheet_empty')));
+      return;
+    }
+    const table = h('table', 'tableau marque-grille');
+    const head = h('tr');
+    head.append(h('th', '', tg('scoresheet_round')));
+    seats.forEach((s) => {
+      const th = h('th');
+      th.append(img(avatarSrc(s.avatar), '', 'avatar'), h('span', 'nom-court', s.name));
+      head.append(th);
+    });
+    table.append(head);
+    for (const r of view.rounds) {
+      const row = h('tr');
+      const first = h('td', 'manche-nom');
+      first.append(h('b', '', String(r.round)));
+      if (r.label) first.append(h('span', 'libelle', names(r.label)));
+      row.append(first);
+      r.points.forEach((p, i) => {
+        const td = h('td', p > 0 ? 'gagne' : p < 0 ? 'perdu' : '', `${p > 0 ? '+' : ''}${p}`);
+        if (r.winner === i) td.classList.add('gagnant');
+        row.append(td);
+      });
+      table.append(row);
+    }
+    const last = view.rounds[view.rounds.length - 1];
+    const tot = h('tr', 'totaux');
+    tot.append(h('td', '', t('table.scoresheet_total')));
+    (last?.totals ?? []).forEach((v) => tot.append(h('td', '', String(v))));
+    table.append(tot);
+    box.append(table);
+  };
+
   const showBubble = (seat: number, node: Node): void => {
     const zone = jeu.zoneForSeat(seat);
     const label = zone?.querySelector<HTMLElement>('.etiquette');
@@ -342,7 +391,7 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
   const info = (text: string, canRejoin: boolean): void => {
     $('info-texte').textContent = text;
     (canRejoin ? show : hide)($('btn-reprendre'));
-    for (const id of ['dlg-manche', 'dlg-emojis', 'dlg-phrases', 'dlg-menu', 'dlg-regles', ...(jeu.dialogs ?? [])]) closeDialog(id);
+    for (const id of ['dlg-manche', 'dlg-emojis', 'dlg-phrases', 'dlg-menu', 'dlg-regles', 'dlg-marque', ...(jeu.dialogs ?? [])]) closeDialog(id);
     openDialog('dlg-info');
   };
 
@@ -492,6 +541,12 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
       closeDialog('dlg-menu');
       openDialog('dlg-regles');
     },
+    'scoresheet': () => {
+      closeDialog('dlg-menu');
+      renderScoresheet();
+      openDialog('dlg-marque');
+    },
+    'close-scoresheet': () => closeDialog('dlg-marque'),
     'close-rules': () => closeDialog('dlg-regles'),
     'menu': () => openDialog('dlg-menu'),
     'close-menu': () => closeDialog('dlg-menu'),
