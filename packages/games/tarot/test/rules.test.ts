@@ -27,7 +27,7 @@ function playing(seats: number, hands: string[], extra: Partial<TarotState> = {}
     hands: h,
     chien: [],
     ecart: [],
-    bestBid: 2,
+    bestBid: 3,
     preneur: 0,
     partner: seats === 5 ? 1 : -1,
     bidsPlaced: seats,
@@ -67,7 +67,7 @@ function playMatch(seats: number, rng: Rng): { state: TarotState; moves: number;
     const r = state.result;
     assert.ok(r);
     const allWon = state.won.flat();
-    const pile = r.bid <= 2 ? state.ecart : state.chien;
+    const pile = r.bid <= 3 ? state.ecart : state.chien;
     const totalPts = [...allWon, ...pile].reduce((s, x) => s + cardPoints(x), 0);
     assert.equal(allWon.length + pile.length, 78);
     assert.equal(Math.round(totalPts * 2) / 2, 91);
@@ -102,15 +102,15 @@ test('La donne : 18 cartes et un chien de 6 à quatre ; 15 et 3 à cinq', () => 
 test('Enchères : on surenchérit ou on passe ; tout le monde passe redonne sans compter', () => {
   let s = createRound(4, seededRng(3));
   const first = s.bidTurn;
-  assert.deepEqual(legalMoves(s, first).map(moveKey), ['bid:0', 'bid:1', 'bid:2', 'bid:3', 'bid:4']);
-  s = applyMove(s, first, { type: 'bid', bid: 2 }, seededRng(0));
+  assert.deepEqual(legalMoves(s, first).map(moveKey), ['bid:0', 'bid:1', 'bid:2', 'bid:3', 'bid:4', 'bid:5']);
+  s = applyMove(s, first, { type: 'bid', bid: 3 }, seededRng(0));
   const second = s.bidTurn;
-  assert.deepEqual(legalMoves(s, second).map(moveKey), ['bid:0', 'bid:3', 'bid:4']);
+  assert.deepEqual(legalMoves(s, second).map(moveKey), ['bid:0', 'bid:4', 'bid:5']);
   s = applyMove(s, second, { type: 'bid', bid: 0 }, seededRng(0));
   s = applyMove(s, s.bidTurn, { type: 'bid', bid: 0 }, seededRng(0));
   s = applyMove(s, s.bidTurn, { type: 'bid', bid: 0 }, seededRng(0));
   assert.equal(s.preneur, first);
-  assert.equal(s.bestBid, 2);
+  assert.equal(s.bestBid, 3);
   assert.equal(s.phase, 'ecart', 'Garde : le chien est montré et le preneur écarte');
   assert.equal(s.hands[first]?.length, 24);
 
@@ -124,9 +124,40 @@ test('Enchères : on surenchérit ou on passe ; tout le monde passe redonne sans
   assert.equal(p.lastEvent?.type, 'redeal');
 });
 
+test('Pousse : entre Petite et Garde, le chien est pris, la base vaut 45 au lieu de 25', () => {
+  let s = createRound(4, seededRng(11));
+  const taker = s.bidTurn;
+  s = applyMove(s, taker, { type: 'bid', bid: 2 }, seededRng(0));
+  assert.deepEqual(legalMoves(s, s.bidTurn).map(moveKey), ['bid:0', 'bid:3', 'bid:4', 'bid:5'], 'on ne peut plus dire Petite');
+  for (let i = 0; i < 3; i++) s = applyMove(s, s.bidTurn, { type: 'bid', bid: 0 }, seededRng(0));
+  assert.equal(s.bestBid, 2);
+  assert.equal(s.phase, 'ecart', 'comme la Petite et la Garde : le chien est montré et écarté');
+  assert.equal(s.hands[taker]?.length, 24);
+  assert.equal(BID_MULT[2], 1);
+  // Même donne jouée en Petite et en Pousse : même écart à l'objectif, 20 points de plus à la base.
+  const played = (bid: 1 | 2) => {
+    let t = createRound(4, seededRng(11));
+    const who = t.bidTurn;
+    t = applyMove(t, who, { type: 'bid', bid }, seededRng(0));
+    for (let i = 0; i < 3; i++) t = applyMove(t, t.bidTurn, { type: 'bid', bid: 0 }, seededRng(0));
+    let guard = 0;
+    while (t.phase !== 'over' && guard++ < 400) {
+      const seat = def.currentSeat(t) as number;
+      const legal = legalMoves(t, seat).filter((m) => m.type !== 'poignee');
+      t = applyMove(t, seat, def.botMove!(t, seat, legal, seededRng(guard)) ?? legal[0]!, seededRng(guard));
+    }
+    return t.result!;
+  };
+  const petite = played(1);
+  const pousse = played(2);
+  assert.equal(pousse.bid, 2);
+  assert.equal(pousse.won, petite.won);
+  assert.equal(Math.abs(pousse.value) - Math.abs(petite.value), 20);
+});
+
 test('Garde Sans et Garde Contre : le chien reste fermé, on joue directement', () => {
   let s = createRound(4, seededRng(11));
-  s = applyMove(s, s.bidTurn, { type: 'bid', bid: 3 }, seededRng(0));
+  s = applyMove(s, s.bidTurn, { type: 'bid', bid: 4 }, seededRng(0));
   for (let i = 0; i < 3; i++) s = applyMove(s, s.bidTurn, { type: 'bid', bid: 0 }, seededRng(0));
   assert.equal(s.phase, 'play');
   assert.equal(s.hands[s.preneur]?.length, 18);
@@ -224,7 +255,7 @@ test("Le pli : l'atout l'emporte, sinon la plus forte de la couleur ; l'Excuse n
 
 test('Décompte : objectifs selon les bouts, Petit au bout, poignée, répartition à 4 et à 5', () => {
   // Un dernier pli construit pour que l'attaque (siège 0, Garde) finisse avec des points connus.
-  const make = (seats: number, bestBid: 1 | 2 | 3 | 4, wonAttack: string, wonDef: string, lastTrick: { seat: number; card: Card }[], winner: number, poignees: { seat: number; count: number; bonus: number }[] = [], pile = ''): TarotState => {
+  const make = (seats: number, bestBid: 1 | 2 | 3 | 4 | 5, wonAttack: string, wonDef: string, lastTrick: { seat: number; card: Card }[], winner: number, poignees: { seat: number; count: number; bonus: number }[] = [], pile = ''): TarotState => {
     const hands = Array.from({ length: seats }, () => '');
     const base = playing(seats, hands, { bestBid, totalTricks: 1, tricksPlayed: 0, chienSize: seats === 5 ? 3 : 6 });
     const won = base.won.map(() => [] as Card[]);
@@ -235,7 +266,7 @@ test('Décompte : objectifs selon les bouts, Petit au bout, poignée, répartiti
     for (const t of lastTrick) (h[t.seat] as Card[]).push(t.card);
     return withState(base, {
       hands: h, won, poignees, partner: seats === 5 ? 1 : -1,
-      ecart: bestBid <= 2 ? cards(pile) : [], chien: bestBid >= 3 ? cards(pile) : [],
+      ecart: bestBid <= 3 ? cards(pile) : [], chien: bestBid >= 4 ? cards(pile) : [],
       current: lastTrick[0]?.seat ?? 0, leadSeat: lastTrick[0]?.seat ?? 0,
       lastEvent: null, excuseInfo: null,
     });
@@ -252,7 +283,7 @@ test('Décompte : objectifs selon les bouts, Petit au bout, poignée, répartiti
   const defCards = 'A1 5♥ 6♥ 7♥ 8♥ 9♥ 10♥ 2♦ 3♦ 4♦ 5♦ 6♦ 7♦ 8♦ 9♦ 10♦ 2♣ 3♣ 4♣ 5♣ 6♣ 7♣ 8♣ 9♣ 10♣ 5♠ 6♠ 7♠ 8♠ 9♠ 10♠ V♠ C♠ D♠'; // reste
   const pile4 = '2♥ 3♥ 4♥ 5♠ 6♠ 7♠'; // non utilisé ici : on passe une pile vide et des points comptés dans won
   void pile4;
-  let s = make(4, 2, attackCards, defCards, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }], 0);
+  let s = make(4, 3, attackCards, defCards, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }], 0);
   s = finish(s, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }]);
   assert.ok(s.roundOver && s.result);
   assert.equal(s.result.bouts, 2);
@@ -275,7 +306,7 @@ test('Décompte : objectifs selon les bouts, Petit au bout, poignée, répartiti
   // Poignée : bonus non multiplié, au camp vainqueur. Garde Sans (×4) perdue.
   const weak = 'A21 2♥ 3♥ 4♥';
   const strong = defCards + ' EXC R♥ D♥ C♥ V♥ R♦ D♦ C♦ V♦ R♣ D♣ C♣ V♣ A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20';
-  let q = make(4, 3, weak, strong, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }], 0, [{ seat: 2, count: 10, bonus: 20 }]);
+  let q = make(4, 4, weak, strong, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }], 0, [{ seat: 2, count: 10, bonus: 20 }]);
   q = finish(q, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }]);
   assert.ok(q.result);
   assert.equal(q.result.won, false);
@@ -285,13 +316,19 @@ test('Décompte : objectifs selon les bouts, Petit au bout, poignée, répartiti
   assert.equal(q.result.value, -((25 + (51 - q.result.attackPoints)) * 4) - 20);
 
   // 5 joueurs avec partenaire : preneur ×2, partenaire ×1, trois défenseurs −1.
-  let f = make(5, 2, attackCards, defCards, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }, { seat: 4, card: c('5♠') }], 0);
+  let f = make(5, 3, attackCards, defCards, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }, { seat: 4, card: c('5♠') }], 0);
   f = finish(f, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }, { seat: 4, card: c('5♠') }]);
   assert.ok(f.result);
   const v = f.result.value;
   assert.deepEqual(f.result.deltas, [2 * v, v, -v, -v, -v]);
   assert.equal(f.result.deltas.reduce((a, b) => a + b, 0), 0);
-  assert.equal(BID_MULT[2], 2);
+  assert.equal(BID_MULT[3], 2);
+
+  // Pousse (×1, base 45) sur la même donne que la Garde ci-dessus : 45 + 21 = 66.
+  let o = make(4, 2, attackCards, defCards, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }], 0);
+  o = finish(o, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }]);
+  assert.equal(o.result!.value, 45 + 21);
+  assert.deepEqual(o.result!.deltas, [3 * 66, -66, -66, -66]);
 });
 
 test('À cinq : appel au Roi, partenaire caché jusqu\'à la carte, seul si la carte est au chien', () => {

@@ -152,7 +152,11 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
       lastTrickKey = key;
       lastTrickShownAt = Date.now();
       if (hideTrickTimer) clearTimeout(hideTrickTimer);
-      hideTrickTimer = setTimeout(() => renderCentre(view, ctx), prefersReducedMotion() ? 600 : 1600);
+      // Au réveil, on redessine depuis la vue DU MOMENT : l'ancienne cacherait la carte posée entre-temps.
+      hideTrickTimer = setTimeout(() => {
+        const fresh = ctx.view();
+        if (fresh) renderCentre(fresh, ctx);
+      }, prefersReducedMotion() ? 600 : 1600);
     }
     if (Date.now() - lastTrickShownAt < (prefersReducedMotion() ? 600 : 1600)) {
       shown = g.lastTrick.cards;
@@ -230,7 +234,7 @@ function renderStatus(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
   const name = (s: number): string => view.seats[s]?.name ?? '';
   const statut = $('statut');
   let txt = '';
-  if (g.roundOver) txt = t('table.round_end');
+  if (g.roundOver) txt = t('games.belote.ui.round_end');
   else if (g.phase === 'bid1' || g.phase === 'bid2') txt = g.bidTurn === me ? t(g.phase === 'bid1' ? 'belote.your_bid_1' : 'belote.your_bid_2') : t('belote.bid_of', { name: name(g.bidTurn) });
   else if (g.current === me) txt = t('table.your_turn');
   else txt = t('table.turn_of', { name: name(g.current) });

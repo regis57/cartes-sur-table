@@ -13,11 +13,12 @@ import {
  * Règles du tarot français à 4 et 5 joueurs, pures et sans réseau. Ce sont celles du jeu
  * d'origine (regis57/tarot-francais-enligne), reprises point par point :
  *
- *  - enchères en un tour : Passe, Petite (×1), Garde (×2), Garde Sans (×4), Garde Contre (×6) ;
+ *  - enchères en un tour : Passe, Petite (×1), Pousse (×1, base 45 au lieu de 25), Garde (×2),
+ *    Garde Sans (×4), Garde Contre (×6) ;
  *    tout le monde passe → nouvelle donne, qui ne compte pas ;
  *  - à 5 joueurs, le preneur appelle un Roi (une Dame s'il a les quatre Rois) ; le porteur
  *    de la carte appelée est son partenaire, révélé quand la carte tombe ;
- *  - Petite et Garde : le chien est montré à tous, puis le preneur fait son écart (ni Roi,
+ *  - Petite, Pousse et Garde : le chien est montré à tous, puis le preneur fait son écart (ni Roi,
  *    ni bout, et de l'atout seulement s'il n'a pas d'autre carte) ;
  *  - obligation de fournir, de couper, de surcouper ; l'Excuse se joue toujours ;
  *  - l'Excuse ne remporte jamais le pli et reste à son camp (sauf au dernier pli), contre
@@ -32,9 +33,14 @@ import {
  * rester « un coup = un choix » et au bot de raisonner dessus, sans rien changer au résultat.
  */
 
-export const BIDS = ['passe', 'petite', 'garde', 'garde-sans', 'garde-contre'] as const;
-export type Bid = 0 | 1 | 2 | 3 | 4;
-export const BID_MULT = [0, 1, 2, 4, 6] as const;
+export const BIDS = ['passe', 'petite', 'pousse', 'garde', 'garde-sans', 'garde-contre'] as const;
+export type Bid = 0 | 1 | 2 | 3 | 4 | 5;
+/** Multiplicateur de chaque contrat ; la Pousse se joue comme la Petite, avec 20 points de plus à la base. */
+export const BID_MULT = [0, 1, 1, 2, 4, 6] as const;
+export const POUSSE_BONUS = 20;
+const BID_LABELS = ['Passe', 'Petite', 'Pousse', 'Garde', 'Garde sans', 'Garde contre'] as const;
+/** Le chien est pris et écarté jusqu'à la Garde comprise. */
+export const LAST_BID_WITH_CHIEN: Bid = 3;
 /** Nombre de donnes d'une partie, comme le défaut du jeu d'origine. */
 export const MATCH_ROUNDS = 5;
 const TARGETS = [56, 51, 41, 36] as const;
@@ -331,7 +337,7 @@ export function legalMoves(state: TarotState, seat: number): Move[] {
   switch (state.phase) {
     case 'bidding': {
       const moves: Move[] = [{ type: 'bid', bid: 0 }];
-      for (let b = state.bestBid + 1; b <= 4; b++) moves.push({ type: 'bid', bid: b as Bid });
+      for (let b = state.bestBid + 1; b <= 5; b++) moves.push({ type: 'bid', bid: b as Bid });
       return moves;
     }
     case 'callKing': {
@@ -382,7 +388,7 @@ export function parseMoveKey(key: string): Move | null {
   const [kind, rest] = key.split(':');
   if (kind === 'bid') {
     const b = Number(rest);
-    return Number.isInteger(b) && b >= 0 && b <= 4 ? { type: 'bid', bid: b as Bid } : null;
+    return Number.isInteger(b) && b >= 0 && b <= 5 ? { type: 'bid', bid: b as Bid } : null;
   }
   if (kind === 'call' && rest) {
     const value = rest.slice(0, -1);
@@ -442,7 +448,7 @@ function applyCall(state: TarotState, seat: number, suit: Suit, value: 'R' | 'D'
 
 function proceedToChien(state: TarotState): TarotState {
   const lead = (state.dealer + 1) % state.seats;
-  if (state.bestBid >= 3) {
+  if (state.bestBid > LAST_BID_WITH_CHIEN) {
     // Garde Sans / Garde Contre : le chien reste fermé.
     return { ...state, phase: 'play', leadSeat: lead, current: lead, trick: [] };
   }
@@ -568,8 +574,8 @@ function scoreRound(state: TarotState): TarotState {
   }
 
   // Le chien (ou l'écart) : à l'attaque, sauf Garde Contre.
-  const pile = state.bestBid <= 2 ? state.ecart : state.chien;
-  if (state.bestBid !== 4) {
+  const pile = state.bestBid <= LAST_BID_WITH_CHIEN ? state.ecart : state.chien;
+  if (state.bestBid !== 5) {
     for (const c of pile) {
       attackPts += cardPoints(c);
       if (isBout(c)) attackBouts++;
@@ -589,7 +595,8 @@ function scoreRound(state: TarotState): TarotState {
 
   const poigneeSum = state.poignees.reduce((s, p) => s + p.bonus, 0);
   const sign = won ? 1 : -1;
-  const value = Math.round((25 + Math.abs(diff)) * mult * sign + petit * mult + poigneeSum * sign);
+  const base = 25 + (state.bestBid === 2 ? POUSSE_BONUS : 0);
+  const value = Math.round((base + Math.abs(diff)) * mult * sign + petit * mult + poigneeSum * sign);
 
   const deltas: number[] = [];
   if (state.seats === 4) {
@@ -697,7 +704,7 @@ export function determinize(state: TarotState, seat: number, rng: Rng): TarotSta
   const isPreneur = seat === state.preneur;
   const chienPublic = state.phase === 'ecart';
   // Le preneur connaît son écart ; sinon la pile cachée est à redistribuer.
-  const pileKnown = (state.phase === 'play' && isPreneur && state.bestBid <= 2) || chienPublic;
+  const pileKnown = (state.phase === 'play' && isPreneur && state.bestBid <= LAST_BID_WITH_CHIEN) || chienPublic;
   if (pileKnown) {
     for (const c of state.ecart) known.add(cardKey(c));
     for (const c of state.chien) known.add(cardKey(c));
@@ -728,7 +735,7 @@ export function determinize(state: TarotState, seat: number, rng: Rng): TarotSta
   if (!pileKnown) {
     // Ce qui reste est la pile cachée. Un écart ne contient ni Roi ni bout : on échange avec une main.
     const pile = pool.splice(0, pool.length);
-    if (state.phase === 'play' && state.bestBid <= 2 && state.ecart.length > 0) {
+    if (state.phase === 'play' && state.bestBid <= LAST_BID_WITH_CHIEN && state.ecart.length > 0) {
       for (let k = 0; k < pile.length; k++) {
         if (!ecartForbidden(pile[k] as Card)) continue;
         for (const i of order) {
@@ -779,11 +786,11 @@ export function evaluate(state: TarotState, seat: number): number {
       bouts += cards.filter(isBout).length;
     } else defense += pts;
   });
-  if (state.bestBid <= 2) {
+  if (state.bestBid <= LAST_BID_WITH_CHIEN) {
     attack += state.ecart.reduce((s, c) => s + cardPoints(c), 0);
     bouts += state.ecart.filter(isBout).length;
   }
-  const remaining = 91 - attack - defense - (state.bestBid <= 2 ? state.ecart.reduce((s, c) => s + cardPoints(c), 0) : 0);
+  const remaining = 91 - attack - defense - (state.bestBid <= LAST_BID_WITH_CHIEN ? state.ecart.reduce((s, c) => s + cardPoints(c), 0) : 0);
   const share = attack + defense > 0 ? attack / (attack + defense) : 0.5;
   const projected = attack + Math.max(0, remaining) * share;
   const target = TARGETS[Math.min(bouts, 3)] as number;
@@ -830,8 +837,9 @@ function botBid(state: TarotState, seat: number): Move {
   const gros = hand.filter((c) => c.t === 'a' && c.rank >= 16).length;
   const strength = atouts + bouts * 4 + rois * 2 + gros + (state.seats === 5 ? 2 : 0);
   let wish: Bid = 0;
-  if (strength >= 26) wish = 3;
-  else if (strength >= 20) wish = 2;
+  if (strength >= 26) wish = 4;
+  else if (strength >= 20) wish = 3;
+  else if (strength >= 17) wish = 2;
   else if (strength >= 15) wish = 1;
   return { type: 'bid', bid: wish > state.bestBid ? wish : 0 };
 }
@@ -942,6 +950,7 @@ export function roundSummary(state: TarotState): RoundSummary {
   return {
     perSeat: state.scores.map((total, i) => ({ roundPoints: r?.deltas[i] ?? 0, total, detail: r ? { role: i === r.preneur ? 'preneur' : i === r.partner ? 'partenaire' : 'defense' } : null })),
     roundWinner: r ? (r.won ? r.preneur : null) : null,
+    label: r ? `${BID_LABELS[r.bid]} — {${r.preneur}}${r.partner !== null && r.partner !== r.preneur ? ` & {${r.partner}}` : ''}` : undefined,
   };
 }
 
@@ -950,11 +959,11 @@ export function achievements(state: TarotState, seat: number, ctx: AchievementCo
   const r = state.result;
   if (r) {
     const attaque = seat === r.preneur || seat === r.partner;
-    if (seat === r.preneur && r.won && r.bid >= 3) out.push('garde-sans-filet');
+    if (seat === r.preneur && r.won && r.bid >= 4) out.push('garde-sans-filet');
     if (attaque && r.won && r.bouts === 3) out.push('trois-bouts');
     if (r.petitAuBout !== 0 && (r.petitAuBout > 0) === attaque) out.push('petit-au-bout');
     if (state.poignees.some((p) => p.seat === seat && p.count >= 13)) out.push('grande-poignee');
-    if (!attaque && !r.won && r.bid >= 2) out.push('defense-de-fer');
+    if (!attaque && !r.won && r.bid >= 3) out.push('defense-de-fer');
   }
   if (ctx.matchOver && ctx.wonMatch) out.push('maitre-du-tarot');
   return out;

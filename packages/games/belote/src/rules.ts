@@ -784,6 +784,7 @@ export function roundSummary(state: BeloteState): RoundSummary {
       detail: r ? { role: i === r.taker ? 'preneur' : teamOf(i) === teamOf(r.taker) ? 'partenaire' : 'defense', team: teamOf(i) } : null,
     })),
     roundWinner: winnerTeam === null ? null : (r && r.made && r.capot === null ? r.taker : winnerTeam),
+    label: r ? `Atout ${r.trump} — {${r.taker}} · ${r.capot !== null ? 'capot' : r.litige ? 'égalité' : r.made ? 'réussie' : 'dedans'}` : undefined,
   };
 }
 

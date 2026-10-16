@@ -135,3 +135,16 @@ body.jeu { overflow-x: hidden; }
 .mini { display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 4px; background: var(--carte-fond); color: var(--carte-noir); font-family: var(--police-titre); font-weight: 700; font-size: 0.9rem; }
 .mini.rouge { color: var(--carte-rouge); }
 .gagnant { color: var(--laiton); font-family: var(--police-titre); font-size: 1.4rem; }
+
+/* Feuille de marque (menu → Marque), commune à tous les jeux. */
+#dlg-marque { max-width: min(96vw, 760px); }
+.marque { overflow-x: auto; }
+.marque-grille th .avatar { width: 28px; height: 28px; vertical-align: middle; margin-right: 4px; }
+.marque-grille th .nom-court { display: inline-block; max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.marque-grille td, .marque-grille th { text-align: right; padding: 6px 8px; white-space: nowrap; }
+.marque-grille td:first-child, .marque-grille th:first-child { text-align: left; }
+.marque-grille .manche-nom .libelle { display: block; font-size: 0.85em; opacity: 0.85; white-space: normal; }
+.marque-grille .totaux td { font-weight: 700; border-top: 2px solid var(--laiton); color: var(--laiton); }
+.marque-grille .gagne { color: #7fd99a; }
+.marque-grille .perdu { color: #f29c9c; }
+.marque-grille td.gagnant { font-size: inherit; font-family: inherit; text-decoration: underline; text-decoration-color: var(--laiton); text-underline-offset: 3px; }

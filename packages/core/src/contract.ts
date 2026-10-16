@@ -147,6 +147,8 @@ export interface RoundSummary {
   }[];
   /** Siège qui a remporté la manche, s'il y en a un. */
   readonly roundWinner: number | null;
+  /** Une ligne pour la feuille de marque, propre au jeu (« Garde — Anne », « Atout ♠ — Paul »). */
+  readonly label?: string | undefined;
 }
 
 export interface AchievementContext {

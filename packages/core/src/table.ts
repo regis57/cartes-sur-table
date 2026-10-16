@@ -76,12 +76,23 @@ export interface RoundEndInfo {
 export type TablePhase = 'playing' | 'roundEnd' | 'matchEnd' | 'destroyed';
 
 /** Vue envoyée à un siège : la vue du jeu, enrichie de ce que le socle sait. */
+/** Une manche jouée, pour la feuille de marque commune à tous les jeux. */
+export interface RoundRecord {
+  round: number;
+  label: string | null;
+  points: number[];
+  totals: number[];
+  winner: number | null;
+}
+
 export interface SeatView<V> {
   tableId: string;
   seat: number;
   seats: PublicSeat[];
   phase: TablePhase;
   round: number;
+  /** Les manches terminées de la partie en cours, tenues par le socle. */
+  rounds: RoundRecord[];
   game: V;
 }
 
@@ -92,6 +103,7 @@ export class Table<S, M, V> {
   state: S;
   phase: TablePhase = 'playing';
   round = 0;
+  rounds: RoundRecord[] = [];
   private readonly timers = new Set<ReturnType<typeof setTimeout>>();
   private readonly out: Outbox;
   private readonly rng: Rng;
@@ -167,7 +179,7 @@ export class Table<S, M, V> {
   }
 
   viewFor(seat: number): SeatView<V> {
-    return { tableId: this.id, seat, seats: this.publicSeats(), phase: this.phase, round: this.round, game: this.def.view(this.state, seat) };
+    return { tableId: this.id, seat, seats: this.publicSeats(), phase: this.phase, round: this.round, rounds: this.rounds, game: this.def.view(this.state, seat) };
   }
 
   broadcastViews(): void {
@@ -204,6 +216,13 @@ export class Table<S, M, V> {
 
   private endRound(): void {
     const summary: RoundSummary = this.def.roundSummary(this.state);
+    this.rounds = [...this.rounds, {
+      round: this.round,
+      label: summary.label ?? null,
+      points: summary.perSeat.map((p) => p.roundPoints),
+      totals: summary.perSeat.map((p) => p.total),
+      winner: summary.roundWinner,
+    }];
     const matchOver = this.def.isMatchOver(this.state);
     const winner = matchOver ? this.def.matchWinner(this.state) : null;
     const winners = matchOver ? (this.def.matchWinners?.(this.state) ?? (winner === null ? [] : [winner])) : [];
@@ -239,6 +258,7 @@ export class Table<S, M, V> {
     if (!s || s.isBot) return false;
     this.clearTimers();
     this.round = 1;
+    this.rounds = [];
     this.phase = 'playing';
     this.state = this.def.createRound(this.seats.length, this.rng);
     this.out.toAll('tableStarted', { tableId: this.id });

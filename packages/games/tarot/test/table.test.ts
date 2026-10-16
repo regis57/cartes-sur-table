@@ -53,6 +53,8 @@ test('Table de tarot : un humain et trois bots jouent une donne entière ; l\'hu
   const last = out.lastState(0)!;
   assert.ok(last.game.roundOver && last.game.result);
   assert.equal(last.game.history.length, 1);
+  assert.equal(last.rounds.length, 1);
+  assert.match(last.rounds[0]!.label ?? '', /^(Petite|Pousse|Garde|Garde sans|Garde contre) — \{\d\}/);
   assert.ok(t.nextRound(0));
   assert.equal(t.phase, 'playing');
   assert.equal(out.lastState(0)!.game.roundNumber, 2);

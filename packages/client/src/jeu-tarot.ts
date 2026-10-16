@@ -22,7 +22,7 @@ const POSITIONS: Record<number, string[]> = {
 };
 /** Zone d'écran utilisée pour chaque position (à quatre, le haut prend la zone haut-gauche). */
 const ZONE_FOR: Record<string, number> = { bas: 0, gauche: 1, 'haut-gauche': 2, haut: 2, 'haut-droite': 3, droite: 4 };
-const BID_KEYS = ['passe', 'petite', 'garde', 'garde-sans', 'garde-contre'];
+const BID_KEYS = ['passe', 'petite', 'pousse', 'garde', 'garde-sans', 'garde-contre'];
 
 let lastTrickShownAt = 0;
 let lastTrickKey = '';
@@ -195,7 +195,11 @@ function renderCentre(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
       lastTrickKey = key;
       lastTrickShownAt = Date.now();
       if (hideTrickTimer) clearTimeout(hideTrickTimer);
-      hideTrickTimer = setTimeout(() => renderCentre(view, ctx), prefersReducedMotion() ? 600 : 1600);
+      // Au réveil, on redessine depuis la vue DU MOMENT : l'ancienne cacherait la carte posée entre-temps.
+      hideTrickTimer = setTimeout(() => {
+        const fresh = ctx.view();
+        if (fresh) renderCentre(fresh, ctx);
+      }, prefersReducedMotion() ? 600 : 1600);
     }
     if (Date.now() - lastTrickShownAt < (prefersReducedMotion() ? 600 : 1600)) {
       shown = g.lastTrick.cards;
@@ -283,7 +287,7 @@ function renderStatus(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
   const name = (s: number): string => view.seats[s]?.name ?? '';
   const statut = $('statut');
   let txt = '';
-  if (g.roundOver) txt = t('table.round_end');
+  if (g.roundOver) txt = t('games.tarot.ui.round_end');
   else if (g.phase === 'bidding') txt = g.bidTurn === me ? t('tarot.your_bid') : t('tarot.bid_of', { name: name(g.bidTurn) });
   else if (g.phase === 'callKing') txt = g.preneur === me ? t('tarot.call_prompt') : t('tarot.calling', { name: name(g.preneur) });
   else if (g.phase === 'ecart') txt = g.preneur === me ? t('tarot.ecart_prompt', { n: g.ecartNeeded }) : t('tarot.ecart_of', { name: name(g.preneur) });
