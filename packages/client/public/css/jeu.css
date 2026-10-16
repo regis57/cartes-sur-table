@@ -37,14 +37,15 @@ body.jeu { overflow-x: hidden; }
 
 /* La table de jeu */
 .barre {
-  position: fixed; top: 0; left: 0; right: 0; height: 52px;
+  position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 52px;
   display: flex; align-items: center; justify-content: center; gap: 12px;
-  padding: 0 72px;
+  /* De la place pour le drapeau à gauche, et pour les deux boutons (thème, menu) à droite. */
+  padding: 0 124px 0 72px;
   z-index: 40;
 }
 .barre .statut { background: var(--toast-fond); color: var(--toast-texte); padding: 8px 18px; font-size: 1.1rem; border-radius: 999px; font-weight: 600; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menu-btn {
-  position: fixed; top: 10px; right: 12px; z-index: 60;
+  position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); z-index: 60;
   width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--panneau-bord);
   background: rgba(0, 0, 0, 0.55); color: var(--texte); cursor: pointer; display: grid; place-items: center; gap: 4px;
 }
@@ -56,9 +57,13 @@ body.jeu { overflow-x: hidden; }
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 8px;
   width: min(100% - 16px, 1040px);
-  height: calc(100vh - 124px);
-  height: calc(100dvh - 124px);
-  margin: 56px auto 0;
+  /* La grille ne doit jamais écraser le centre : elle peut dépasser l'écran et la page
+     défiler un peu. Les barres (statut en haut, réactions en bas) sont comptées, ainsi que
+     les zones réservées de l'iPhone (encoche, barre d'accueil). */
+  height: auto;
+  min-height: calc(100dvh - 130px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  grid-template-rows: auto minmax(max-content, 1fr) auto;
+  margin: calc(56px + env(safe-area-inset-top, 0px)) auto 0;
 }
 .siege { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; border-radius: 12px; min-width: 0; border: 2px solid transparent; }
 .siege.actif { border-color: var(--laiton); background: rgba(217, 164, 65, 0.1); }
@@ -113,9 +118,9 @@ body.jeu { overflow-x: hidden; }
 
 /* Réactions */
 .reactions {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
-  display: flex; justify-content: center; gap: 6px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+  /* Dans le flux, sous la main : rien ne recouvre jamais les cartes du joueur. */
+  position: static;
+  display: flex; justify-content: center; gap: 6px; padding: 6px 12px calc(10px + env(safe-area-inset-bottom, 0px));
 }
 .reactions button { background: var(--toast-fond); border: 1px solid var(--panneau-bord); color: var(--toast-texte); border-radius: 999px; padding: 10px 18px; cursor: pointer; min-height: 48px; font-size: 1.05rem; }
 .reactions button:hover { border-color: var(--laiton); }

@@ -6,8 +6,6 @@
  * Le centre ne doit jamais être écrasé : la page peut défiler un peu plutôt que de cacher le pli.
  */
 .belote .table-jeu-grille {
-  height: auto; min-height: calc(100dvh - 124px);
-  grid-template-rows: auto minmax(max-content, 1fr) auto;
   grid-template-areas:
     "haut haut haut"
     "gauche centre droite"
@@ -18,7 +16,6 @@
 .belote .siege.droite { grid-area: droite; }
 .belote .siege.bas { grid-area: bas; }
 .belote .centre { grid-area: centre; }
-.belote .reactions { position: static; background: none; padding-top: 4px; }
 
 /* Les dos des adversaires sont décoratifs : plus petits, ils laissent la place au pli. */
 .belote .siege:not(.bas) .main { --carte-l: calc(var(--carte-l-base, 72px) * 0.6); --carte-h: calc(var(--carte-h-base, 104px) * 0.6); }

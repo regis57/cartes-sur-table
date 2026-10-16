@@ -5,19 +5,11 @@
  * Le tarot : cinq sièges, un pli au centre, le chien et l'écart, les enchères.
  */
 
-/* Le centre du tarot (contrat, pli, choix) ne doit jamais être écrasé : la grille peut
-   dépasser l'écran et la page défiler un peu, plutôt que de cacher le pli. */
-.tarot .table-jeu-grille {
-  height: auto; min-height: calc(100dvh - 124px);
-  grid-template-rows: auto minmax(max-content, 1fr) auto;
-}
-/* La barre des réactions suit le document au lieu de flotter : rien ne recouvre jamais la main. */
-.tarot .reactions { position: static; background: none; padding-top: 4px; }
 
 /* Cinq sièges : deux en haut, un de chaque côté, le joueur en bas. */
 .table-jeu-grille.cinq {
   grid-template-columns: minmax(70px, 1fr) minmax(0, 3fr) minmax(70px, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(max-content, 1fr) auto;
   grid-template-areas:
     "haut-gauche haut-gauche haut-droite"
     "gauche centre droite"

@@ -6,6 +6,24 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.2"></a>
+## 0.6.2 — 16 octobre 2026
+
+**iPhone en mode application : le menu redevient accessible, rien ne couvre la main.**
+
+Corrigé
+- Installé sur l'écran d'accueil d'un iPhone, le site occupe tout l'écran, barre d'état
+  comprise : le bandeau de statut et les boutons menu et thème passaient sous l'heure et la
+  batterie, le menu devenait inaccessible. Tout ce qui est fixé en haut (drapeau, statut,
+  boutons) et en bas respecte maintenant les zones réservées de l'appareil
+  (`env(safe-area-inset-*)`).
+- La barre « Réactions / Phrases » flottait au-dessus de la main au 8 Américain et la
+  cachait sur un petit écran : elle est dans le flux, sous les cartes, dans les trois jeux.
+  La grille de table ne s'écrase plus : elle peut dépasser l'écran et la page défiler.
+- Le bandeau de statut laisse la place aux deux boutons de droite au lieu de passer dessous.
+
+---
+
 <a name="v0.6.1"></a>
 ## 0.6.1 — 16 octobre 2026
 

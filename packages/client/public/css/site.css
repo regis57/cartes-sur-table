@@ -124,7 +124,9 @@ body {
   top: 0;
   left: 0;
   width: 96px;
-  height: 64px;
+  height: calc(64px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   border-bottom-right-radius: 40px;
@@ -135,7 +137,7 @@ body {
 .drapeau span:nth-child(1) { background: #0055a4; }
 .drapeau span:nth-child(2) { background: #ffffff; }
 .drapeau span:nth-child(3) { background: #ef4135; }
-.drapeau.petit { width: 60px; height: 40px; border-bottom-right-radius: 24px; }
+.drapeau.petit { width: 60px; height: calc(40px + env(safe-area-inset-top, 0px)); border-bottom-right-radius: 24px; }
 
 h1, h2, h3 { font-family: var(--police-titre); font-weight: 600; line-height: 1.15; margin: 0 0 0.5em; letter-spacing: 0.005em; }
 h1 { font-size: clamp(2.4rem, 6vw, 4rem); }
@@ -340,11 +342,11 @@ dialog h2 { margin-top: 0; }
 
 /* Bouton jour / nuit */
 .theme-btn {
-  position: fixed; top: 12px; right: 68px; z-index: 60;
+  position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(68px + env(safe-area-inset-right, 0px)); z-index: 60;
   width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--panneau-bord);
   background: var(--toast-fond); color: var(--toast-texte); font-size: 1.4rem; line-height: 1; cursor: pointer;
 }
-body:not(.jeu) .theme-btn { right: 16px; }
+body:not(.jeu) .theme-btn { right: calc(16px + env(safe-area-inset-right, 0px)); }
 .theme-btn:hover { border-color: var(--laiton); }
 
 /* Lisibilité : formulaires et étiquettes */
