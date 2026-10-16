@@ -82,6 +82,12 @@ export interface GameDefinition<S, M, V> {
   matchWinner(state: S): number | null;
 
   /**
+   * Tous les sièges vainqueurs, pour un jeu par équipes (facultatif). Par défaut, le seul
+   * siège renvoyé par `matchWinner`. Chacun d'eux compte la partie comme gagnée.
+   */
+  matchWinners?(state: S): number[];
+
+  /**
    * Ce que le siège a le droit de voir. C'est la SEULE chose envoyée aux clients.
    * Doit être sérialisable en JSON et ne contenir aucun identifiant interne.
    */

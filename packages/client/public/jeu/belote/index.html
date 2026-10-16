@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  Jeux de cartes — Copyright (C) 2026 regis57
+  Licensed under the GNU Affero General Public License v3.0 or later.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Belote — Jeux de cartes</title>
+  <meta name="description" content="Jouez à la belote classique en ligne, à quatre par équipes : solo contre des bots, à plusieurs, ou entre amis avec un code. Retourne, atout, belote-rebelote, annonces, dix de der.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="theme-color" content="#1e6b45">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Cartes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/jeu.css">
+  <link rel="stylesheet" href="/css/belote.css">
+  <script type="module" src="/js/jeu-belote.js"></script>
+</head>
+<body class="jeu belote" data-game="belote">
+  <a class="drapeau petit" href="/" aria-label="Jeux de cartes, accueil"><span></span><span></span><span></span></a>
+
+  <section id="lobby" class="lobby"></section>
+
+  <section id="table" hidden>
+    <div class="barre"><div class="statut" id="statut" role="status" aria-live="polite"></div></div>
+    <button type="button" class="menu-btn" data-action="menu" aria-label="Menu"><i></i><i></i><i></i></button>
+    <div class="table-jeu-grille quatre">
+      <div class="siege haut" id="siege-2"><div class="etiquette"></div><div class="main horizontale"></div></div>
+      <div class="siege gauche" id="siege-1"><div class="etiquette"></div><div class="main verticale"></div></div>
+      <div class="centre">
+        <div class="contrat" id="contrat"></div>
+        <div class="pli" id="pli"></div>
+        <div class="retourne" id="retourne" hidden></div>
+        <div class="annonces" id="annonces" hidden></div>
+        <div class="choix" id="choix"></div>
+        <div class="compteur-plis" id="plis"></div>
+      </div>
+      <div class="siege droite" id="siege-3"><div class="etiquette"></div><div class="main verticale"></div></div>
+      <div class="siege bas" id="siege-0"><div class="etiquette"></div><div class="main horizontale moi" id="ma-main"></div></div>
+    </div>
+    <div class="reactions">
+      <button type="button" data-action="open-emojis" data-i18n="table.emotes">Réactions</button>
+      <button type="button" data-action="open-phrases" data-i18n="table.phrases">Phrases</button>
+    </div>
+  </section>
+</body>
+</html>

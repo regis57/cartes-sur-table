@@ -67,6 +67,7 @@ export interface RoundEndInfo {
   round: number;
   matchOver: boolean;
   winner: number | null;
+  winners: number[];
   /** Succès propres au jeu, par siège (vide pour un bot). */
   achievements: string[][];
   seats: readonly Seat[];
@@ -205,13 +206,14 @@ export class Table<S, M, V> {
     const summary: RoundSummary = this.def.roundSummary(this.state);
     const matchOver = this.def.isMatchOver(this.state);
     const winner = matchOver ? this.def.matchWinner(this.state) : null;
+    const winners = matchOver ? (this.def.matchWinners?.(this.state) ?? (winner === null ? [] : [winner])) : [];
     this.phase = matchOver ? 'matchEnd' : 'roundEnd';
     const achievements = this.seats.map((s, i) =>
-      s.isBot ? [] : this.def.achievements(this.state, i, { matchOver, wonMatch: winner === i, rounds: this.round }),
+      s.isBot ? [] : this.def.achievements(this.state, i, { matchOver, wonMatch: winners.includes(i), rounds: this.round }),
     );
     this.broadcastViews();
-    this.out.toAll('roundEnd', { tableId: this.id, round: this.round, summary, seats: this.publicSeats(), matchOver, winner, achievements });
-    this.onRoundEnd?.({ tableId: this.id, round: this.round, matchOver, winner, achievements, seats: this.seats });
+    this.out.toAll('roundEnd', { tableId: this.id, round: this.round, summary, seats: this.publicSeats(), matchOver, winner, winners, achievements });
+    this.onRoundEnd?.({ tableId: this.id, round: this.round, matchOver, winner, winners, achievements, seats: this.seats });
     // Une table sans humain ne doit pas tourner à vide.
     if (!this.anyoneExpected) this.destroy();
   }

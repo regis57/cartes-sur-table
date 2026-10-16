@@ -6,6 +6,37 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+## 0.5.0 — 16 octobre 2026
+
+**La belote, et la version affichée dans « À propos ».**
+
+Ajouté
+- **La belote** (`packages/games/belote`) : la belote classique à quatre, par équipes, la
+  retourne et ses deux tours d'enchères, l'atout (Valet 20, 9 14), l'obligation de fournir,
+  de couper et de surcouper sauf partenaire maître, belote-rebelote annoncée d'office, les
+  annonces (tierce, cinquante, cent, carrés) déclarées d'office et montrées après le
+  premier pli, le dix de der, « dedans », l'égalité mise en réserve pour la donne suivante,
+  le capot à 252, la partie en 1000 points. Solo, en ligne et entre amis, règles dans la
+  page des règles, douze phrases, six succès. Le bot est une heuristique propre au jeu
+  (`botMove`) ; la défausse libre et les renonces observées nourrissent le monde que tire
+  `determinize` pour la recherche Monte-Carlo si on l'emploie.
+- **Les jeux par équipes** : le contrat gagne `matchWinners` (facultatif). Les deux
+  partenaires comptent la partie comme gagnée, dans les statistiques comme dans les succès ;
+  l'écran de fin nomme les deux. Rien ne change pour les jeux à un vainqueur.
+- **La version dans « À propos »** : la page lit `/api/version` et affiche la version en
+  cours (et la révision), avec un lien vers l'étiquette `vX.Y.Z` de cette version dans le
+  dépôt. Chaque version fusionnée sur `main` est donc étiquetée, ce qui lance aussi la
+  publication de l'image portant ce numéro.
+- Raccourci « Jouer à la belote » dans l'application installée.
+
+À savoir
+- Il n'existe pas de dépôt d'origine pour la belote, contrairement au 8 Américain et au
+  tarot : les règles retenues sont celles de la belote classique française ; les points
+  discutés d'une table à l'autre (annonces d'office, égalité en réserve, partie en 1000)
+  sont écrits noir sur blanc dans la page des règles.
+
+---
+
 ## 0.4.2 — 16 octobre 2026
 
 **Sauvegarde et mise à jour du NAS, en tâches planifiées.**

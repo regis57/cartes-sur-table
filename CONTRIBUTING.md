@@ -31,7 +31,8 @@ Les commits portent une adresse `@users.noreply.github.com`.
    Un coup = un choix : si une décision porte sur plusieurs cartes (un écart), la découper
    en autant de coups ; c'est ce qui garde `legalMoves` énumérable et le bot capable de
    raisonner. Si le jeu a sa propre stratégie de bot, la brancher par `botMove` (facultatif) ;
-   sinon le MCTS générique joue avec `rolloutMove`.
+   sinon le MCTS générique joue avec `rolloutMove`. Dans un jeu par équipes, renvoyer tous
+   les vainqueurs par `matchWinners` (la belote le fait) : chacun compte la partie gagnée.
 3. Enregistrer le jeu dans `packages/server/src/games.ts`.
 4. Écrire les tests, en copiant la structure de `test/rules.test.ts` :
    - création de manche, coups légaux (clés uniques), coups illégaux refusés, fin de manche
@@ -48,7 +49,12 @@ Les commits portent une adresse `@users.noreply.github.com`.
    tout le parcours (identité, modes, file, table privée, niveau, nombre de joueurs, règles,
    menu, réactions, fin de manche, reprise). Les mots propres au jeu (« donne » plutôt que
    « manche ») se posent sous `games.<mon-jeu>.ui`.
-6. Mettre à jour `README.md` et la page « À propos ».
+6. Mettre à jour `README.md`, la page « À propos » (liste des règles), le raccourci dans
+   `manifest.webmanifest`, la liste des succès de `profil.ts` et les tests du serveur.
+7. Monter la version (`package.json`, `package-lock.json`, `sw.js`), écrire l'entrée du
+   journal, et après la fusion sur `main`, poser l'étiquette `vX.Y.Z` sur le commit de
+   fusion : la page « À propos » du site pointe dessus, et c'est elle qui publie l'image
+   portant ce numéro.
 
 ## Ce qu'on ne fait pas
 

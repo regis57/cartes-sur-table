@@ -369,7 +369,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       if (!info.matchOver) return;
       info.seats.forEach((s, i) => {
         if (s.isBot || !s.profileId) return;
-        const fresh = store.recordMatch(s.profileId, game.meta.id, { won: info.winner === i, rounds: info.round, gameAchievements: info.achievements[i] ?? [] });
+        const fresh = store.recordMatch(s.profileId, game.meta.id, { won: info.winners.includes(i), rounds: info.round, gameAchievements: info.achievements[i] ?? [] });
         if (fresh.length > 0 && s.humanId) nsp.to(s.humanId).emit('achievements', { codes: fresh });
       });
     }

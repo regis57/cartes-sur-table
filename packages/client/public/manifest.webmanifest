@@ -70,6 +70,17 @@
       ]
     },
     {
+      "name": "Jouer à la belote",
+      "short_name": "Belote",
+      "url": "/jeu/belote/",
+      "icons": [
+        {
+          "src": "/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Mon profil",
       "short_name": "Profil",
       "url": "/profil/",

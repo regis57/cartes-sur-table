@@ -79,7 +79,8 @@ test('HTTP : en-têtes de sécurité, pages servies, rien de caché ni de hors-d
     assert.deepEqual(g.games.map((x: { id: string }) => x.id), ['huit-americain', 'tarot', 'belote']);
     assert.deepEqual(g.games[1].seatCounts, [4, 5]);
     assert.equal(g.games[1].status, 'available');
-    assert.equal(g.games[2].status, 'soon');
+    assert.equal(g.games[2].status, 'available');
+    assert.deepEqual(g.games[2].seatCounts, [4]);
     assert.equal(g.avatars, 12);
   } finally {
     await server.close();
@@ -419,7 +420,8 @@ test('Cohérence : le dictionnaire du client couvre les émoticônes, les phrase
   }
   for (const code of ['premiere-partie', 'premiere-victoire', 'dix-victoires', 'cinquante-parties', 'touche-a-tout',
     'huit-americain:huit-magique', 'huit-americain:sans-pioche', 'huit-americain:coup-du-sept', 'huit-americain:manche-parfaite',
-    'tarot:garde-sans-filet', 'tarot:trois-bouts', 'tarot:petit-au-bout', 'tarot:grande-poignee', 'tarot:defense-de-fer', 'tarot:maitre-du-tarot']) {
+    'tarot:garde-sans-filet', 'tarot:trois-bouts', 'tarot:petit-au-bout', 'tarot:grande-poignee', 'tarot:defense-de-fer', 'tarot:maitre-du-tarot',
+    'belote:capot', 'belote:belle-prise', 'belote:dedans', 'belote:belote-rebelote', 'belote:cent', 'belote:maitre-de-la-belote']) {
     assert.ok(fr.achievements[code]?.name, code);
   }
 });

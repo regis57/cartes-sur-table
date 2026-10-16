@@ -47,7 +47,23 @@
     },
     "belote": {
       "name": "Belote",
-      "blurb": "À quatre, par équipes, avec l'atout et les annonces."
+      "blurb": "La belote classique à quatre, par équipes : la retourne, l'atout, belote-rebelote, les annonces d'office et le dix de der. La partie se joue en 1000 points.",
+      "rules": {
+        "1": "32 cartes (du 7 à l'As), quatre joueurs en deux équipes : les partenaires se font face. Chacun reçoit cinq cartes (trois puis deux) et une carte est retournée.",
+        "2": "Premier tour, à partir de la gauche du donneur : chacun prend la retourne (sa couleur devient l'atout) ou passe. Si tout le monde passe, second tour : chacun peut nommer une autre couleur comme atout, ou passer. Deux tours sans preneur : on redonne, et la donne ne compte pas.",
+        "3": "Le preneur reçoit la retourne et deux cartes, les autres en reçoivent trois : huit cartes chacun. On entame à gauche du donneur, et le gagnant d'un pli entame le suivant.",
+        "4": "Il faut fournir la couleur demandée. Sinon, il faut couper, et surcouper si l'on peut — sauf si le partenaire est maître du pli, auquel cas on joue ce que l'on veut. Quand l'atout est demandé, il faut monter si l'on peut. Sans atout, on défausse.",
+        "5": "À l'atout : Valet 20, 9 14, As 11, 10 10, Roi 4, Dame 3. Dans les autres couleurs : As 11, 10 10, Roi 4, Dame 3, Valet 2. Le dernier pli rapporte 10 points de plus (le dix de der) : 162 points par donne.",
+        "6": "Belote-rebelote : le Roi et la Dame d'atout dans la même main valent 20 points, annoncés d'office à la pose de la première des deux, et toujours acquis à l'équipe qui les détient.",
+        "7": "Annonces, déclarées d'office et montrées après le premier pli : tierce (trois cartes qui se suivent dans une couleur) 20, cinquante (quatre) 50, cent (cinq) 100 ; carré de Valets 200, de 9 150, d'As, de 10, de Rois ou de Dames 100. Seule l'équipe qui détient la plus forte annonce marque les siennes. À annonce égale, l'atout l'emporte ; sinon personne ne marque.",
+        "8": "L'équipe du preneur doit totaliser strictement plus que la défense, annonces comprises. Sinon elle est « dedans » : la défense marque 162 points plus toutes les annonces. À égalité parfaite, la défense marque ses points et ceux du preneur sont mis en réserve pour le vainqueur de la donne suivante. Capot (tous les plis) : 252 points. La première équipe à 1000 points gagne la partie."
+      },
+      "ui": {
+        "round_end": "Fin de la donne",
+        "next_round": "Donne suivante",
+        "round_won_by": "Donne remportée par {name}",
+        "round_no_winner": "Donne terminée."
+      }
     },
     "tarot": {
       "name": "Tarot",
@@ -123,6 +139,7 @@
     "next_round": "Manche suivante",
     "match_end": "Fin de la partie",
     "match_winner": "{name} gagne la partie",
+    "match_winners": "{names} gagnent la partie",
     "play_again": "Rejouer une partie",
     "quit": "Quitter la table",
     "quit_confirm": "Quitter la table ? Un bot prendra votre place.",
@@ -170,6 +187,20 @@
       "coupe": "Je coupe !",
       "le-petit": "Attention au Petit…",
       "excuse": "Excuse !",
+      "au-revoir": "Merci, au revoir !"
+    },
+    "belote": {
+      "bien-joue": "Bien joué !",
+      "joli-pli": "Joli pli.",
+      "a-toi": "À toi.",
+      "pas-de-chance": "Pas de chance…",
+      "je-reflechis": "Je réfléchis.",
+      "on-y-va": "On y va !",
+      "je-prends": "Je prends !",
+      "je-passe": "Je passe.",
+      "coupe": "Je coupe !",
+      "belote": "Belote…",
+      "rebelote": "… et rebelote !",
       "au-revoir": "Merci, au revoir !"
     }
   },
@@ -248,6 +279,30 @@
     "tarot:maitre-du-tarot": {
       "name": "Maître du tarot",
       "desc": "Gagner une partie de tarot."
+    },
+    "belote:capot": {
+      "name": "Capot",
+      "desc": "Remporter les huit plis de la donne avec son équipe."
+    },
+    "belote:belle-prise": {
+      "name": "Belle prise",
+      "desc": "Réussir une prise avec au moins 120 points de cartes."
+    },
+    "belote:dedans": {
+      "name": "Dedans !",
+      "desc": "Faire chuter le preneur adverse."
+    },
+    "belote:belote-rebelote": {
+      "name": "Belote-rebelote",
+      "desc": "Détenir le Roi et la Dame d'atout dans une donne."
+    },
+    "belote:cent": {
+      "name": "Cent",
+      "desc": "Marquer une annonce de cent points ou plus."
+    },
+    "belote:maitre-de-la-belote": {
+      "name": "Maître de la belote",
+      "desc": "Gagner une partie de belote."
     }
   },
   "profile": {
@@ -466,5 +521,67 @@
     "title": "Les règles",
     "intro": "Les règles appliquées par le serveur, telles quelles. Elles sont aussi consultables en cours de partie, par le menu en haut à droite.",
     "toc": "Les jeux"
+  },
+  "belote": {
+    "trump": "Atout",
+    "trump_is": "Atout {suit}",
+    "turned": "Retourne",
+    "bidding": "Qui prend ?",
+    "your_bid_1": "Prenez-vous la retourne ?",
+    "your_bid_2": "Choisissez un atout, ou passez",
+    "bid_of": "{name} décide",
+    "take": "Je prends",
+    "take_suit": "Atout {suit}",
+    "pass": "Je passe",
+    "taken_by": "{name} a pris",
+    "team_we": "Nous",
+    "team_them": "Eux",
+    "team_n": "Équipe {n}",
+    "trick_n": "Pli {n} / {total}",
+    "round_n": "Donne {n}",
+    "target": "Partie en {n} points",
+    "litige": "{n} points en litige",
+    "forced_play": "Une seule carte possible : elle est jouée pour vous.",
+    "role": {
+      "preneur": "Preneur",
+      "partenaire": "Partenaire",
+      "defense": "Défense"
+    },
+    "role_col": "Rôle",
+    "result_col": "Résultat",
+    "contract_won": "Prise réussie",
+    "contract_lost": "Dedans",
+    "litige_result": "Égalité : points en réserve",
+    "capot": "Capot !",
+    "cards_points": "Cartes : {a} à {b}",
+    "belote_points": "Belote-rebelote +20 ({name})",
+    "declarations_points": "Annonces : +{n} pour {team}",
+    "declaration": {
+      "tierce": "Tierce",
+      "cinquante": "Cinquante",
+      "cent": "Cent",
+      "carre": "Carré"
+    },
+    "scored": "Marque : {a} / {b}",
+    "history": "La partie",
+    "won_short": "réussie",
+    "lost_short": "dedans",
+    "litige_short": "égalité",
+    "donne_won": "{name} réussit sa prise",
+    "donne_lost": "{name} est dedans",
+    "donne_litige": "Égalité : la donne suivante tranchera",
+    "event": {
+      "redeal": "Tout le monde passe : nouvelle donne",
+      "pass": "{name} passe",
+      "take": "{name} prend à {suit}",
+      "belote": "{name} : belote",
+      "rebelote": "{name} : rebelote !",
+      "declarations": "{team} marquent {n} points d'annonces",
+      "trick": "{name} remporte le pli"
+    },
+    "points_so_far": "{a} – {b}",
+    "dealer": "donne",
+    "belote_badge": "belote",
+    "declarations_none": "Annonces égales : personne ne marque"
   }
 }
