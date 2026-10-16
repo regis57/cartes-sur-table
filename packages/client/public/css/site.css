@@ -345,3 +345,25 @@ small { font-size: 0.92em; }
 .passkey { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 10px; background: var(--champ-fond); border: 1px solid var(--panneau-bord); }
 .passkey small { display: block; opacity: 0.85; }
 .btn.petit { min-height: 40px; padding: 6px 14px; font-size: 0.95em; }
+
+/* --- Installation de l'application ------------------------------------------------ */
+.bandeau-install {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 16px; margin: 24px 0; padding: 18px 20px;
+  background: var(--panneau); border: 1px solid var(--panneau-bord); border-radius: var(--rayon);
+}
+.bandeau-install p { margin: 0; max-width: 46ch; }
+.etapes { margin: 0; padding-left: 1.4em; }
+.etapes li { margin: 0 0 12px; line-height: 1.55; }
+.autres { display: flex; flex-direction: column; gap: 10px; }
+.autre {
+  border: 1px solid var(--panneau-bord); border-radius: 10px;
+  background: var(--champ-fond); padding: 4px 16px;
+}
+.autre > summary {
+  cursor: pointer; padding: 12px 0; font-weight: 600;
+  min-height: 44px; display: flex; align-items: center;
+}
+.autre > summary:focus-visible { outline: var(--focus); outline-offset: 2px; }
+.autre[open] > summary { border-bottom: 1px solid var(--panneau-bord); margin-bottom: 12px; }
+.autre .etapes { padding-bottom: 8px; }

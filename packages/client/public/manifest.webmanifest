@@ -1,10 +1,32 @@
 {
-  "name": "Jeux de cartes",
+  "id": "/",
+  "name": "Cartes sur table — jeux de cartes français",
   "short_name": "Cartes",
-  "start_url": "/",
+  "description": "Les jeux de cartes français dans le navigateur : 8 Américain, puis belote et tarot. Solo contre des bots, à plusieurs ou entre amis. Sans compte obligatoire, sans publicité, sans pistage.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#1e6b45",
   "theme_color": "#1e6b45",
   "lang": "fr",
-  "icons": [{ "src": "/img/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/img/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Jouer au 8 Américain", "short_name": "8 Américain", "url": "/jeu/huit-americain/", "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mon profil", "short_name": "Profil", "url": "/profil/", "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "screenshots": [
+    { "src": "/img/ecran-accueil.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "L'accueil : choisir un jeu et une table" },
+    { "src": "/img/ecran-partie.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "Une partie de 8 Américain" },
+    { "src": "/img/ecran-accueil-mobile.png", "sizes": "412x915", "type": "image/png", "form_factor": "narrow", "label": "L'accueil sur téléphone" },
+    { "src": "/img/ecran-partie-mobile.png", "sizes": "412x915", "type": "image/png", "form_factor": "narrow", "label": "Une partie sur téléphone" }
+  ]
 }

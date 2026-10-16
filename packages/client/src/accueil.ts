@@ -7,6 +7,48 @@ import { $, h, img, show, hide, toast } from './ui.ts';
 import { loadLocale, t, has } from './i18n.ts';
 import { fetchProfile, getGuest, setGuest } from './profile.ts';
 import { avatarSrc, renderAvatarPicker } from './avatars.ts';
+import { dejaInstallee, enregistrerAgent, installer, inviteDisponible, surChangement } from './installer.ts';
+
+const LS_INSTALL_REFUSE = 'jdc.install.plus-tard';
+
+/**
+ * Bandeau d'installation : seulement quand le navigateur sait le faire en un clic,
+ * que l'application n'est pas déjà installée, et que la personne ne l'a pas écarté.
+ * Ailleurs (iPhone, Firefox), la page « Installer l'application » du pied explique
+ * la marche à suivre : on ne harcèle personne avec un bandeau qu'on ne peut pas honorer.
+ */
+function bandeauInstallation(): void {
+  const bandeau = $('bandeau-install');
+  let ecarte = false;
+  try {
+    ecarte = localStorage.getItem(LS_INSTALL_REFUSE) === '1';
+  } catch {
+    /* stockage indisponible : on montrera le bandeau, sans insister davantage */
+  }
+  const maj = (): void => {
+    if (!ecarte && !dejaInstallee() && inviteDisponible()) show(bandeau);
+    else hide(bandeau);
+  };
+  surChangement(maj);
+  maj();
+
+  $('btn-install-accueil').addEventListener('click', () => {
+    void (async () => {
+      const res = await installer();
+      if (res === true) toast(t('install.done'), 'succes');
+      maj();
+    })();
+  });
+  $('btn-install-plus-tard').addEventListener('click', () => {
+    ecarte = true;
+    try {
+      localStorage.setItem(LS_INSTALL_REFUSE, '1');
+    } catch {
+      /* rien à mémoriser : le bandeau reviendra au prochain passage */
+    }
+    hide(bandeau);
+  });
+}
 
 interface GameMeta {
   id: string;
@@ -17,6 +59,8 @@ interface GameMeta {
 
 async function main(): Promise<void> {
   await loadLocale();
+  enregistrerAgent();
+  bandeauInstallation();
 
   const profile = await fetchProfile().catch(() => null);
   if (profile) {

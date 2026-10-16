@@ -61,6 +61,19 @@ npm run verify                        # typage strict, tests, construction, audi
 La branche `main` est protégée : pull request obligatoire, contrôles verts requis, commits
 signés, squash seulement, pas de force-push (`.github/rulesets/protect-main.json`).
 
+## Installer l'application
+
+Le site s'installe comme une application — icône sur le bureau, le Dock ou l'écran
+d'accueil, et ouverture dans sa propre fenêtre. En un clic sur Chrome, Edge, Opera,
+Samsung Internet et Firefox pour Android ; à la main sur iPhone, iPad et Safari, parce
+qu'Apple l'impose. La page `/installer/` détaille la marche à suivre pour chaque
+navigateur, en affichant d'abord celui de la personne.
+
+Un agent de service (`packages/client/public/sw.js`) rend le démarrage instantané et
+l'accueil disponible sur réseau capricieux. Il ne met en cache que les fichiers publics :
+ni `/api/`, ni `/socket.io/`, ni aucune page de profil. Jouer demande toujours une
+connexion — les parties se déroulent sur le serveur, y compris contre les bots.
+
 ## Sécurité et journal
 
 - [docs/MANIFESTE-SECURITE.md](docs/MANIFESTE-SECURITE.md) : ce que le site promet aux

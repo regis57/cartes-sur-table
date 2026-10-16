@@ -10,6 +10,12 @@
   <title>Jeux de cartes — 8 Américain, belote, tarot en ligne</title>
   <meta name="description" content="Les jeux de cartes français, en ligne, dans le navigateur : solo contre des bots, à plusieurs, entre amis. Sans compte, sans publicité, sans pistage.">
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="theme-color" content="#1e6b45">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Cartes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/css/site.css">
   <script type="module" src="/js/accueil.js"></script>
@@ -45,8 +51,18 @@
 
     <section class="tables" id="tables" aria-label="Jeux"></section>
 
+    <aside class="bandeau-install" id="bandeau-install" hidden>
+      <p><strong data-i18n="site.install_title">Installer l'application</strong><br>
+        <span data-i18n="site.install_hint"></span></p>
+      <div class="boutons">
+        <button type="button" class="btn btn-laiton" id="btn-install-accueil" data-i18n="site.install">Installer l'application</button>
+        <button type="button" class="btn btn-craie" id="btn-install-plus-tard" data-i18n="site.later">Plus tard</button>
+      </div>
+    </aside>
+
     <footer class="pied">
       <a href="/a-propos/" data-i18n="site.about">À propos</a>
+      <a href="/installer/" data-i18n="site.install">Installer l'application</a>
       <a href="/soutenir/" data-i18n="site.support">Soutenir</a>
       <a href="/donnees/" data-i18n="site.data">Vos données</a>
       <a href="/confidentialite/" data-i18n="site.privacy">Confidentialité</a>

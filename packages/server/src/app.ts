@@ -294,6 +294,12 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       maxAge: '1h',
       setHeaders: (res, filePath) => {
         if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+        // L'agent de service pilote tout le site : il doit pouvoir sortir de son dossier,
+        // et ne jamais rester en cache, sinon une version corrigée n'arriverait jamais.
+        if (filePath.endsWith('sw.js')) {
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Service-Worker-Allowed', '/');
+        }
       },
     }),
   );

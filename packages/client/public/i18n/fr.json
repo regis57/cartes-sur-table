@@ -26,7 +26,11 @@
     "loading": "Chargement…",
     "offline": "Connexion au serveur impossible. Réessayez dans un instant.",
     "busy": "Le serveur est complet pour le moment. Réessayez dans un instant.",
-    "copied": "Copié"
+    "copied": "Copié",
+    "install": "Installer l'application",
+    "install_title": "Installer l'application",
+    "install_hint": "Une icône sur votre bureau ou votre écran d'accueil, et le jeu s'ouvre dans sa propre fenêtre. Rien à télécharger.",
+    "later": "Plus tard"
   },
   "games": {
     "huit-americain": {
@@ -237,5 +241,99 @@
     "sessions": "{n} connexion(s) par passkey active(s) sur vos appareils.",
     "revoke": "Déconnecter les autres appareils",
     "revoked": "{n} connexion(s) fermée(s). Le code de récupération et les passkeys restent valables."
+  },
+  "install": {
+    "title": "Installer l'application",
+    "intro": "Cartes sur table peut s'installer comme une application : une icône sur votre bureau ou votre écran d'accueil, et le jeu s'ouvre dans sa propre fenêtre, sans barre d'adresse. Rien à télécharger sur une boutique, rien de plus à accepter.",
+    "already_title": "C'est déjà fait",
+    "already": "Vous utilisez déjà l'application installée. Il n'y a rien à faire de plus.",
+    "play": "Jouer",
+    "one_click_title": "En un clic",
+    "one_click": "Votre navigateur sait installer le site tout seul. Cliquez, puis confirmez dans la fenêtre qu'il affiche.",
+    "action": "Installer l'application",
+    "done": "Application installée. Son icône est sur votre bureau.",
+    "manual": "Votre navigateur n'a pas proposé la fenêtre d'installation. Suivez la marche à suivre ci-dessous.",
+    "steps_title": "La marche à suivre",
+    "steps_fallback_title": "Ou bien, à la main",
+    "other_title": "Un autre appareil, un autre navigateur",
+    "other_intro": "Chaque navigateur s'y prend à sa façon. Dépliez celui qui vous concerne.",
+    "what_title": "Ce que l'installation change, et ne change pas",
+    "what_1": "Une icône apparaît sur votre bureau, votre menu Démarrer, votre Dock ou votre écran d'accueil.",
+    "what_2": "Le jeu s'ouvre dans sa propre fenêtre, sans barre d'adresse ni onglets : plus de place pour les cartes, et des caractères plus lisibles.",
+    "what_3": "Le démarrage est plus rapide, et la page d'accueil s'affiche même quand le réseau hésite. Jouer demande en revanche toujours une connexion : les parties se déroulent sur le serveur.",
+    "what_4": "Rien de plus n'est collecté. C'est le même site, le même profil, les mêmes règles de confidentialité, et aucune autorisation n'est demandée à votre appareil.",
+    "remove": "Pour désinstaller : clic droit sur l'icône puis « Désinstaller » sur ordinateur, appui long puis « Supprimer » sur téléphone. Votre profil, lui, reste sur le serveur tant que vous ne le supprimez pas depuis la page Profil.",
+    "ios-safari": {
+      "titre": "iPhone et iPad (Safari)",
+      "intro": "Apple ne permet pas à un site d'installer l'application à votre place : le geste doit venir de vous. Il prend dix secondes.",
+      "1": "Vérifiez que cette page est ouverte dans Safari, le navigateur d'Apple (icône bleue en forme de boussole).",
+      "2": "Touchez le bouton Partager : un carré d'où sort une flèche vers le haut. Il est en bas de l'écran sur iPhone, en haut à droite sur iPad.",
+      "3": "Faites défiler la liste vers le bas jusqu'à la ligne « Sur l'écran d'accueil ».",
+      "4": "Touchez « Ajouter », en haut à droite.",
+      "5": "L'icône verte aux trois cartes apparaît sur votre écran d'accueil. Touchez-la pour jouer.",
+      "note": "C'est une règle d'iPhone et d'iPad, pas un oubli de notre part : aucun site, quel qu'il soit, ne peut s'installer seul sur un appareil Apple."
+    },
+    "ios-autre": {
+      "titre": "iPhone et iPad (Chrome, Firefox, Edge)",
+      "intro": "Sur iPhone et iPad, tous les navigateurs reposent sur le moteur de Safari, et l'installation passe par le menu de partage.",
+      "1": "Touchez le bouton Partager de votre navigateur : un carré d'où sort une flèche vers le haut, ou le menu à trois points.",
+      "2": "Cherchez la ligne « Sur l'écran d'accueil » et touchez-la.",
+      "3": "Touchez « Ajouter ».",
+      "4": "Si cette ligne n'existe pas dans votre navigateur, ouvrez simplement la même adresse dans Safari : la marche à suivre y est toujours disponible."
+    },
+    "android-chrome": {
+      "titre": "Android (Chrome)",
+      "1": "Touchez le menu en haut à droite : trois points l'un au-dessus de l'autre.",
+      "2": "Choisissez « Installer l'application » — selon la version, la ligne s'appelle « Ajouter à l'écran d'accueil ».",
+      "3": "Confirmez par « Installer ».",
+      "4": "L'icône rejoint votre écran d'accueil et votre tiroir d'applications."
+    },
+    "android-samsung": {
+      "titre": "Android (Samsung Internet)",
+      "1": "Touchez le menu en bas à droite : trois traits horizontaux.",
+      "2": "Choisissez « Ajouter la page à », puis « Écran d'accueil ».",
+      "3": "Confirmez par « Ajouter »."
+    },
+    "android-firefox": {
+      "titre": "Android (Firefox)",
+      "1": "Touchez le menu à trois points, à droite de la barre d'adresse.",
+      "2": "Choisissez « Installer », ou « Ajouter à l'écran d'accueil ».",
+      "3": "Confirmez par « Ajouter »."
+    },
+    "bureau-chromium": {
+      "titre": "Ordinateur (Chrome, Edge, Opera, Brave)",
+      "1": "Regardez la barre d'adresse, tout à droite : une petite icône d'écran avec une flèche vers le bas apparaît. Cliquez dessus.",
+      "2": "Si vous ne la voyez pas, ouvrez le menu en haut à droite — trois points sur Chrome, trois points alignés horizontalement sur Edge — puis « Installer Cartes sur table… ». Sur Edge, passez d'abord par la ligne « Applications ».",
+      "3": "Confirmez par « Installer ».",
+      "4": "Le raccourci est ajouté au bureau, au menu Démarrer ou au Dock, selon votre système."
+    },
+    "bureau-safari": {
+      "titre": "Mac (Safari)",
+      "1": "Dans la barre de menus tout en haut de l'écran, ouvrez le menu « Fichier ».",
+      "2": "Choisissez « Ajouter au Dock… ».",
+      "3": "Vérifiez le nom proposé, puis cliquez sur « Ajouter ».",
+      "note": "Cette possibilité existe depuis macOS Sonoma. Sur une version plus ancienne, utilisez Chrome ou Edge, ou gardez simplement le site en favori."
+    },
+    "bureau-firefox": {
+      "titre": "Ordinateur (Firefox)",
+      "intro": "Firefox pour ordinateur ne sait pas installer un site comme application. Deux solutions, au choix.",
+      "1": "Ouvrir cette page dans Chrome, Edge ou Safari, et suivre leur marche à suivre. L'application et Firefox peuvent très bien cohabiter.",
+      "2": "Ou garder le site en favori dans Firefox : appuyez sur Ctrl+D (Cmd+D sur Mac). Le jeu fonctionne exactement pareil, dans un onglet.",
+      "note": "Sur Android, en revanche, Firefox sait installer l'application."
+    },
+    "inconnue": {
+      "titre": "Votre navigateur",
+      "intro": "Nous n'avons pas reconnu votre navigateur. La manœuvre est partout la même, à l'intitulé près.",
+      "1": "Ouvrez le menu principal de votre navigateur.",
+      "2": "Cherchez une ligne « Installer », « Installer l'application » ou « Ajouter à l'écran d'accueil ».",
+      "3": "Confirmez. Si rien de tel n'existe, gardez simplement le site en favori : tout fonctionne de la même façon."
+    }
+  },
+  "offline": {
+    "title": "Pas de connexion",
+    "intro": "Votre appareil n'arrive pas à joindre le site. Vérifiez le wifi ou les données mobiles, puis réessayez.",
+    "why": "Les parties se déroulent sur le serveur, y compris contre les bots : il faut donc une connexion pour jouer. Nous préférons vous le dire plutôt que de faire semblant.",
+    "retry": "Réessayer",
+    "kept": "Rien n'est perdu : votre profil, vos statistiques et vos succès vous attendent."
   }
 }

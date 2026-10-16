@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  Jeux de cartes — Copyright (C) 2026 regis57
+  Licensed under the GNU Affero General Public License v3.0 or later.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Installer l'application — Cartes sur table</title>
+  <meta name="description" content="Installer Cartes sur table comme une application, sur ordinateur, sur Android et sur iPhone ou iPad. La marche à suivre pour chaque navigateur.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="theme-color" content="#1e6b45">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Cartes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/css/site.css">
+  <script type="module" src="/js/installer-page.js"></script>
+</head>
+<body>
+  <a class="drapeau" href="/" aria-label="Cartes sur table, accueil"><span></span><span></span><span></span></a>
+  <main class="page etroite">
+    <h1 data-i18n="install.title">Installer l'application</h1>
+    <p data-i18n="install.intro"></p>
+
+    <section class="panneau" id="deja" hidden>
+      <h2 data-i18n="install.already_title">C'est déjà fait</h2>
+      <p data-i18n="install.already"></p>
+      <p><a class="btn btn-laiton" href="/" data-i18n="install.play">Jouer</a></p>
+    </section>
+
+    <section class="panneau" id="bouton-zone" hidden>
+      <h2 data-i18n="install.one_click_title">En un clic</h2>
+      <p data-i18n="install.one_click"></p>
+      <div class="boutons">
+        <button type="button" class="btn btn-laiton" id="btn-installer" data-i18n="install.action">Installer l'application</button>
+      </div>
+    </section>
+
+    <section class="panneau" id="pas-a-pas">
+      <h2 id="pas-a-pas-titre" data-i18n="install.steps_title">La marche à suivre</h2>
+      <p id="pas-a-pas-intro"></p>
+      <ol class="etapes" id="etapes"></ol>
+      <p id="pas-a-pas-note" class="attention" hidden></p>
+    </section>
+
+    <section class="panneau">
+      <h2 data-i18n="install.other_title">Un autre appareil, un autre navigateur</h2>
+      <p data-i18n="install.other_intro"></p>
+      <div id="autres" class="autres"></div>
+    </section>
+
+    <section class="panneau">
+      <h2 data-i18n="install.what_title">Ce que l'installation change, et ne change pas</h2>
+      <ul>
+        <li data-i18n="install.what_1"></li>
+        <li data-i18n="install.what_2"></li>
+        <li data-i18n="install.what_3"></li>
+        <li data-i18n="install.what_4"></li>
+      </ul>
+      <p data-i18n="install.remove"></p>
+    </section>
+
+    <footer class="pied">
+      <a href="/">Accueil</a>
+      <a href="/profil/">Profil</a>
+      <a href="/a-propos/">À propos</a>
+      <a href="/installer/">Installer l'application</a>
+      <a href="/soutenir/">Soutenir</a>
+      <a href="/donnees/">Vos données</a>
+      <a href="/confidentialite/">Confidentialité</a>
+      <a href="/mentions-legales/">Mentions légales</a>
+      <a href="https://github.com/regis57/cartes-sur-table" rel="noopener noreferrer">Code source (AGPL-3.0)</a>
+    </footer>
+  </main>
+</body>
+</html>
