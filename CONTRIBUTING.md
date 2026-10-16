@@ -55,8 +55,9 @@ Les commits portent une adresse `@users.noreply.github.com`.
    `manifest.webmanifest`, la liste des succès de `profil.ts` et les tests du serveur.
 7. Monter la version (`package.json`, `package-lock.json`, `sw.js`) et écrire l'entrée du
    journal, avec son ancre `<a name="vX.Y.Z"></a>` au-dessus du titre : la page « À propos »
-   du site pointe dessus. Poser en plus l'étiquette `vX.Y.Z` sur le commit de fusion publie
-   l'image portant ce numéro (facultatif).
+   du site pointe dessus. À la fusion, `etiquette.yml` pose l'étiquette `vX.Y.Z` sur le commit
+   de fusion et publie une release GitHub avec cette entrée pour texte ; `release.yml`
+   publie l'image portant ce numéro. Rien à faire à la main.
 
 ## Ce qu'on ne fait pas
 

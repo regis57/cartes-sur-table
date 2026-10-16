@@ -12,6 +12,10 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 **La Pousse au tarot, la feuille de marque pour tous les jeux, et une carte qui se cachait.**
 
 Ajouté
+- **Étiquettes et releases automatiques** : à chaque fusion sur `main`, si la version de
+  `package.json` est nouvelle, `etiquette.yml` pose `vX.Y.Z` sur le commit de fusion et
+  publie une release GitHub dont le texte est l'entrée du journal. L'image Docker portant
+  ce numéro est publiée par `release.yml` depuis `main`.
 - **Tarot : le contrat Pousse**, entre la Petite et la Garde. Il se joue comme la Petite
   (chien montré, écart, multiplicateur ×1) mais la donne vaut **45 points de base au lieu
   de 25** : vingt points de plus, gagnés ou perdus. Les enchères, l'écart, le décompte, le
