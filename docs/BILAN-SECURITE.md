@@ -150,6 +150,12 @@ auraient l'adresse du tunnel et la limite par IP bloquerait le 11ᵉ joueur du s
 
 ---
 
+Mesures externes à la mise en ligne (16 octobre 2026) : Mozilla HTTP Observatory **A+** ;
+Blacklight (The Markup) **0 traceur publicitaire, 0 cookie tiers**, aucune empreinte
+navigateur, aucun enregistrement de session, aucun pixel, aucune société publicitaire ;
+DNSSEC validé, CAA posés, courrier du sous-domaine verrouillé. La marche à suivre pour
+refaire ces tests est dans le [manifeste](MANIFESTE-SECURITE.md) § 9.
+
 ## Ce qui reste à faire
 
 | Point | Pourquoi ce n'est pas fait | Quand |

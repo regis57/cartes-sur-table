@@ -25,7 +25,9 @@ Les actions GitHub sont épinglées par SHA.
 
 ## Réglages Cloudflare attendus
 
-Décrits pas à pas dans [DEPLOIEMENT.md](DEPLOIEMENT.md) § 2. Le contrôle externe
+Marche à suivre et points à vérifier dans le [manifeste](MANIFESTE-SECURITE.md) § 8,
+valeurs des règles dans [DEPLOIEMENT.md](DEPLOIEMENT.md) § 2 ; tests externes (Observatory,
+Blacklight, SSL Labs, DNSViz…) dans le manifeste § 9. Le contrôle externe
 vérifie ceux qui se voient de l'extérieur : HTTPS forcé, en-têtes intacts (pas de Rocket
 Loader ni de beacon), aucun cookie, SPF `-all`, MX nul, DMARC `reject`.
 
