@@ -176,6 +176,10 @@ function renderCentre(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
       contrat.append(document.createTextNode(t('tarot.called', { card: `${g.calledCard.t === 'c' ? g.calledCard.value : ''}${g.calledCard.t === 'c' ? g.calledCard.suit : ''}` })));
       if (g.partner !== null) contrat.append(document.createTextNode(` · ${t('tarot.partner_is', { name: name(g.partner) })}`));
     }
+    if (g.ecartAtouts.length) {
+      contrat.append(h('br'));
+      contrat.append(document.createTextNode(t('tarot.ecart_atouts', { cards: g.ecartAtouts.map((c) => (c.t === 'a' ? String(c.rank) : '')).join(', ') })));
+    }
   } else if (g.phase === 'bidding') {
     contrat.append(h('b', '', t('tarot.bidding')));
     if (g.bestBid > 0 && g.preneur >= 0) contrat.append(document.createTextNode(` — ${bidName(g.bestBid)} (${name(g.preneur)})`));
@@ -303,7 +307,7 @@ function renderStatus(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
   let prefix = '';
   if (ev && !g.roundOver) {
     switch (ev.type) {
-      case 'redeal': prefix = t('tarot.event.redeal'); break;
+      case 'redeal': prefix = t(ev.reason === 'petit-sec' ? 'tarot.event.petit_sec' : 'tarot.event.redeal'); break;
       case 'bid': prefix = t('tarot.event.bid', { name: name(ev.seat), bid: bidName(ev.bid) }); break;
       case 'call': prefix = t('tarot.event.call', { name: name(ev.seat), card: ev.card.t === 'c' ? `${ev.card.value}${ev.card.suit}` : '' }); break;
       case 'ecart-done': prefix = t('tarot.event.ecart_done', { name: name(ev.seat) }); break;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { seededRng, type Rng } from '@jdc/core';
 import {
   tarot as def, createRound, legalMoves, legalCards, applyMove, view, determinize, teamOf, moveKey, parseMoveKey,
-  canAnnouncePoignee, BID_MULT, type TarotState, type Move,
+  canAnnouncePoignee, hasPetitSec, BID_MULT, type TarotState, type Move,
 } from '../src/rules.ts';
 import { buildDeck, cardKey, cardPoints, isBout, parseCardKey, sortHand, type Card } from '../src/cartes.ts';
 
@@ -155,14 +155,52 @@ test('Pousse : entre Petite et Garde, le chien est pris, la base vaut 45 au lieu
   assert.equal(Math.abs(pousse.value) - Math.abs(petite.value), 20);
 });
 
-test('Garde Sans et Garde Contre : le chien reste fermé, on joue directement', () => {
-  let s = createRound(4, seededRng(11));
-  s = applyMove(s, s.bidTurn, { type: 'bid', bid: 4 }, seededRng(0));
-  for (let i = 0; i < 3; i++) s = applyMove(s, s.bidTurn, { type: 'bid', bid: 0 }, seededRng(0));
-  assert.equal(s.phase, 'play');
-  assert.equal(s.hands[s.preneur]?.length, 18);
-  assert.equal(s.chien.length, 6);
-  assert.equal(view(s, (s.preneur + 1) % 4).chien, null, 'le chien fermé ne se voit pas');
+test('Garde Sans et Garde Contre : le chien reste fermé, personne ne le voit, pas d\'écart ; il compte pour l\'attaque (sans) ou la défense (contre)', () => {
+  for (const bid of [4, 5] as const) {
+    let s = createRound(4, seededRng(11));
+    s = applyMove(s, s.bidTurn, { type: 'bid', bid }, seededRng(0));
+    for (let i = 0; i < 3; i++) s = applyMove(s, s.bidTurn, { type: 'bid', bid: 0 }, seededRng(0));
+    assert.equal(s.phase, 'play', 'on joue directement, sans phase d\'écart');
+    assert.equal(s.hands[s.preneur]?.length, 18, 'le preneur ne prend pas le chien');
+    assert.equal(s.chien.length, 6);
+    for (let seat = 0; seat < 4; seat++) {
+      const v = view(s, seat);
+      assert.equal(v.chien, null, `siège ${seat} : le chien fermé ne se voit pas (contrat ${bid})`);
+      assert.equal(v.ecart, null);
+      assert.equal(v.ecartNeeded, 0);
+      assert.ok(!v.legal.some((l) => l.move.type === 'discard'), 'aucun coup d\'écart proposé');
+    }
+    // Jouer la donne au bot et vérifier à qui vont les points du chien.
+    const chienPts = s.chien.reduce((a, c) => a + cardPoints(c), 0);
+    let guard = 0;
+    while (s.phase !== 'over' && guard++ < 400) {
+      const seat = def.currentSeat(s) as number;
+      const legal = legalMoves(s, seat).filter((m) => m.type !== 'poignee');
+      s = applyMove(s, seat, def.botMove!(s, seat, legal, seededRng(guard)) ?? legal[0]!, seededRng(guard));
+    }
+    const r = s.result!;
+    const wonByAttack = s.won[r.preneur]!.reduce((a, c) => a + cardPoints(c), 0);
+    const excuseAdj = s.excuseInfo && teamOf(s, s.excuseInfo.owner) !== teamOf(s, s.excuseInfo.trickWinner) ? (teamOf(s, s.excuseInfo.owner) === 'A' ? -0.5 : 0.5) : 0;
+    if (bid === 4) assert.equal(r.attackPoints, wonByAttack + chienPts + excuseAdj, 'Garde sans : le chien est au preneur');
+    else assert.equal(r.attackPoints, wonByAttack + excuseAdj, 'Garde contre : le chien est à la défense');
+  }
+});
+
+test('Petit sec : la donne est annulée et redonnée ; les atouts écartés sont montrés à tous', () => {
+  // Aucune main distribuée ne porte le Petit sec, quel que soit le hasard.
+  for (let seed = 1; seed < 300; seed++) {
+    const s = createRound(4, seededRng(seed));
+    assert.ok(!s.hands.some(hasPetitSec), `graine ${seed}`);
+  }
+  assert.ok(hasPetitSec(cards('A1 2♠ 3♠ R♥')));
+  assert.ok(!hasPetitSec(cards('A1 EXC 2♠')), 'avec l\'Excuse, ce n\'est pas un Petit sec');
+  assert.ok(!hasPetitSec(cards('A1 A5 2♠')));
+  // Un preneur qui n'a que des Rois, des bouts et des atouts doit écarter de l'atout : montré à tous ensuite.
+  let e = playing(4, ['R♠ R♥ R♣ R♦ A1 A21 EXC A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 2♠ 3♠', '4♠ 5♠', '6♠ 7♠', '8♠ 9♠'], { phase: 'ecart', bestBid: 1, chienSize: 6, ecart: [] });
+  for (const k of ['2♠', '3♠', 'A2', 'A3', 'A4', 'A5']) e = applyMove(e, 0, { type: 'discard', card: c(k) }, seededRng(0));
+  assert.equal(e.phase, 'play');
+  assert.deepEqual(view(e, 2).ecartAtouts.map(cardKey).sort(), ['A2', 'A3', 'A4', 'A5'], 'les atouts de l\'écart se voient de la défense');
+  assert.equal(view(e, 2).ecart, null, 'le reste de l\'écart, non');
 });
 
 test("L'écart : ni Roi ni bout ; de l'atout seulement faute d'autre carte ; une carte par coup", () => {
