@@ -16,7 +16,7 @@
  * Une partie se joue sur le serveur : hors ligne, on ne fait pas semblant, on l'explique.
  */
 
-const VERSION = '0.6.3';
+const VERSION = '0.6.4';
 const CACHE = `jdc-${VERSION}`;
 const HORS_LIGNE = '/hors-ligne/';
 
@@ -81,6 +81,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   if (event.origin && event.origin !== self.location.origin) return;
   if (event.data === 'appliquer-maj') self.skipWaiting();
+  // La page demande quelle version la sert : elle la compare à celle du serveur.
+  if (event.data === 'version ?' && event.ports[0]) event.ports[0].postMessage(VERSION);
 });
 
 self.addEventListener('fetch', (event) => {
