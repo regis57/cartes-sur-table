@@ -6,6 +6,23 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.4"></a>
+## 0.6.4 — 16 octobre 2026
+
+**Un client périmé se reconnaît lui-même.**
+
+Corrigé
+- La carte d'entame invisible a été revue une fois encore, sur un onglet qui tournait avec
+  les scripts d'avant la mise à jour. La 0.6.1 appliquait bien la nouvelle version, mais
+  seulement depuis les nouveaux scripts : un onglet encore sur les anciens n'en savait rien.
+  Désormais, à l'ouverture, la page demande sa version à l'agent qui la sert et au serveur
+  la sienne ; si elles diffèrent, ou si l'agent est trop vieux pour répondre, la page se
+  recharge (une fois par version et par onglet), ou prévient la salle si une table est en
+  cours. Et par précaution, la minuterie qui efface le dernier pli est annulée dès qu'une
+  carte est posée : même périmée, elle ne peut plus rien cacher.
+
+---
+
 <a name="v0.6.3"></a>
 ## 0.6.3 — 16 octobre 2026
 

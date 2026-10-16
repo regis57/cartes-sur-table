@@ -146,6 +146,11 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
   const posOf = (seat: number): string => POSITIONS[(seat - me + 4) % 4] ?? 'bas';
   let shown: readonly TrickCard[] = g.trick;
   let winner: number | null = null;
+  // Une carte est posée : plus rien à effacer, la minuterie du dernier pli n'a plus lieu d'être.
+  if (g.trick.length > 0 && hideTrickTimer) {
+    clearTimeout(hideTrickTimer);
+    hideTrickTimer = null;
+  }
   if (g.trick.length === 0 && g.lastTrick && g.phase === 'play') {
     const key = g.lastTrick.cards.map((c) => cardKey(c.card)).join(',') + `:${g.tricksPlayed}`;
     if (key !== lastTrickKey) {

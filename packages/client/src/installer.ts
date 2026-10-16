@@ -156,4 +156,41 @@ export function enregistrerAgent(): void {
   // mais sans rater l'évènement : cette fonction peut être appelée après coup.
   if (document.readyState === 'complete') poser();
   else window.addEventListener('load', poser, { once: true });
+  verifierVersion().catch(() => undefined);
+}
+
+/**
+ * Ceinture et bretelles : la page demande à l'agent qui la sert sa version, et au serveur
+ * la sienne. Si elles diffèrent (ou si l'agent ne sait pas répondre : il est d'avant), les
+ * scripts chargés sont périmés. Hors table on recharge, une fois par version de serveur et
+ * par onglet ; à table on prévient la salle, qui rechargera au prochain écran.
+ */
+async function verifierVersion(): Promise<void> {
+  const sw = navigator.serviceWorker;
+  if (!sw.controller) return; // première visite : la page vient tout droit du réseau
+  const serveur = await fetch('/api/version', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null) as { version?: unknown } | null;
+  if (!serveur || typeof serveur.version !== 'string') return;
+  const locale = await new Promise<string | null>((resolve) => {
+    const canal = new MessageChannel();
+    const fin = setTimeout(() => resolve(null), 1500);
+    canal.port1.onmessage = (e) => {
+      clearTimeout(fin);
+      resolve(typeof e.data === 'string' ? e.data : null);
+    };
+    sw.controller?.postMessage('version ?', [canal.port2]);
+  });
+  if (locale === serveur.version) return;
+  const cle = `jdc-recharge-${serveur.version}`;
+  let deja = false;
+  try {
+    deja = sessionStorage.getItem(cle) === '1';
+    sessionStorage.setItem(cle, '1');
+  } catch {
+    /* stockage refusé : on tente une fois quand même */
+  }
+  if (deja) return;
+  sw.getRegistration().then((reg) => reg?.update()).catch(() => undefined);
+  const table = document.getElementById('table');
+  if (!table || table.hidden) location.reload();
+  else window.dispatchEvent(new Event(EVENEMENT_NOUVELLE_VERSION));
 }
