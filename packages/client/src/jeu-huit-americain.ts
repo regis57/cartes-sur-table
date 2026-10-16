@@ -34,11 +34,11 @@ const cardText = (c: Card): string => `${c.value}${c.suit}`;
 
 function cardEl(c: Card, extra = ''): HTMLElement {
   const el = h('div', `carte${isRed(c) ? ' rouge' : ''}${extra ? ' ' + extra : ''}`);
+  // Un seul index, en haut à gauche, toujours à l'endroit et du côté du joueur : dans une
+  // main en éventail, c'est la seule zone jamais recouverte par la carte voisine.
   const coin = h('span', 'coin');
   coin.append(document.createTextNode(c.value), h('span', '', c.suit));
-  const coinBas = coin.cloneNode(true) as HTMLElement;
-  coinBas.classList.add('bas');
-  el.append(coin, h('span', 'centre', c.suit), coinBas);
+  el.append(coin, h('span', 'centre', c.suit));
   el.setAttribute('aria-label', cardText(c));
   return el;
 }
