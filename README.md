@@ -99,8 +99,13 @@ connexion — les parties se déroulent sur le serveur, y compris contre les bot
 Le site est servi depuis un NAS domestique, derrière un tunnel sortant dédié : aucun port
 n'est ouvert. Le domaine est signé (DNSSEC) et l'émission de certificats y est restreinte
 aux seules autorités de l'intermédiaire réseau. Les valeurs de cette configuration ne sont
-pas dans ce dépôt ; la marche à suivre, elle, l'est, dans
-[docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
+pas dans ce dépôt ; la marche à suivre, elle, l'est : le chapitre
+[« Cloudflare : créer un sous-domaine sûr, pas à pas »](docs/MANIFESTE-SECURITE.md#8-cloudflare--créer-un-sous-domaine-sûr-pas-à-pas)
+du manifeste donne les menus et les points à vérifier, le
+[guide de déploiement](docs/DEPLOIEMENT.md) les valeurs des règles et les captures. Le
+chapitre suivant du manifeste dit
+[comment tester la sécurité du site en ligne](docs/MANIFESTE-SECURITE.md#9-tester-la-sécurité-du-site-en-ligne)
+(Observatory A+, Blacklight 0 traceur, DNSSEC, CAA, courrier verrouillé).
 
 Toute la documentation est en français, README compris ; le wiki sera porté en anglais
 si le site l'est.

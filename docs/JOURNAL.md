@@ -9,7 +9,19 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 <a name="v0.5.1"></a>
 ## 0.5.1 — 16 octobre 2026
 
-**Le lien de version pointe sur le journal.**
+**Le lien de version pointe sur le journal ; Cloudflare pas à pas dans le manifeste.**
+
+Ajouté
+- Manifeste § 8 « Cloudflare : créer un sous-domaine sûr, pas à pas » : le tunnel dédié,
+  la route vers le nom du service (jamais une adresse), le proxy obligatoire, les trois
+  options qui casseraient la CSP, la protection applicative, le cache, le nom lui-même
+  (DNSSEC, CAA, courrier verrouillé), le verrou d'essai, et ce qu'on ne fait jamais. Sans
+  aucune valeur secrète : les menus et les points à vérifier seulement.
+- Manifeste § 9 « Tester la sécurité du site en ligne » : Observatory (A+, et on y reste),
+  securityheaders, SSL Labs, Blacklight, DNSViz, MXToolbox, Lighthouse, `curl`, le flot
+  sur `/socket.io/`, et le contrôle externe maison. Résultats à la mise en ligne consignés
+  dans le bilan : Observatory A+, Blacklight 0 traceur / 0 cookie tiers.
+- README : la configuration renvoie à ces deux chapitres.
 
 Changé
 - « À propos » renvoie vers l'entrée de la version dans ce journal, sous une ancre stable
