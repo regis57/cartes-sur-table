@@ -22,8 +22,8 @@ async function afficherVersion(): Promise<void> {
     const revision = typeof data.revision === 'string' && /^[0-9a-f]{7,40}$/.test(data.revision) ? data.revision.slice(0, 7) : null;
     if (!version) throw new Error('version inconnue');
     numero.textContent = revision ? `${version} (révision ${revision})` : version;
-    // Chaque version publiée porte une étiquette « vX.Y.Z » dans le dépôt : sa page liste ce qu'elle contient.
-    lien.href = `${DEPOT}/releases/tag/v${version}`;
+    // Chaque version a son entrée dans le journal du dépôt, sous une ancre stable « vX.Y.Z ».
+    lien.href = `${DEPOT}/blob/main/docs/JOURNAL.md#v${version}`;
   } catch {
     numero.textContent = 'inconnue (hors ligne ?)';
   }

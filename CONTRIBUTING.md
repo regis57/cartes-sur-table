@@ -51,10 +51,10 @@ Les commits portent une adresse `@users.noreply.github.com`.
    « manche ») se posent sous `games.<mon-jeu>.ui`.
 6. Mettre à jour `README.md`, la page « À propos » (liste des règles), le raccourci dans
    `manifest.webmanifest`, la liste des succès de `profil.ts` et les tests du serveur.
-7. Monter la version (`package.json`, `package-lock.json`, `sw.js`), écrire l'entrée du
-   journal, et après la fusion sur `main`, poser l'étiquette `vX.Y.Z` sur le commit de
-   fusion : la page « À propos » du site pointe dessus, et c'est elle qui publie l'image
-   portant ce numéro.
+7. Monter la version (`package.json`, `package-lock.json`, `sw.js`) et écrire l'entrée du
+   journal, avec son ancre `<a name="vX.Y.Z"></a>` au-dessus du titre : la page « À propos »
+   du site pointe dessus. Poser en plus l'étiquette `vX.Y.Z` sur le commit de fusion publie
+   l'image portant ce numéro (facultatif).
 
 ## Ce qu'on ne fait pas
 
