@@ -6,6 +6,30 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.5"></a>
+## 0.6.5 — 17 octobre 2026
+
+**Tarot : relecture des règles face au règlement officiel.**
+
+Vérifié, et déjà conforme : Garde sans et Garde contre ne montrent pas le chien et ne
+donnent lieu à aucun écart ; le chien compte pour le preneur (sans) ou pour la défense
+(contre). Un écran « Garde sans » avec le chien ouvert n'était pas le serveur mais un onglet
+resté sur les anciens scripts, où le troisième contrat s'appelait encore Garde sans ; la
+0.6.4 recharge ces onglets d'eux-mêmes. Un test joue désormais les deux contrats de bout en
+bout et vérifie à qui vont les points du chien.
+
+Ajouté
+- **Petit sec** : une main dont le seul atout est le Petit, sans l'Excuse, annule la donne ;
+  on redonne, le donneur tourne, et la table le dit.
+- **Atouts écartés montrés** : quand le preneur, faute d'autre carte, écarte de l'atout, ces
+  atouts sont visibles de tous pendant la donne, comme à la table.
+- Les règles affichées disent tout cela.
+
+Non retenu, en connaissance de cause : le chelem (annoncé ou non) et les misères, rares et
+sources de litiges ; la donne par paquets de trois, sans effet sur le jeu.
+
+---
+
 <a name="v0.6.4"></a>
 ## 0.6.4 — 16 octobre 2026
 

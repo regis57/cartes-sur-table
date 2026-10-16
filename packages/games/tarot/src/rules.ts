@@ -71,7 +71,7 @@ export interface Poignee {
 
 /** Ce qui vient de se passer, pour l'affichage (jamais nécessaire aux règles). */
 export type LastEvent =
-  | { readonly type: 'redeal' }
+  | { readonly type: 'redeal'; readonly reason?: 'passe' | 'petit-sec' }
   | { readonly type: 'bid'; readonly seat: number; readonly bid: Bid }
   | { readonly type: 'call'; readonly seat: number; readonly card: Card }
   | { readonly type: 'ecart-done'; readonly seat: number }
@@ -159,6 +159,8 @@ export interface TarotView {
   readonly chienSize: number;
   /** L'écart déjà posé, visible du preneur seul. */
   readonly ecart: readonly Card[] | null;
+  /** Les atouts que le preneur a dû écarter : montrés à tous, règle officielle. */
+  readonly ecartAtouts: readonly Card[];
   readonly ecartNeeded: number;
   readonly trick: readonly TrickCard[];
   readonly lastTrick: { readonly cards: readonly TrickCard[]; readonly winner: number } | null;
@@ -272,16 +274,30 @@ function deal(seats: number, dealer: number, rng: Rng, base: Pick<TarotState, 'r
   };
 }
 
+/** Petit sec : le 1 d'atout pour seul atout, sans l'Excuse. La donne est annulée (règle officielle). */
+export function hasPetitSec(hand: readonly Card[]): boolean {
+  const atouts = hand.filter((c) => c.t === 'a');
+  return atouts.length === 1 && atouts[0]!.rank === 1 && !hand.some((c) => c.t === 'e');
+}
+
+/** Donne, puis redonne (donneur suivant) tant qu'une main a le Petit sec. */
+function dealValid(seats: number, dealer: number, rng: Rng, base: Pick<TarotState, 'roundNumber' | 'totalRounds' | 'scores' | 'history'>, lastEvent: LastEvent | null): TarotState {
+  let s = deal(seats, dealer, rng, base, lastEvent);
+  let guard = 0;
+  while (s.hands.some(hasPetitSec) && guard++ < 50) s = deal(seats, (s.dealer + 1) % seats, rng, base, { type: 'redeal', reason: 'petit-sec' });
+  return s;
+}
+
 export function createRound(seats: number, rng: Rng, previous?: TarotState): TarotState {
   if (previous) {
-    return deal(seats, (previous.dealer + 1) % seats, rng, {
+    return dealValid(seats, (previous.dealer + 1) % seats, rng, {
       roundNumber: previous.roundNumber + 1,
       totalRounds: previous.totalRounds,
       scores: previous.scores,
       history: previous.history,
     }, null);
   }
-  return deal(seats, rng.int(seats), rng, { roundNumber: 1, totalRounds: MATCH_ROUNDS, scores: new Array<number>(seats).fill(0), history: [] }, null);
+  return dealValid(seats, rng.int(seats), rng, { roundNumber: 1, totalRounds: MATCH_ROUNDS, scores: new Array<number>(seats).fill(0), history: [] }, null);
 }
 
 // ---------- légalité ----------
@@ -427,7 +443,7 @@ function applyBid(state: TarotState, seat: number, bid: Bid, rng: Rng): TarotSta
   }
   if (bestBid === 0) {
     // Tout le monde passe : on redonne, la donne ne compte pas, le donneur tourne.
-    return deal(state.seats, (state.dealer + 1) % state.seats, rng, state, { type: 'redeal' });
+    return dealValid(state.seats, (state.dealer + 1) % state.seats, rng, state, { type: 'redeal', reason: 'passe' });
   }
   const next: TarotState = { ...state, bids, bestBid, preneur, bidsPlaced, lastEvent: { type: 'bid', seat, bid } };
   if (state.seats === 5) return { ...next, phase: 'callKing' };
@@ -672,6 +688,7 @@ export function view(state: TarotState, seat: number): TarotView {
     chien: state.phase === 'ecart' ? state.chien : null,
     chienSize: state.chienSize,
     ecart: isPreneur && state.phase === 'ecart' ? state.ecart : null,
+    ecartAtouts: state.phase !== 'ecart' ? state.ecart.filter((c) => c.t === 'a') : [],
     ecartNeeded: state.phase === 'ecart' ? state.chienSize - state.ecart.length : 0,
     trick: state.trick,
     lastTrick: state.lastTrick,
