@@ -5,6 +5,7 @@ import { io as connect, type Socket } from 'socket.io-client';
 import { generateProfileToken, FEMALE_NAMES, MALE_NAMES, EMOJI_CODES } from '@jdc/core';
 import { PHRASES } from '@jdc/huit-americain';
 import { createApp, CLIENT_DIR } from '../src/app.ts';
+import { GAMES } from '../src/games.ts';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -75,7 +76,10 @@ test('HTTP : en-têtes de sécurité, pages servies, rien de caché ni de hors-d
     assert.equal(JSON.parse(v.body).version, '0.1.0');
     assert.equal(v.headers['cache-control'], 'no-store');
     const g = JSON.parse((await req(port, 'GET', '/api/jeux')).body);
-    assert.equal(g.games[0].id, 'huit-americain');
+    assert.deepEqual(g.games.map((x: { id: string }) => x.id), ['huit-americain', 'tarot', 'belote']);
+    assert.deepEqual(g.games[1].seatCounts, [4, 5]);
+    assert.equal(g.games[1].status, 'available');
+    assert.equal(g.games[2].status, 'soon');
     assert.equal(g.avatars, 12);
   } finally {
     await server.close();
@@ -396,17 +400,28 @@ test('Rafale : un client qui inonde est déconnecté, le serveur reste debout', 
   }
 });
 
-test('Cohérence : le dictionnaire du client couvre les émoticônes, les phrases et les succès du serveur', () => {
+test('Cohérence : le dictionnaire du client couvre les émoticônes, les phrases et les succès de chaque jeu', () => {
   const fr = JSON.parse(readFileSync(path.join(CLIENT_DIR, 'i18n', 'fr.json'), 'utf8'));
   assert.deepEqual(Object.keys(fr.emotes).sort(), [...EMOJI_CODES].sort());
-  assert.deepEqual(Object.keys(fr.phrases['huit-americain']).sort(), [...PHRASES].sort());
   for (const code of EMOJI_CODES) readFileSync(path.join(CLIENT_DIR, 'img', 'emotes', `${code}.svg`));
-  for (const code of ['premiere-partie', 'premiere-victoire', 'dix-victoires', 'cinquante-parties', 'touche-a-tout', 'huit-americain:huit-magique', 'huit-americain:sans-pioche', 'huit-americain:coup-du-sept', 'huit-americain:manche-parfaite']) {
+  // Les réactions sont dans la salle commune ; chaque jeu porte ses douze phrases.
+  const salle = readFileSync(path.join(CLIENT_DIR, 'js', 'salle.js'), 'utf8');
+  for (const code of EMOJI_CODES) assert.ok(salle.includes(`'${code}'`), `émoticône ${code} connue de la salle`);
+  for (const g of GAMES) {
+    const id = g.meta.id;
+    assert.equal(g.def.phrases.length, 12, `${id} : douze phrases`);
+    assert.deepEqual(Object.keys(fr.phrases[id]).sort(), [...g.def.phrases].sort(), `${id} : phrases traduites`);
+    const client = readFileSync(path.join(CLIENT_DIR, 'js', `jeu-${id}.js`), 'utf8');
+    for (const code of g.def.phrases) assert.ok(client.includes(`'${code}'`), `${id} : phrase ${code} connue du client`);
+    assert.ok(fr.games[id]?.name && fr.games[id]?.blurb, `${id} : nom et présentation`);
+    assert.ok(fr.games[id]?.rules?.['1'], `${id} : règles affichables`);
+    readFileSync(path.join(CLIENT_DIR, 'jeu', id, 'index.html'));
+  }
+  for (const code of ['premiere-partie', 'premiere-victoire', 'dix-victoires', 'cinquante-parties', 'touche-a-tout',
+    'huit-americain:huit-magique', 'huit-americain:sans-pioche', 'huit-americain:coup-du-sept', 'huit-americain:manche-parfaite',
+    'tarot:garde-sans-filet', 'tarot:trois-bouts', 'tarot:petit-au-bout', 'tarot:grande-poignee', 'tarot:defense-de-fer', 'tarot:maitre-du-tarot']) {
     assert.ok(fr.achievements[code]?.name, code);
   }
-  const game = readFileSync(path.join(CLIENT_DIR, 'js', 'jeu-huit-americain.js'), 'utf8');
-  for (const code of EMOJI_CODES) assert.ok(game.includes(`'${code}'`), `émoticône ${code} connue du client`);
-  for (const code of PHRASES) assert.ok(game.includes(`'${code}'`), `phrase ${code} connue du client`);
 });
 
 test('Espace de noms par défaut refusé ; création de profil limitée par IP', async () => {

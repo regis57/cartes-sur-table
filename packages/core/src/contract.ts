@@ -108,6 +108,15 @@ export interface GameDefinition<S, M, V> {
    */
   rolloutMove?(state: S, seat: number, legal: readonly M[], rng: Rng): M;
 
+  /**
+   * Politique de bot propre au jeu (facultative). Quand elle renvoie un coup, le socle le
+   * joue tel quel ; quand elle renvoie `null`, le socle s'en remet au MCTS générique.
+   * Utile aux jeux dont une manche est trop longue pour que le MCTS converge dans le
+   * temps de réflexion imparti (le tarot : enchères, écart, dix-huit plis), ou dont les
+   * décisions de début de manche demandent une stratégie plutôt qu'une recherche.
+   */
+  botMove?(state: S, seat: number, legal: readonly M[], rng: Rng): M | null;
+
   /** Bilan d'une manche terminée, pour l'écran de fin et les succès. */
   roundSummary(state: S): RoundSummary;
 

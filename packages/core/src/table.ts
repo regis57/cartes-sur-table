@@ -299,7 +299,10 @@ export class Table<S, M, V> {
     const legal = this.def.legalMoves(this.state, seat);
     if (legal.length === 0) return;
     let move: M;
-    if (this.botLevel === 'facile' || legal.length === 1) {
+    const propre = this.botLevel === 'facile' ? null : (this.def.botMove?.(this.state, seat, legal, this.botRng) ?? null);
+    if (propre !== null) {
+      move = propre;
+    } else if (this.botLevel === 'facile' || legal.length === 1) {
       move = this.def.rolloutMove ? this.def.rolloutMove(this.state, seat, legal, this.botRng) : (legal[this.botRng.int(legal.length)] as M);
     } else {
       const res = mctsChooseMove(this.def, this.state, seat, { timeMs: this.botThinkMs, maxIterations: 4000, rng: this.botRng });

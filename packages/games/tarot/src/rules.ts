@@ -1,0 +1,992 @@
+/*
+ * Jeux de cartes — Copyright (C) 2026 regis57
+ * Licensed under the GNU Affero General Public License v3.0 or later.
+ */
+
+import { shuffle, type GameDefinition, type GameMeta, type Rng, type RoundSummary, type AchievementContext } from '@jdc/core';
+import {
+  SUITS, buildDeck, cardKey, cardPoints, isBout, isKing, parseCardKey, sameCard, sortHand,
+  type Card, type Suit,
+} from './cartes.ts';
+
+/**
+ * Règles du tarot français à 4 et 5 joueurs, pures et sans réseau. Ce sont celles du jeu
+ * d'origine (regis57/tarot-francais-enligne), reprises point par point :
+ *
+ *  - enchères en un tour : Passe, Petite (×1), Garde (×2), Garde Sans (×4), Garde Contre (×6) ;
+ *    tout le monde passe → nouvelle donne, qui ne compte pas ;
+ *  - à 5 joueurs, le preneur appelle un Roi (une Dame s'il a les quatre Rois) ; le porteur
+ *    de la carte appelée est son partenaire, révélé quand la carte tombe ;
+ *  - Petite et Garde : le chien est montré à tous, puis le preneur fait son écart (ni Roi,
+ *    ni bout, et de l'atout seulement s'il n'a pas d'autre carte) ;
+ *  - obligation de fournir, de couper, de surcouper ; l'Excuse se joue toujours ;
+ *  - l'Excuse ne remporte jamais le pli et reste à son camp (sauf au dernier pli), contre
+ *    un demi-point rendu ;
+ *  - objectifs selon les bouts : 56 / 51 / 41 / 36 ; valeur de la donne = (25 + écart) × contrat,
+ *    plus le Petit au bout (10 × contrat) et les poignées (non multipliées) ;
+ *  - à 4, le preneur marque trois fois la valeur ; à 5, deux fois (le partenaire une fois),
+ *    ou quatre fois s'il est seul ;
+ *  - poignées : 10 / 13 / 15 atouts à 4 joueurs, 8 / 10 / 13 à 5 (+20 / +30 / +40).
+ *
+ * L'écart se fait carte par carte (un coup par carte) : c'est ce qui permet au contrat de
+ * rester « un coup = un choix » et au bot de raisonner dessus, sans rien changer au résultat.
+ */
+
+export const BIDS = ['passe', 'petite', 'garde', 'garde-sans', 'garde-contre'] as const;
+export type Bid = 0 | 1 | 2 | 3 | 4;
+export const BID_MULT = [0, 1, 2, 4, 6] as const;
+/** Nombre de donnes d'une partie, comme le défaut du jeu d'origine. */
+export const MATCH_ROUNDS = 5;
+const TARGETS = [56, 51, 41, 36] as const;
+const POIGNEES: Record<number, readonly (readonly [number, number])[]> = {
+  4: [[10, 20], [13, 30], [15, 40]],
+  5: [[8, 20], [10, 30], [13, 40]],
+};
+
+export type Phase = 'bidding' | 'callKing' | 'ecart' | 'play' | 'over';
+
+export type Move =
+  | { readonly type: 'bid'; readonly bid: Bid }
+  | { readonly type: 'call'; readonly suit: Suit; readonly value: 'R' | 'D' }
+  | { readonly type: 'discard'; readonly card: Card }
+  | { readonly type: 'poignee' }
+  | { readonly type: 'play'; readonly card: Card };
+
+export interface TrickCard {
+  readonly seat: number;
+  readonly card: Card;
+}
+
+export interface Poignee {
+  readonly seat: number;
+  readonly count: number;
+  readonly bonus: number;
+}
+
+/** Ce qui vient de se passer, pour l'affichage (jamais nécessaire aux règles). */
+export type LastEvent =
+  | { readonly type: 'redeal' }
+  | { readonly type: 'bid'; readonly seat: number; readonly bid: Bid }
+  | { readonly type: 'call'; readonly seat: number; readonly card: Card }
+  | { readonly type: 'ecart-done'; readonly seat: number }
+  | { readonly type: 'poignee'; readonly seat: number; readonly count: number; readonly bonus: number }
+  | { readonly type: 'partner'; readonly seat: number }
+  | { readonly type: 'trick'; readonly winner: number };
+
+/** Le bilan d'une donne terminée. */
+export interface DonneResult {
+  readonly preneur: number;
+  readonly partner: number | null;
+  readonly bid: Bid;
+  readonly attackPoints: number;
+  readonly bouts: number;
+  readonly target: number;
+  readonly won: boolean;
+  readonly petitAuBout: number;
+  readonly poignees: number;
+  readonly value: number;
+  readonly deltas: readonly number[];
+  readonly calledCard: Card | null;
+}
+
+export interface HistoryEntry {
+  readonly round: number;
+  readonly result: DonneResult;
+  readonly scores: readonly number[];
+}
+
+export interface TarotState {
+  readonly seats: number;
+  readonly dealer: number;
+  readonly roundNumber: number;
+  readonly totalRounds: number;
+  readonly phase: Phase;
+  readonly hands: readonly (readonly Card[])[];
+  readonly chien: readonly Card[];
+  readonly ecart: readonly Card[];
+  readonly chienSize: number;
+  readonly bids: readonly number[];
+  readonly bestBid: Bid;
+  readonly preneur: number;
+  readonly bidTurn: number;
+  readonly bidsPlaced: number;
+  readonly calledCard: Card | null;
+  readonly partner: number;
+  readonly partnerRevealed: boolean;
+  readonly trick: readonly TrickCard[];
+  readonly leadSeat: number;
+  readonly current: number;
+  readonly tricksPlayed: number;
+  readonly totalTricks: number;
+  readonly lastTrick: { readonly cards: readonly TrickCard[]; readonly winner: number } | null;
+  readonly won: readonly (readonly Card[])[];
+  readonly excuseInfo: { readonly owner: number; readonly trickWinner: number } | null;
+  readonly played: readonly Card[];
+  /** Par siège, ce dont il s'est montré dépourvu (« ♠ », « A » pour l'atout) : sert au bot, jamais aux règles. */
+  readonly voids: readonly (readonly string[])[];
+  readonly poignees: readonly Poignee[];
+  readonly scores: readonly number[];
+  readonly roundOver: boolean;
+  readonly result: DonneResult | null;
+  readonly history: readonly HistoryEntry[];
+  readonly lastEvent: LastEvent | null;
+}
+
+export interface TarotView {
+  readonly seats: number;
+  readonly me: number;
+  readonly phase: Phase;
+  readonly dealer: number;
+  readonly roundNumber: number;
+  readonly totalRounds: number;
+  readonly hand: readonly Card[];
+  readonly handCounts: readonly number[];
+  readonly bids: readonly number[];
+  readonly bestBid: Bid;
+  readonly bidTurn: number;
+  readonly preneur: number;
+  readonly calledCard: Card | null;
+  /** Le partenaire du preneur, seulement une fois révélé (ou la donne finie). */
+  readonly partner: number | null;
+  /** Le chien, montré à tous pendant l'écart. */
+  readonly chien: readonly Card[] | null;
+  readonly chienSize: number;
+  /** L'écart déjà posé, visible du preneur seul. */
+  readonly ecart: readonly Card[] | null;
+  readonly ecartNeeded: number;
+  readonly trick: readonly TrickCard[];
+  readonly lastTrick: { readonly cards: readonly TrickCard[]; readonly winner: number } | null;
+  readonly current: number;
+  readonly tricksPlayed: number;
+  readonly totalTricks: number;
+  readonly poignees: readonly Poignee[];
+  /** Niveau de poignée annonçable par ce siège maintenant, ou null. */
+  readonly myPoignee: { readonly count: number; readonly bonus: number } | null;
+  readonly scores: readonly number[];
+  readonly roundOver: boolean;
+  readonly result: DonneResult | null;
+  readonly history: readonly HistoryEntry[];
+  readonly lastEvent: LastEvent | null;
+  readonly legal: readonly { key: string; move: Move }[];
+}
+
+// ---------- utilitaires ----------
+
+function handSizeFor(seats: number): number {
+  return seats === 5 ? 15 : 18;
+}
+
+function chienSizeFor(seats: number): number {
+  return seats === 5 ? 3 : 6;
+}
+
+function without(hand: readonly Card[], card: Card): Card[] {
+  const i = hand.findIndex((c) => sameCard(c, card));
+  if (i < 0) return [...hand];
+  return [...hand.slice(0, i), ...hand.slice(i + 1)];
+}
+
+function has(hand: readonly Card[], card: Card): boolean {
+  return hand.some((c) => sameCard(c, card));
+}
+
+/** Le camp d'un siège : attaque (preneur et partenaire) ou défense. */
+export function teamOf(state: Pick<TarotState, 'preneur' | 'partner'>, seat: number): 'A' | 'D' {
+  if (seat === state.preneur) return 'A';
+  if (state.partner >= 0 && state.partner !== state.preneur && seat === state.partner) return 'A';
+  return 'D';
+}
+
+function ledCard(trick: readonly TrickCard[]): Card | null {
+  for (const t of trick) if (t.card.t !== 'e') return t.card;
+  return null;
+}
+
+function highestAtout(trick: readonly TrickCard[]): number {
+  let best = 0;
+  for (const t of trick) if (t.card.t === 'a' && t.card.rank > best) best = t.card.rank;
+  return best;
+}
+
+/** L'écart interdit les Rois et les bouts ; l'atout n'est permis qu'en dernier recours. */
+export function ecartForbidden(c: Card): boolean {
+  return isKing(c) || isBout(c);
+}
+
+export function poigneeLevel(seats: number, hand: readonly Card[]): { count: number; bonus: number } | null {
+  const n = hand.filter((c) => c.t === 'a' || c.t === 'e').length;
+  let best: { count: number; bonus: number } | null = null;
+  for (const [count, bonus] of POIGNEES[seats] ?? POIGNEES[4] ?? []) if (n >= count) best = { count, bonus };
+  return best;
+}
+
+// ---------- la donne ----------
+
+function deal(seats: number, dealer: number, rng: Rng, base: Pick<TarotState, 'roundNumber' | 'totalRounds' | 'scores' | 'history'>, lastEvent: LastEvent | null): TarotState {
+  const deck = shuffle(buildDeck(), rng);
+  const handSize = handSizeFor(seats);
+  const chienSize = chienSizeFor(seats);
+  const hands: Card[][] = [];
+  for (let i = 0; i < seats; i++) hands.push(sortHand(deck.splice(0, handSize)));
+  const chien = deck.splice(0, chienSize);
+  return {
+    seats,
+    dealer,
+    roundNumber: base.roundNumber,
+    totalRounds: base.totalRounds,
+    phase: 'bidding',
+    hands,
+    chien,
+    ecart: [],
+    chienSize,
+    bids: new Array<number>(seats).fill(-1),
+    bestBid: 0,
+    preneur: -1,
+    bidTurn: (dealer + 1) % seats,
+    bidsPlaced: 0,
+    calledCard: null,
+    partner: -1,
+    partnerRevealed: false,
+    trick: [],
+    leadSeat: (dealer + 1) % seats,
+    current: (dealer + 1) % seats,
+    tricksPlayed: 0,
+    totalTricks: handSize,
+    lastTrick: null,
+    won: hands.map(() => []),
+    excuseInfo: null,
+    played: [],
+    voids: hands.map(() => []),
+    poignees: [],
+    scores: [...base.scores],
+    roundOver: false,
+    result: null,
+    history: [...base.history],
+    lastEvent,
+  };
+}
+
+export function createRound(seats: number, rng: Rng, previous?: TarotState): TarotState {
+  if (previous) {
+    return deal(seats, (previous.dealer + 1) % seats, rng, {
+      roundNumber: previous.roundNumber + 1,
+      totalRounds: previous.totalRounds,
+      scores: previous.scores,
+      history: previous.history,
+    }, null);
+  }
+  return deal(seats, rng.int(seats), rng, { roundNumber: 1, totalRounds: MATCH_ROUNDS, scores: new Array<number>(seats).fill(0), history: [] }, null);
+}
+
+// ---------- légalité ----------
+
+export function currentSeat(state: TarotState): number | null {
+  switch (state.phase) {
+    case 'bidding': return state.bidTurn;
+    case 'callKing':
+    case 'ecart': return state.preneur;
+    case 'play': return state.current;
+    case 'over': return null;
+  }
+}
+
+/** Indices (dans la main) des cartes jouables, règle du jeu d'origine. */
+export function legalCards(state: TarotState, seat: number): Card[] {
+  const hand = state.hands[seat] ?? [];
+  const trick = state.trick;
+  if (trick.length === 0) return [...hand];
+  const led = ledCard(trick);
+  if (!led) return [...hand];
+
+  const bestAtout = highestAtout(trick);
+  const atouts = hand.filter((c) => c.t === 'a');
+  const hasAtout = atouts.length > 0;
+  const hasHigher = atouts.some((c) => c.rank > bestAtout);
+  const hasLedSuit = led.t === 'c' && hand.some((c) => c.t === 'c' && c.suit === led.suit);
+
+  const legal = hand.filter((c) => {
+    if (c.t === 'e') return true;
+    if (led.t === 'a') {
+      if (!hasAtout) return true;
+      return c.t === 'a' && (!hasHigher || c.rank > bestAtout);
+    }
+    if (hasLedSuit) return c.t === 'c' && c.suit === led.suit;
+    if (hasAtout) return c.t === 'a' && (!hasHigher || c.rank > bestAtout);
+    return true;
+  });
+  return legal.length ? legal : [...hand];
+}
+
+function legalDiscards(state: TarotState): Card[] {
+  const hand = state.hands[state.preneur] ?? [];
+  const remaining = state.chienSize - state.ecart.length;
+  const normal = hand.filter((c) => !ecartForbidden(c) && c.t !== 'a');
+  if (normal.length >= remaining) return normal;
+  // Pas assez de cartes ordinaires : les atouts (hors bouts) deviennent permis.
+  return hand.filter((c) => !ecartForbidden(c));
+}
+
+export function legalMoves(state: TarotState, seat: number): Move[] {
+  if (currentSeat(state) !== seat) return [];
+  switch (state.phase) {
+    case 'bidding': {
+      const moves: Move[] = [{ type: 'bid', bid: 0 }];
+      for (let b = state.bestBid + 1; b <= 4; b++) moves.push({ type: 'bid', bid: b as Bid });
+      return moves;
+    }
+    case 'callKing': {
+      const hand = state.hands[seat] ?? [];
+      const kings = hand.filter(isKing).length;
+      const value: 'R' | 'D' = kings >= 4 ? 'D' : 'R';
+      return SUITS.map((suit) => ({ type: 'call', suit, value }));
+    }
+    case 'ecart':
+      return legalDiscards(state).map((card) => ({ type: 'discard', card }));
+    case 'play': {
+      const moves: Move[] = legalCards(state, seat).map((card) => ({ type: 'play', card }));
+      if (canAnnouncePoignee(state, seat)) moves.unshift({ type: 'poignee' });
+      return moves;
+    }
+    case 'over':
+      return [];
+  }
+}
+
+export function canAnnouncePoignee(state: TarotState, seat: number): boolean {
+  if (state.phase !== 'play') return false;
+  const hand = state.hands[seat] ?? [];
+  if (hand.length !== state.totalTricks) return false; // avant sa première carte seulement
+  if (state.poignees.some((p) => p.seat === seat)) return false;
+  return poigneeLevel(state.seats, hand) !== null;
+}
+
+export function forcedMove(state: TarotState, seat: number): Move | null {
+  const legal = legalMoves(state, seat);
+  // Une seule carte jouable (et pas de poignée à décider) : le socle la pose pour un humain.
+  if (state.phase === 'play' && legal.length === 1 && legal[0]?.type === 'play') return legal[0];
+  return null;
+}
+
+export function moveKey(m: Move): string {
+  switch (m.type) {
+    case 'bid': return `bid:${m.bid}`;
+    case 'call': return `call:${m.value}${m.suit}`;
+    case 'discard': return `discard:${cardKey(m.card)}`;
+    case 'poignee': return 'poignee';
+    case 'play': return `play:${cardKey(m.card)}`;
+  }
+}
+
+export function parseMoveKey(key: string): Move | null {
+  if (key === 'poignee') return { type: 'poignee' };
+  const [kind, rest] = key.split(':');
+  if (kind === 'bid') {
+    const b = Number(rest);
+    return Number.isInteger(b) && b >= 0 && b <= 4 ? { type: 'bid', bid: b as Bid } : null;
+  }
+  if (kind === 'call' && rest) {
+    const value = rest.slice(0, -1);
+    const suit = rest.slice(-1) as Suit;
+    if ((value === 'R' || value === 'D') && SUITS.includes(suit)) return { type: 'call', suit, value };
+    return null;
+  }
+  if ((kind === 'discard' || kind === 'play') && rest) {
+    const card = parseCardKey(rest);
+    return card ? { type: kind, card } : null;
+  }
+  return null;
+}
+
+// ---------- application des coups ----------
+
+export function applyMove(state: TarotState, seat: number, move: Move, rng: Rng): TarotState {
+  switch (move.type) {
+    case 'bid': return applyBid(state, seat, move.bid, rng);
+    case 'call': return applyCall(state, seat, move.suit, move.value);
+    case 'discard': return applyDiscard(state, seat, move.card);
+    case 'poignee': return applyPoignee(state, seat);
+    case 'play': return applyPlay(state, seat, move.card);
+  }
+}
+
+function applyBid(state: TarotState, seat: number, bid: Bid, rng: Rng): TarotState {
+  const bids = [...state.bids];
+  bids[seat] = bid;
+  const bestBid = bid > state.bestBid ? bid : state.bestBid;
+  const preneur = bid > state.bestBid ? seat : state.preneur;
+  const bidsPlaced = state.bidsPlaced + 1;
+
+  if (bidsPlaced < state.seats) {
+    return { ...state, bids, bestBid, preneur, bidsPlaced, bidTurn: (state.bidTurn + 1) % state.seats, lastEvent: { type: 'bid', seat, bid } };
+  }
+  if (bestBid === 0) {
+    // Tout le monde passe : on redonne, la donne ne compte pas, le donneur tourne.
+    return deal(state.seats, (state.dealer + 1) % state.seats, rng, state, { type: 'redeal' });
+  }
+  const next: TarotState = { ...state, bids, bestBid, preneur, bidsPlaced, lastEvent: { type: 'bid', seat, bid } };
+  if (state.seats === 5) return { ...next, phase: 'callKing' };
+  return proceedToChien(next);
+}
+
+function applyCall(state: TarotState, seat: number, suit: Suit, value: 'R' | 'D'): TarotState {
+  const called: Card = { t: 'c', suit, value, rank: value === 'R' ? 14 : 13 };
+  let partner = state.preneur;
+  state.hands.forEach((hand, i) => {
+    if (has(hand, called)) partner = i;
+  });
+  // La carte appelée dans le chien, ou dans sa propre main : le preneur joue seul.
+  if (has(state.chien, called)) partner = state.preneur;
+  const revealed = partner === state.preneur; // seul : il n'y a personne à révéler
+  return proceedToChien({ ...state, calledCard: called, partner, partnerRevealed: revealed, lastEvent: { type: 'call', seat, card: called } });
+}
+
+function proceedToChien(state: TarotState): TarotState {
+  const lead = (state.dealer + 1) % state.seats;
+  if (state.bestBid >= 3) {
+    // Garde Sans / Garde Contre : le chien reste fermé.
+    return { ...state, phase: 'play', leadSeat: lead, current: lead, trick: [] };
+  }
+  const hands = state.hands.map((h, i) => (i === state.preneur ? sortHand([...h, ...state.chien]) : h));
+  return { ...state, phase: 'ecart', hands };
+}
+
+function applyDiscard(state: TarotState, seat: number, card: Card): TarotState {
+  const hands = state.hands.map((h, i) => (i === seat ? without(h, card) : h));
+  const ecart = [...state.ecart, card];
+  if (ecart.length < state.chienSize) return { ...state, hands, ecart };
+  const lead = (state.dealer + 1) % state.seats;
+  return { ...state, hands, ecart, phase: 'play', leadSeat: lead, current: lead, trick: [], lastEvent: { type: 'ecart-done', seat } };
+}
+
+function applyPoignee(state: TarotState, seat: number): TarotState {
+  const level = poigneeLevel(state.seats, state.hands[seat] ?? []);
+  if (!level) return state;
+  const p: Poignee = { seat, count: level.count, bonus: level.bonus };
+  return { ...state, poignees: [...state.poignees, p], lastEvent: { type: 'poignee', seat, count: p.count, bonus: p.bonus } };
+}
+
+function applyPlay(state: TarotState, seat: number, card: Card): TarotState {
+  const hand = state.hands[seat] ?? [];
+  const hands = state.hands.map((h, i) => (i === seat ? without(h, card) : h));
+  const trick = [...state.trick, { seat, card }];
+  const played = [...state.played, card];
+
+  // Renonces observées : le siège n'a pas fourni la couleur (ou l'atout) demandée.
+  const voids = state.voids.map((v) => [...v]);
+  const led = ledCard(state.trick);
+  if (led && card.t !== 'e') {
+    const seatVoids = voids[seat] as string[];
+    if (led.t === 'c' && !(card.t === 'c' && card.suit === led.suit)) {
+      if (!seatVoids.includes(led.suit)) seatVoids.push(led.suit);
+      if (card.t !== 'a' && !seatVoids.includes('A')) seatVoids.push('A');
+    } else if (led.t === 'a' && card.t !== 'a') {
+      if (!seatVoids.includes('A')) seatVoids.push('A');
+    }
+  }
+
+  let partnerRevealed = state.partnerRevealed;
+  let lastEvent: LastEvent | null = null;
+  if (state.calledCard && !partnerRevealed && sameCard(card, state.calledCard)) {
+    partnerRevealed = true;
+    lastEvent = { type: 'partner', seat };
+  }
+
+  const base: TarotState = { ...state, hands, trick, played, voids, partnerRevealed, lastEvent };
+  void hand;
+  if (trick.length < state.seats) {
+    return { ...base, current: (state.current + 1) % state.seats };
+  }
+  return resolveTrick(base);
+}
+
+function resolveTrick(state: TarotState): TarotState {
+  const trick = state.trick;
+  const led = ledCard(trick);
+  let winner = -1;
+  let bestRank = -1;
+  let bestIsAtout = false;
+  for (const t of trick) {
+    const c = t.card;
+    if (c.t === 'e') continue;
+    if (c.t === 'a') {
+      if (!bestIsAtout || c.rank > bestRank) {
+        bestIsAtout = true;
+        bestRank = c.rank;
+        winner = t.seat;
+      }
+    } else if (!bestIsAtout && led && led.t === 'c' && c.suit === led.suit && c.rank > bestRank) {
+      bestRank = c.rank;
+      winner = t.seat;
+    }
+  }
+  if (winner < 0) winner = trick[0]?.seat ?? state.leadSeat;
+
+  const isLast = state.tricksPlayed === state.totalTricks - 1;
+  const won = state.won.map((w) => [...w]);
+  let excuseInfo = state.excuseInfo;
+  for (const t of trick) {
+    if (t.card.t === 'e' && !isLast) {
+      (won[t.seat] as Card[]).push(t.card);
+      excuseInfo = { owner: t.seat, trickWinner: winner };
+    } else {
+      (won[winner] as Card[]).push(t.card);
+    }
+  }
+
+  const next: TarotState = {
+    ...state,
+    won,
+    excuseInfo,
+    lastTrick: { cards: trick, winner },
+    trick: [],
+    tricksPlayed: state.tricksPlayed + 1,
+    leadSeat: winner,
+    current: winner,
+    lastEvent: state.lastEvent?.type === 'partner' ? state.lastEvent : { type: 'trick', winner },
+  };
+  return next.tricksPlayed >= next.totalTricks ? scoreRound(next) : next;
+}
+
+// ---------- décompte ----------
+
+function scoreRound(state: TarotState): TarotState {
+  let attackPts = 0;
+  let attackBouts = 0;
+  state.won.forEach((cards, i) => {
+    if (teamOf(state, i) !== 'A') return;
+    for (const c of cards) {
+      attackPts += cardPoints(c);
+      if (isBout(c)) attackBouts++;
+    }
+  });
+
+  // L'Excuse : un demi-point rendu au camp qui a remporté le pli, si ce n'est pas le même.
+  if (state.excuseInfo) {
+    const ownerTeam = teamOf(state, state.excuseInfo.owner);
+    const winnerTeam = teamOf(state, state.excuseInfo.trickWinner);
+    if (ownerTeam !== winnerTeam) attackPts += ownerTeam === 'A' ? -0.5 : 0.5;
+  }
+
+  // Le chien (ou l'écart) : à l'attaque, sauf Garde Contre.
+  const pile = state.bestBid <= 2 ? state.ecart : state.chien;
+  if (state.bestBid !== 4) {
+    for (const c of pile) {
+      attackPts += cardPoints(c);
+      if (isBout(c)) attackBouts++;
+    }
+  }
+
+  const target = TARGETS[Math.min(attackBouts, 3)] as number;
+  const diff = attackPts - target;
+  const won = diff >= 0;
+  const mult = BID_MULT[state.bestBid];
+
+  // Petit au bout : le camp qui remporte le dernier pli avec le Petit dedans.
+  let petit = 0;
+  if (state.lastTrick && state.lastTrick.cards.some((t) => t.card.t === 'a' && t.card.rank === 1)) {
+    petit = teamOf(state, state.lastTrick.winner) === 'A' ? 10 : -10;
+  }
+
+  const poigneeSum = state.poignees.reduce((s, p) => s + p.bonus, 0);
+  const sign = won ? 1 : -1;
+  const value = Math.round((25 + Math.abs(diff)) * mult * sign + petit * mult + poigneeSum * sign);
+
+  const deltas: number[] = [];
+  if (state.seats === 4) {
+    for (let i = 0; i < 4; i++) deltas.push(i === state.preneur ? 3 * value : -value);
+  } else {
+    const alone = state.partner === state.preneur;
+    for (let i = 0; i < 5; i++) {
+      if (i === state.preneur) deltas.push((alone ? 4 : 2) * value);
+      else if (!alone && i === state.partner) deltas.push(value);
+      else deltas.push(-value);
+    }
+  }
+  const scores = state.scores.map((s, i) => s + (deltas[i] ?? 0));
+
+  const result: DonneResult = {
+    preneur: state.preneur,
+    partner: state.partner >= 0 && state.partner !== state.preneur ? state.partner : null,
+    bid: state.bestBid,
+    attackPoints: Math.round(attackPts * 2) / 2,
+    bouts: attackBouts,
+    target,
+    won,
+    petitAuBout: petit * mult,
+    poignees: poigneeSum * sign,
+    value,
+    deltas,
+    calledCard: state.calledCard,
+  };
+  return {
+    ...state,
+    phase: 'over',
+    roundOver: true,
+    partnerRevealed: true,
+    scores,
+    result,
+    history: [...state.history, { round: state.roundNumber, result, scores }],
+  };
+}
+
+export function isMatchOver(state: TarotState): boolean {
+  return state.roundOver && state.roundNumber >= state.totalRounds;
+}
+
+export function matchWinner(state: TarotState): number | null {
+  if (!isMatchOver(state)) return null;
+  let best = 0;
+  state.scores.forEach((s, i) => {
+    if (s > (state.scores[best] ?? -Infinity)) best = i;
+  });
+  return best;
+}
+
+// ---------- vue ----------
+
+export function view(state: TarotState, seat: number): TarotView {
+  const legal = legalMoves(state, seat).map((move) => ({ key: moveKey(move), move }));
+  const isPreneur = seat === state.preneur;
+  return {
+    seats: state.seats,
+    me: seat,
+    phase: state.phase,
+    dealer: state.dealer,
+    roundNumber: state.roundNumber,
+    totalRounds: state.totalRounds,
+    hand: state.hands[seat] ?? [],
+    handCounts: state.hands.map((h) => h.length),
+    bids: state.bids,
+    bestBid: state.bestBid,
+    bidTurn: state.phase === 'bidding' ? state.bidTurn : -1,
+    preneur: state.preneur,
+    calledCard: state.calledCard,
+    partner: state.partnerRevealed && state.partner >= 0 && state.partner !== state.preneur ? state.partner : null,
+    chien: state.phase === 'ecart' ? state.chien : null,
+    chienSize: state.chienSize,
+    ecart: isPreneur && state.phase === 'ecart' ? state.ecart : null,
+    ecartNeeded: state.phase === 'ecart' ? state.chienSize - state.ecart.length : 0,
+    trick: state.trick,
+    lastTrick: state.lastTrick,
+    current: state.phase === 'play' ? state.current : -1,
+    tricksPlayed: state.tricksPlayed,
+    totalTricks: state.totalTricks,
+    poignees: state.poignees,
+    myPoignee: canAnnouncePoignee(state, seat) ? poigneeLevel(state.seats, state.hands[seat] ?? []) : null,
+    scores: state.scores,
+    roundOver: state.roundOver,
+    result: state.result,
+    history: state.history,
+    lastEvent: state.lastEvent,
+    legal,
+  };
+}
+
+// ---------- information cachée ----------
+
+/**
+ * Un monde possible pour `seat` : ses cartes et les cartes tombées sont fixes ; le reste
+ * est redistribué entre les autres mains et la pile cachée (chien ou écart), en respectant
+ * les renonces observées et, pour l'écart, l'interdiction des Rois et des bouts.
+ */
+export function determinize(state: TarotState, seat: number, rng: Rng): TarotState {
+  const known = new Set<string>();
+  for (const c of state.hands[seat] ?? []) known.add(cardKey(c));
+  for (const c of state.played) known.add(cardKey(c));
+  for (const t of state.trick) known.add(cardKey(t.card));
+  const isPreneur = seat === state.preneur;
+  const chienPublic = state.phase === 'ecart';
+  // Le preneur connaît son écart ; sinon la pile cachée est à redistribuer.
+  const pileKnown = (state.phase === 'play' && isPreneur && state.bestBid <= 2) || chienPublic;
+  if (pileKnown) {
+    for (const c of state.ecart) known.add(cardKey(c));
+    for (const c of state.chien) known.add(cardKey(c));
+  }
+  // Pendant l'écart, les autres joueurs connaissent le chien mais pas ce que le preneur en fera.
+  const pool = shuffle(buildDeck().filter((c) => !known.has(cardKey(c))), rng);
+
+  const hands: Card[][] = state.hands.map((h, i) => (i === seat ? [...h] : []));
+  const order = shuffle([...Array(state.seats).keys()].filter((i) => i !== seat), rng);
+  for (const i of order) {
+    const need = state.hands[i]?.length ?? 0;
+    const voids = state.voids[i] ?? [];
+    const allowed = (c: Card): boolean => (c.t === 'e') || (c.t === 'a' ? !voids.includes('A') : !voids.includes(c.suit));
+    const take: Card[] = [];
+    for (let k = pool.length - 1; k >= 0 && take.length < need; k--) {
+      const c = pool[k] as Card;
+      if (allowed(c)) {
+        take.push(c);
+        pool.splice(k, 1);
+      }
+    }
+    while (take.length < need && pool.length) take.push(pool.pop() as Card); // contraintes insatisfiables : on complète
+    hands[i] = sortHand(take);
+  }
+
+  let chien = [...state.chien];
+  let ecart = [...state.ecart];
+  if (!pileKnown) {
+    // Ce qui reste est la pile cachée. Un écart ne contient ni Roi ni bout : on échange avec une main.
+    const pile = pool.splice(0, pool.length);
+    if (state.phase === 'play' && state.bestBid <= 2 && state.ecart.length > 0) {
+      for (let k = 0; k < pile.length; k++) {
+        if (!ecartForbidden(pile[k] as Card)) continue;
+        for (const i of order) {
+          const j = (hands[i] as Card[]).findIndex((c) => !ecartForbidden(c) && c.t !== 'a');
+          if (j >= 0) {
+            const swap = (hands[i] as Card[])[j] as Card;
+            (hands[i] as Card[])[j] = pile[k] as Card;
+            pile[k] = swap;
+            hands[i] = sortHand(hands[i] as Card[]);
+            break;
+          }
+        }
+      }
+      ecart = pile;
+    } else {
+      chien = pile;
+    }
+  }
+
+  // À 5 joueurs, le partenaire suit la carte appelée dans ce monde.
+  let partner = state.partner;
+  if (state.calledCard && !state.partnerRevealed) {
+    partner = state.preneur;
+    hands.forEach((h, i) => {
+      if (has(h, state.calledCard as Card)) partner = i;
+    });
+    if (has(chien, state.calledCard) || has(ecart, state.calledCard)) partner = state.preneur;
+  }
+  return { ...state, hands, chien, ecart, partner };
+}
+
+// ---------- évaluation ----------
+
+export function evaluate(state: TarotState, seat: number): number {
+  if (state.roundOver && state.result) {
+    const delta = state.result.deltas[seat] ?? 0;
+    return 0.5 + 0.5 * Math.tanh(delta / 150);
+  }
+  if (state.phase === 'bidding' || state.preneur < 0) return 0.5;
+  // En cours de donne : points de l'attaque projetés contre l'objectif courant.
+  let attack = 0;
+  let defense = 0;
+  let bouts = 0;
+  state.won.forEach((cards, i) => {
+    const pts = cards.reduce((s, c) => s + cardPoints(c), 0);
+    if (teamOf(state, i) === 'A') {
+      attack += pts;
+      bouts += cards.filter(isBout).length;
+    } else defense += pts;
+  });
+  if (state.bestBid <= 2) {
+    attack += state.ecart.reduce((s, c) => s + cardPoints(c), 0);
+    bouts += state.ecart.filter(isBout).length;
+  }
+  const remaining = 91 - attack - defense - (state.bestBid <= 2 ? state.ecart.reduce((s, c) => s + cardPoints(c), 0) : 0);
+  const share = attack + defense > 0 ? attack / (attack + defense) : 0.5;
+  const projected = attack + Math.max(0, remaining) * share;
+  const target = TARGETS[Math.min(bouts, 3)] as number;
+  const v = 0.5 + 0.5 * Math.tanh((projected - target) / 15);
+  return teamOf(state, seat) === 'A' ? v : 1 - v;
+}
+
+// ---------- le bot du jeu d'origine ----------
+
+/** Carte maîtresse : plus aucune carte supérieure du même groupe en circulation. */
+function isMaster(state: TarotState, hand: readonly Card[], card: Card): boolean {
+  if (card.t === 'e') return false;
+  const seen = (rank: number, suit: Suit | null, t: 'a' | 'c'): boolean => {
+    const match = (c: Card): boolean => c.t === t && c.rank === rank && (t === 'a' || (c as { suit: Suit }).suit === suit);
+    return state.played.some(match) || state.trick.some((x) => match(x.card)) || hand.some(match);
+  };
+  if (card.t === 'a') {
+    for (let r = card.rank + 1; r <= 21; r++) if (!seen(r, null, 'a')) return false;
+    return true;
+  }
+  for (let r = card.rank + 1; r <= 14; r++) if (!seen(r, card.suit, 'c')) return false;
+  return true;
+}
+
+function wouldWin(state: TarotState, card: Card): boolean {
+  if (card.t === 'e') return false;
+  const led = ledCard(state.trick) ?? card;
+  const bestAtout = highestAtout(state.trick);
+  if (card.t === 'a') return card.rank > bestAtout;
+  if (bestAtout > 0) return false;
+  if (led.t === 'c' && card.suit === led.suit) {
+    let best = -1;
+    for (const t of state.trick) if (t.card.t === 'c' && t.card.suit === led.suit && t.card.rank > best) best = t.card.rank;
+    return card.rank > best;
+  }
+  return false;
+}
+
+function botBid(state: TarotState, seat: number): Move {
+  const hand = state.hands[seat] ?? [];
+  const atouts = hand.filter((c) => c.t === 'a').length;
+  const bouts = hand.filter(isBout).length;
+  const rois = hand.filter(isKing).length;
+  const gros = hand.filter((c) => c.t === 'a' && c.rank >= 16).length;
+  const strength = atouts + bouts * 4 + rois * 2 + gros + (state.seats === 5 ? 2 : 0);
+  let wish: Bid = 0;
+  if (strength >= 26) wish = 3;
+  else if (strength >= 20) wish = 2;
+  else if (strength >= 15) wish = 1;
+  return { type: 'bid', bid: wish > state.bestBid ? wish : 0 };
+}
+
+function botCall(state: TarotState, seat: number, rng: Rng): Move {
+  const hand = state.hands[seat] ?? [];
+  const value: 'R' | 'D' = hand.filter(isKing).length >= 4 ? 'D' : 'R';
+  let bestSuit: Suit | null = null;
+  let bestLen = -1;
+  for (const suit of SUITS) {
+    if (hand.some((c) => c.t === 'c' && c.suit === suit && c.value === value)) continue;
+    const len = hand.filter((c) => c.t === 'c' && c.suit === suit).length;
+    if (len > bestLen) {
+      bestLen = len;
+      bestSuit = suit;
+    }
+  }
+  return { type: 'call', suit: bestSuit ?? (SUITS[rng.int(4)] as Suit), value };
+}
+
+function botDiscard(state: TarotState, legal: readonly Move[]): Move {
+  const cards = legal.flatMap((m) => (m.type === 'discard' ? [m.card] : []));
+  const normal = cards.filter((c) => c.t !== 'a');
+  const pool = normal.length ? normal : cards;
+  const sorted = [...pool].sort((a, b) => (cardPoints(a) - cardPoints(b)) || ((a.t === 'c' ? a.rank : (a as { rank: number }).rank) - (b.t === 'c' ? b.rank : (b as { rank: number }).rank)));
+  return { type: 'discard', card: sorted[0] as Card };
+}
+
+function botPlay(state: TarotState, seat: number, legalMovesList: readonly Move[]): Move {
+  const hand = state.hands[seat] ?? [];
+  const legal = legalMovesList.flatMap((m) => (m.type === 'play' ? [m.card] : []));
+  const isLastToPlay = state.trick.length === state.seats - 1;
+  const tricksRemaining = state.totalTricks - state.tricksPlayed;
+  const trickPts = state.trick.reduce((s, t) => s + cardPoints(t.card), 0);
+  const rank = (c: Card): number => (c.t === 'e' ? 0 : c.rank);
+  let choice: Card | null = null;
+
+  // 1. L'Excuse perdue au dernier pli : on la joue au plus tard à l'avant-dernier.
+  const excuse = legal.find((c) => c.t === 'e') ?? null;
+  if (excuse && tricksRemaining === 2) choice = excuse;
+
+  const safe = legal.filter((c) => c.t !== 'e' && !(c.t === 'a' && c.rank === 1));
+  const noExcuse = legal.filter((c) => c.t !== 'e');
+  const pool = safe.length ? safe : noExcuse.length ? noExcuse : legal;
+
+  if (!choice && state.trick.length === 0) {
+    // 2. Entame : une maîtresse à points, sinon une petite carte de sa couleur longue.
+    const masters = pool.filter((c) => c.t === 'c' && isMaster(state, hand, c));
+    if (masters.length) {
+      masters.sort((a, b) => cardPoints(b) - cardPoints(a));
+      choice = masters[0] as Card;
+    } else {
+      const suitCards = pool.filter((c) => c.t === 'c');
+      if (suitCards.length) {
+        const len: Record<string, number> = {};
+        for (const c of hand) if (c.t === 'c') len[c.suit] = (len[c.suit] ?? 0) + 1;
+        suitCards.sort((a, b) => ((len[(b as { suit: Suit }).suit] ?? 0) - (len[(a as { suit: Suit }).suit] ?? 0)) || (rank(a) - rank(b)));
+        choice = suitCards[0] as Card;
+      } else {
+        choice = [...pool].sort((a, b) => rank(a) - rank(b))[0] as Card;
+      }
+    }
+  }
+
+  if (!choice) {
+    // 3. En cours de pli.
+    const winners = pool.filter((c) => wouldWin(state, c));
+    const masterWinners = winners.filter((c) => isMaster(state, hand, c));
+    if (isLastToPlay && winners.length && trickPts >= 2) {
+      winners.sort((a, b) => (rank(a) - rank(b)) || (cardPoints(a) - cardPoints(b)));
+      choice = winners[0] as Card;
+    } else if (masterWinners.length && trickPts >= 3) {
+      masterWinners.sort((a, b) => cardPoints(a) - cardPoints(b));
+      choice = masterWinners[0] as Card;
+    }
+    if (!choice) {
+      // 4. Se défausser au plus bas ; sacrifier l'Excuse plutôt qu'une figure sur un gros pli.
+      const dumps = [...pool].sort((a, b) => (cardPoints(a) - cardPoints(b)) || (rank(a) - rank(b)));
+      const cheapest = dumps[0] as Card;
+      choice = excuse && cardPoints(cheapest) >= 1.5 && trickPts >= 3 && tricksRemaining > 2 ? excuse : cheapest;
+    }
+  }
+  return { type: 'play', card: choice };
+}
+
+/** La stratégie du jeu d'origine, pour toutes les décisions : le socle l'utilise telle quelle. */
+export function botMove(state: TarotState, seat: number, legal: readonly Move[], rng: Rng): Move | null {
+  if (legal.length === 0) return null;
+  switch (state.phase) {
+    case 'bidding': return botBid(state, seat);
+    case 'callKing': return botCall(state, seat, rng);
+    case 'ecart': return botDiscard(state, legal);
+    case 'play':
+      if (legal.some((m) => m.type === 'poignee')) return { type: 'poignee' }; // annonce automatique
+      return botPlay(state, seat, legal);
+    case 'over': return null;
+  }
+}
+
+export function rolloutMove(state: TarotState, seat: number, legal: readonly Move[], rng: Rng): Move {
+  return botMove(state, seat, legal, rng) ?? (legal[rng.int(legal.length)] as Move);
+}
+
+// ---------- bilan, succès, textes ----------
+
+export function roundSummary(state: TarotState): RoundSummary {
+  const r = state.result;
+  return {
+    perSeat: state.scores.map((total, i) => ({ roundPoints: r?.deltas[i] ?? 0, total, detail: r ? { role: i === r.preneur ? 'preneur' : i === r.partner ? 'partenaire' : 'defense' } : null })),
+    roundWinner: r ? (r.won ? r.preneur : null) : null,
+  };
+}
+
+export function achievements(state: TarotState, seat: number, ctx: AchievementContext): string[] {
+  const out: string[] = [];
+  const r = state.result;
+  if (r) {
+    const attaque = seat === r.preneur || seat === r.partner;
+    if (seat === r.preneur && r.won && r.bid >= 3) out.push('garde-sans-filet');
+    if (attaque && r.won && r.bouts === 3) out.push('trois-bouts');
+    if (r.petitAuBout !== 0 && (r.petitAuBout > 0) === attaque) out.push('petit-au-bout');
+    if (state.poignees.some((p) => p.seat === seat && p.count >= 13)) out.push('grande-poignee');
+    if (!attaque && !r.won && r.bid >= 2) out.push('defense-de-fer');
+  }
+  if (ctx.matchOver && ctx.wonMatch) out.push('maitre-du-tarot');
+  return out;
+}
+
+export const PHRASES: readonly string[] = [
+  'bien-joue', 'joli-pli', 'a-toi', 'pas-de-chance', 'je-reflechis', 'on-y-va',
+  'je-prends', 'je-passe', 'coupe', 'le-petit', 'excuse', 'au-revoir',
+];
+
+export const META: GameMeta = { id: 'tarot', nameKey: 'games.tarot.name', seatCounts: [4, 5], status: 'available' };
+
+export const tarot: GameDefinition<TarotState, Move, TarotView> = {
+  id: 'tarot',
+  seatCounts: [4, 5],
+  timings: { botDelay: 1300, forcedDelay: 1500, afkTimeout: 150_000 },
+  createRound,
+  currentSeat,
+  legalMoves,
+  forcedMove,
+  applyMove,
+  moveKey,
+  isRoundOver: (s) => s.roundOver,
+  isMatchOver,
+  scores: (s) => [...s.scores],
+  matchWinner,
+  view,
+  determinize,
+  evaluate,
+  rolloutMove,
+  botMove,
+  roundSummary,
+  achievements,
+  phrases: PHRASES,
+};

@@ -17,9 +17,9 @@ Les commits portent une adresse `@users.noreply.github.com`.
 
 ## Ajouter un jeu
 
-1. Copier `packages/games/huit-americain` vers `packages/games/<mon-jeu>` ; renommer le
-   paquet (`@jdc/<mon-jeu>`) et le déclarer dans `packages/server/package.json`,
-   `packages/client/package.json` et `Dockerfile`.
+1. Copier `packages/games/huit-americain` (ou `tarot`, pour un jeu à plis avec enchères)
+   vers `packages/games/<mon-jeu>` ; renommer le paquet (`@jdc/<mon-jeu>`) et le déclarer
+   dans `packages/server/package.json` (le `Dockerfile` copie `packages/games` en entier).
 2. Écrire `src/rules.ts` : l'état `S`, les coups `M`, la vue `V`, et l'objet
    `GameDefinition<S, M, V>`. Le contrat est documenté ligne par ligne dans
    `packages/core/src/contract.ts`. Trois règles sont non négociables :
@@ -28,6 +28,10 @@ Les commits portent une adresse `@users.noreply.github.com`.
    - `view(state, seat)` ne contient **que** ce que le siège a le droit de voir, et rien
      d'interne (pas d'identifiants, pas de pioche, pas de mains adverses) ;
    - `determinize(state, seat, rng)` tire un monde possible **compatible avec la vue**.
+   Un coup = un choix : si une décision porte sur plusieurs cartes (un écart), la découper
+   en autant de coups ; c'est ce qui garde `legalMoves` énumérable et le bot capable de
+   raisonner. Si le jeu a sa propre stratégie de bot, la brancher par `botMove` (facultatif) ;
+   sinon le MCTS générique joue avec `rolloutMove`.
 3. Enregistrer le jeu dans `packages/server/src/games.ts`.
 4. Écrire les tests, en copiant la structure de `test/rules.test.ts` :
    - création de manche, coups légaux (clés uniques), coups illégaux refusés, fin de manche
@@ -37,9 +41,13 @@ Les commits portent une adresse `@users.noreply.github.com`.
    - **determinize** conserve la main du siège, les tailles et le multi-ensemble de cartes ;
    - des parties entières avec `rolloutMove` se terminent (pas de manche infinie) ;
    - le bot MCTS trouve un coup gagnant évident.
-5. Ajouter les textes : `packages/client/public/i18n/fr.json` (nom, règles en une phrase,
-   douze phrases, succès), une page `packages/client/public/jeu/<mon-jeu>/index.html` et
-   son script, en partant de ceux du 8 Américain.
+5. Ajouter les textes : `packages/client/public/i18n/fr.json` (nom, présentation, règles
+   paragraphe par paragraphe sous `games.<mon-jeu>.rules`, douze phrases, succès), une page
+   `packages/client/public/jeu/<mon-jeu>/index.html` et son script. Le script n'écrit que
+   le rendu de la table et du bilan : il appelle `demarrerSalle` (`salle.ts`), qui fournit
+   tout le parcours (identité, modes, file, table privée, niveau, nombre de joueurs, règles,
+   menu, réactions, fin de manche, reprise). Les mots propres au jeu (« donne » plutôt que
+   « manche ») se posent sous `games.<mon-jeu>.ui`.
 6. Mettre à jour `README.md` et la page « À propos ».
 
 ## Ce qu'on ne fait pas

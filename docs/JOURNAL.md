@@ -6,6 +6,48 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+## 0.4.0 — 16 octobre 2026
+
+**Le tarot, et un parcours unique pour tous les jeux.**
+
+Ajouté
+- **Tarot français à 4 et 5 joueurs**, règles du jeu d'origine (regis57/tarot-francais-enligne)
+  reprises point par point : enchères en un tour (Petite, Garde, Garde sans, Garde contre),
+  tout le monde passe → nouvelle donne ; appel au Roi à cinq, partenaire caché jusqu'à ce
+  que la carte tombe ; chien montré puis écart (ni Roi ni bout, atout en dernier recours),
+  fait carte par carte ; fournir, couper, surcouper ; Excuse qui ne gagne jamais et reste à
+  son camp ; objectifs 56 / 51 / 41 / 36 ; Petit au bout ; poignées 10 / 13 / 15 (8 / 10 / 13
+  à cinq) ; répartition ×3 à quatre, ×2 + partenaire ×1 (ou ×4 seul) à cinq ; cinq donnes.
+- Le bot du jeu d'origine, porté tel quel pour toutes les décisions (enchère, appel, écart,
+  poignée, carte), branché par un nouveau crochet du contrat, `botMove` ; le MCTS générique
+  reste la voie par défaut des autres jeux.
+- Six succès propres au tarot et douze phrases de table.
+- **Salle commune** (`salle.ts`) : le lobby, les modes, la file, la table privée, le niveau
+  des bots, le choix du nombre de joueurs, le menu, les réactions, la fin de manche et la
+  reprise sont désormais un seul code pour tous les jeux. Le 8 Américain l'utilise aussi.
+- « Règles du jeu » depuis le lobby et depuis le menu, pour chaque jeu, en français clair.
+- Lien « Tous les jeux » en tête de chaque lobby ; les mots changent avec le jeu (« donne
+  suivante » au tarot, « manche suivante » au 8).
+
+Changé
+- Le bilan de fin de manche est commun (titre, boutons) et chaque jeu y pose son tableau :
+  au tarot, contrat, points contre objectif, bouts, Petit au bout, poignées, valeur, rôle
+  et points de chacun, et l'historique de la partie donne par donne.
+- Accueil : le tarot passe de « bientôt » à jouable ; la belote reste annoncée.
+
+Vérifié
+- 17 tests pour le tarot : 78 cartes et 91 points, donne à 4 et à 5, enchères et redonne,
+  chien fermé, écart (y compris le cas où l'atout devient permis), fournir / couper /
+  surcouper / monter / Excuse, résolution des plis et retour de l'Excuse, décompte sur des
+  cas construits (objectifs, Petit au bout dans les deux sens, poignée non multipliée,
+  répartition à 4 et à 5), appel au Roi et Dame avec quatre Rois, poignée annonçable une
+  fois, vue sans fuite et clés de coups réversibles, déterminisation respectant les
+  renonces, quatre parties complètes à somme nulle, bot qui décide avec la vue seule, et
+  trois tests de table (humain et bots, cinq joueurs, refus et reprise). 75 tests en tout.
+- Parcours joué dans un navigateur réel à quatre et à cinq, de l'accueil au bilan.
+
+---
+
 ## 0.3.1 — 16 octobre 2026
 
 **Correction : les valeurs des cartes se lisent toujours à l'endroit.**
