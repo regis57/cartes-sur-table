@@ -6,6 +6,23 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.1"></a>
+## 0.6.1 — 16 octobre 2026
+
+**Une nouvelle version s'applique toute seule, au premier moment calme.**
+
+Corrigé
+- Après la mise à jour du serveur, une page déjà ouverte gardait ses anciens scripts (le
+  cache les sert d'abord, et les rafraîchit en fond pour la fois suivante). Un vieux client
+  face à un serveur neuf affichait des étiquettes fausses : au tarot, la Pousse apparaissait
+  « Garde » et la Garde « Garde sans », alors que les points, eux, étaient justes. Désormais
+  la nouvelle version prend la main dès qu'elle est prête ; hors table la page se recharge
+  aussitôt, à table un message prévient et la page se recharge à la manche suivante ou au
+  retour au lobby — la reprise rend le siège. La vérification de mise à jour se fait aussi à
+  chaque retour sur la page.
+
+---
+
 <a name="v0.6.0"></a>
 ## 0.6.0 — 16 octobre 2026
 

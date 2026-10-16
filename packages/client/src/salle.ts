@@ -20,7 +20,7 @@ import { loadLocale, t, has } from './i18n.ts';
 import { identity } from './profile.ts';
 import { avatarSrc } from './avatars.ts';
 import { connectGame, saveSeat, loadSeat, type GameSocket } from './net.ts';
-import { enregistrerAgent } from './installer.ts';
+import { enregistrerAgent, EVENEMENT_NOUVELLE_VERSION } from './installer.ts';
 import type { SeatView, PublicSeat } from '@jdc/core/table.ts';
 import type { RoundEndPayload } from '@jdc/core/protocol.ts';
 
@@ -395,7 +395,19 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     openDialog('dlg-info');
   };
 
+  // Une nouvelle version du site a pris la main pendant la partie : on l'applique au
+  // premier moment calme (manche suivante, retour au lobby), le siège est repris ensuite.
+  let nouvelleVersion = false;
+  window.addEventListener(EVENEMENT_NOUVELLE_VERSION, () => {
+    nouvelleVersion = true;
+    toast(t('site.new_version'), 'info');
+  });
+
   const backToLobby = (): void => {
+    if (nouvelleVersion) {
+      location.reload();
+      return;
+    }
     tableId = null;
     mySeat = -1;
     view = null;
@@ -565,10 +577,12 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     'next-round': () => {
       closeDialog('dlg-manche');
       if (tableId) socket.emit('nextRound', { tableId });
+      if (nouvelleVersion) location.reload(); // la reprise rend le siège, avec la vue à jour
     },
     'restart': () => {
       closeDialog('dlg-manche');
       if (tableId) socket.emit('restart', { tableId });
+      if (nouvelleVersion) location.reload();
     },
     'rejoin': () => {
       const s = loadSeat(jeu.id);
