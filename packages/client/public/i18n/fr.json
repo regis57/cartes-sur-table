@@ -2,6 +2,8 @@
   "site": {
     "name": "Jeux de cartes",
     "tagline": "Les jeux de cartes français, en ligne, sans compte ni publicité.",
+    "beta": "bêta",
+    "beta_hint": "Version d'essai : tout fonctionne, tout peut encore bouger. Un souci, une idée ? Écrivez à l'auteur, depuis la page « À propos ».",
     "play": "Jouer",
     "soon": "Bientôt",
     "players": "{n} joueurs",

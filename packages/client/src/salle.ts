@@ -67,7 +67,11 @@ function buildLobby(jeu: SalleJeu<unknown>): void {
   const back = h('a', 'retour-jeux', `← ${t('lobby.all_games')}`);
   back.href = '/';
   lobby.append(back);
-  lobby.append(h('h1', '', t(`games.${jeu.id}.name`)));
+  const titre = h('h1', '', t(`games.${jeu.id}.name`));
+  const beta = h('span', 'beta', t('site.beta'));
+  beta.title = t('site.beta_hint');
+  titre.append(document.createTextNode(' '), beta);
+  lobby.append(titre);
   if (has(`games.${jeu.id}.blurb`)) lobby.append(h('p', '', t(`games.${jeu.id}.blurb`)));
   const ident = h('p', 'lobby-identite');
   ident.id = 'lobby-identite';

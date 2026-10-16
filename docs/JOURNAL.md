@@ -6,6 +6,24 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.3"></a>
+## 0.6.3 — 16 octobre 2026
+
+**Version d'essai assumée, et le site lisible par les moteurs de recherche.**
+
+Ajouté
+- **Pastille « bêta »** à côté du titre de l'accueil, de chaque jeu et de la version dans
+  « À propos », avec une phrase qui dit ce que cela veut dire : tout fonctionne, tout peut
+  encore bouger, et où écrire.
+- **Référencement** : titres et descriptions réécrits page par page (mots que les gens
+  tapent : « belote en ligne gratuite », « tarot à 5 joueurs », « règles du tarot »), lien
+  canonique partout, balises Open Graph pour un aperçu propre quand le lien est partagé,
+  `robots.txt` (profil, hors-ligne, API exclus) et `sitemap.xml` des dix pages publiques.
+  Le profil et la page hors-ligne sont marqués `noindex`. Aucun script, aucun service
+  tiers : rien ne change pour la vie privée.
+
+---
+
 <a name="v0.6.2"></a>
 ## 0.6.2 — 16 octobre 2026
 

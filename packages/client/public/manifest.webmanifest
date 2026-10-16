@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Cartes sur table — jeux de cartes français",
   "short_name": "Cartes",
-  "description": "Les jeux de cartes français dans le navigateur : 8 Américain, puis belote et tarot. Solo contre des bots, à plusieurs ou entre amis. Sans compte obligatoire, sans publicité, sans pistage.",
+  "description": "Belote, tarot et 8 Américain dans le navigateur. Solo contre des bots, à plusieurs ou entre amis. Sans compte obligatoire, sans publicité, sans pistage. Version d'essai (bêta).",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
