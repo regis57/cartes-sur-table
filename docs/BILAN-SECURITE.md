@@ -158,7 +158,7 @@ auraient l'adresse du tunnel et la limite par IP bloquerait le 11ᵉ joueur du s
 | Fuzzing continu (OSS-Fuzz) | Hors proportion pour le projet ; des simulations aléatoires de parties tournent à chaque CI | Non planifié |
 | Badge OpenSSF Best Practices | Démarche déclarative | Non planifié |
 | Signature des commits (Sigstore / GPG) | Le dépôt n'exige pas encore les commits signés | À activer |
-| Sauvegarde chiffrée hors site | La base tient dans quelques Mo ; sauvegarde locale décrite dans le guide | Avant l'ouverture publique |
+| Sauvegarde **hors site** | La sauvegarde est faite : copie cohérente quotidienne, intégrité vérifiée, chiffrée côté client sur une clé USB, sept jours au plus. Mais la clé reste branchée au NAS : elle ne protège ni d'un sinistre, ni d'un logiciel malveillant qui prendrait la main sur le serveur | Débrancher la clé régulièrement, ou en faire tourner deux |
 | Audit externe | Pas de budget | Si le projet grandit |
 
 Un manque signalé ici vaut mieux qu'un manque ignoré : ce tableau fait partie du bilan.

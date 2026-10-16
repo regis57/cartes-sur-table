@@ -20,6 +20,7 @@ réseau.
 | Destinataires | L'éditeur seul |
 | Durée | Tant que le profil existe ; effacement automatique après 365 jours sans visite ; effacement immédiat à la demande du joueur depuis le site |
 | Lieu | Serveur de l'éditeur, en France (base SQLite dans un volume Docker) |
+| Sauvegardes | Copie cohérente quotidienne, vérifiée, conservée **sept jours au plus** : sept copies tournantes sur le serveur, et une copie chiffrée côté client sur un support USB relié au serveur, en rotation de sept versions. Un profil effacé disparaît donc des sauvegardes au plus tard sept jours après |
 | Sécurité | Jeton jamais stocké (empreinte seule) ; transport par en-tête Authorization en HTTPS ; serveur sans port ouvert, joignable par tunnel sortant seulement ; conteneur en lecture seule, sans privilèges |
 | Droits | Accès et portabilité (export JSON), rectification (pseudo, avatar), effacement : depuis la page Profil, sans formulaire. Réclamation possible auprès de la CNIL |
 
@@ -70,3 +71,4 @@ journaux applicatifs contenant des adresses IP, sauvegardes au-delà de sept jou
 
 - 2026-10-15 : création du registre, version initiale du site.
 - 2026-10-16 : ajout des passkeys et des sessions (traitement 1 bis).
+- 2026-10-16 : sauvegardes décrites (copie quotidienne vérifiée, chiffrée sur USB, sept jours au plus).
