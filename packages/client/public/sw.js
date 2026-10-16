@@ -16,7 +16,7 @@
  * Une partie se joue sur le serveur : hors ligne, on ne fait pas semblant, on l'explique.
  */
 
-const VERSION = '0.4.0';
+const VERSION = '0.4.1';
 const CACHE = `jdc-${VERSION}`;
 const HORS_LIGNE = '/hors-ligne/';
 
@@ -33,6 +33,7 @@ const COQUILLE = [
   '/js/avatars.js',
   '/js/installer.js',
   '/js/hors-ligne.js',
+  '/regles/',
   '/i18n/fr.json',
   '/img/favicon.svg',
   '/img/icon-192.png',

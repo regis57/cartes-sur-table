@@ -30,7 +30,8 @@
     "install": "Installer l'application",
     "install_title": "Installer l'application",
     "install_hint": "Une icône sur votre bureau ou votre écran d'accueil, et le jeu s'ouvre dans sa propre fenêtre. Rien à télécharger.",
-    "later": "Plus tard"
+    "later": "Plus tard",
+    "rules": "Les règles"
   },
   "games": {
     "huit-americain": {
@@ -460,5 +461,10 @@
     },
     "donne_won": "{name} réussit son contrat.",
     "donne_lost": "{name} chute : la défense l'emporte."
+  },
+  "rules": {
+    "title": "Les règles",
+    "intro": "Les règles appliquées par le serveur, telles quelles. Elles sont aussi consultables en cours de partie, par le menu en haut à droite.",
+    "toc": "Les jeux"
   }
 }
