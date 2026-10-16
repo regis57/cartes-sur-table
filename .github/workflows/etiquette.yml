@@ -1,0 +1,60 @@
+name: Étiquette
+
+# À chaque fusion sur `main`, si la version de `package.json` n'a pas encore son
+# étiquette `vX.Y.Z`, on la pose sur le commit de fusion et on publie une « release »
+# GitHub dont le texte est l'entrée du journal pour cette version. La page « À propos »
+# du site et la page des releases pointent ainsi sur la même chose.
+#
+# Une étiquette créée par le jeton du workflow ne déclenche pas d'autre workflow : c'est
+# voulu par GitHub (pas de cascade) ; l'image portant ce numéro est donc publiée par
+# `release.yml` directement depuis la poussée sur `main`.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: etiquette-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  etiqueter:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lire la version et son entrée de journal
+        id: v
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          # L'entrée du journal : de son ancre jusqu'au séparateur suivant.
+          awk -v a="<a name=\"v${version}\"></a>" '
+            $0 == a { on = 1; next }
+            on && /^---$/ { exit }
+            on { print }
+          ' docs/JOURNAL.md > notes.md
+          if [ ! -s notes.md ]; then echo "Version ${version} : pas d'entrée de journal." > notes.md; fi
+          echo "Version ${version}, $(wc -l < notes.md) lignes de notes."
+
+      - name: Poser l'étiquette et publier la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          if gh api "repos/${REPO}/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "v${VERSION} existe déjà : rien à faire."
+            exit 0
+          fi
+          gh release create "v${VERSION}" --repo "$REPO" --target "$SHA" --title "${VERSION}" --notes-file notes.md
+          echo "v${VERSION} posée sur ${SHA::12} et release publiée."

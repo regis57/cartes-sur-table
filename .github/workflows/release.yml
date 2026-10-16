@@ -66,10 +66,13 @@ jobs:
         run: |
           short="${SHA::12}"
           tags="${IMAGE}:sha-${short}"
+          pkg="$(node -p "require('./package.json').version")"
           if [ "$REF_TYPE" = "tag" ]; then
             tags="${tags},${IMAGE}:${REF_NAME#v},${IMAGE}:latest"
           elif [ "$REF_NAME" = "main" ]; then
-            tags="${tags},${IMAGE}:latest"
+            # L'étiquette vX.Y.Z est posée par etiquette.yml sans redéclencher ce workflow :
+            # l'image portant le numéro de version est donc publiée ici, depuis main.
+            tags="${tags},${IMAGE}:${pkg},${IMAGE}:latest"
           fi
           echo "tags=${tags}" >> "$GITHUB_OUTPUT"
           echo "short=${short}" >> "$GITHUB_OUTPUT"

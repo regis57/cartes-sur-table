@@ -18,6 +18,7 @@
 | ZAP passif sur le site en ligne | `securite.yml` | chaque lundi | bloquant |
 | Mises à jour | Dependabot (npm, Actions, Docker) | chaque semaine | PR à fusionner |
 | Wiki (journal, manifeste) | `wiki.yml` | chaque fusion sur `main` | publié |
+| Étiquette `vX.Y.Z` et release GitHub (texte : l'entrée du journal) | `etiquette.yml` | chaque fusion sur `main`, si la version est nouvelle | publié |
 
 Les binaires de scan (Trivy, Opengrep, ZAP) sont pris dans leurs releases officielles,
 version et empreinte SHA-256 fixées dans les workflows, jamais par une action tierce.
