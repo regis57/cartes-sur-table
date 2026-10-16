@@ -6,6 +6,36 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+## 0.4.1 — 16 octobre 2026
+
+**Pages : une page de règles dédiée, soutien, mentions légales.**
+
+Ajouté
+- **Page « Les règles »** (`/regles/`) : toutes les règles rassemblées, une ancre par jeu
+  (`/regles/#tarot`), un sommaire et un bouton pour jouer. Elle est construite depuis le
+  dictionnaire, comme la boîte « Règles du jeu » d'une table : une règle corrigée l'est
+  partout, et un jeu ajouté y apparaît sans que personne n'y pense.
+- Lien « Les règles » dans le pied de toutes les pages.
+
+Changé
+- **À propos** ne récite plus les règles du 8 Américain : il renvoie à la page dédiée,
+  jeu par jeu. La page redevient ce qu'elle doit être — comment le site fonctionne, et
+  comment ajouter un jeu.
+- **Soutenir** : le don passe par Buy Me a Coffee (« offrir une bière »). Il reste sans
+  contrepartie : rien à débloquer, aucun avantage, aucun effet sur le profil. Rien n'est
+  chargé depuis le service de don avant le clic, et le site ne sait pas qui a donné.
+- **Mentions légales** : la nature **non professionnelle** de la publication est énoncée
+  explicitement (pas de vente, pas de publicité, pas de recette, dons sans contrepartie),
+  avec le régime d'adresse qui en découle. Retrait d'une phrase héritée d'un autre projet,
+  hors périmètre.
+- Les deux derniers champs « à compléter » signalés à chaque construction sont résolus.
+
+Corrigé
+- Un lien s'était glissé au milieu d'une phrase de la page Soutenir, et le pied de la page
+  hors ligne avait été oublié, lors de l'ajout automatique des liens d'installation.
+
+---
+
 ## 0.4.0 — 16 octobre 2026
 
 **Le tarot, et un parcours unique pour tous les jeux.**

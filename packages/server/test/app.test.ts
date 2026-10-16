@@ -63,7 +63,7 @@ test('HTTP : en-têtes de sécurité, pages servies, rien de caché ni de hors-d
     assert.equal(r.headers['referrer-policy'], 'no-referrer');
     const lower = r.body.toLowerCase();
     assert.ok(!lower.includes('onclick=') && !lower.includes(' style=') && !lower.includes('<script>'), 'HTML sans script ni style en ligne');
-    for (const p of ['/profil/', '/donnees/', '/confidentialite/', '/mentions-legales/', '/soutenir/', '/a-propos/', '/jeu/huit-americain/', '/js/accueil.js', '/css/site.css', '/i18n/fr.json', '/img/avatars/a01.svg', '/img/emotes/sourire.svg', '/healthz', '/socket.io/socket.io.esm.min.js']) {
+    for (const p of ['/profil/', '/donnees/', '/confidentialite/', '/mentions-legales/', '/soutenir/', '/a-propos/', '/regles/', '/installer/', '/hors-ligne/', '/jeu/huit-americain/', '/js/accueil.js', '/css/site.css', '/i18n/fr.json', '/img/avatars/a01.svg', '/img/emotes/sourire.svg', '/healthz', '/socket.io/socket.io.esm.min.js']) {
       assert.equal((await req(port, 'GET', p)).status, 200, p);
     }
     for (const p of ['/package.json', '/.env', '/.git/config', '/../package.json', '/%2e%2e/package.json', '/js/../../src/app.ts', '/src/app.ts', '/api/inconnu']) {
