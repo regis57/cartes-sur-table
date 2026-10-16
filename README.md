@@ -6,6 +6,10 @@ Sans compte obligatoire, sans publicité, sans pistage, sans messagerie.
 
 Deux jeux : le **8 Américain** et le **tarot** (à 4 ou 5, avec appel au Roi). Prochain : la belote.
 
+**En ligne : [jeuxdecartes.altiplume.com](https://jeuxdecartes.altiplume.com)** — et
+installable comme une application, sur ordinateur comme sur téléphone
+([comment faire](https://jeuxdecartes.altiplume.com/installer/)).
+
 ## Ce qu'il y a dedans
 
 - **Un socle commun** (`packages/core`) qui ne connaît aucune carte : un contrat de jeu
@@ -90,6 +94,12 @@ connexion — les parties se déroulent sur le serveur, y compris contre les bot
   [wiki](https://github.com/regis57/cartes-sur-table/wiki), synchronisé à chaque fusion.
 - [docs/SECURITE.md](docs/SECURITE.md) : les contrôles automatiques, par qui, quand.
 - [SECURITY.md](SECURITY.md) : signaler une faille, variables de configuration.
+
+Le site est servi depuis un NAS domestique, derrière un tunnel sortant dédié : aucun port
+n'est ouvert. Le domaine est signé (DNSSEC) et l'émission de certificats y est restreinte
+aux seules autorités de l'intermédiaire réseau. Les valeurs de cette configuration ne sont
+pas dans ce dépôt ; la marche à suivre, elle, l'est, dans
+[docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md).
 
 Toute la documentation est en français, README compris ; le wiki sera porté en anglais
 si le site l'est.

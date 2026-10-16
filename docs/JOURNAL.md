@@ -46,6 +46,29 @@ Vérifié
   trois tests de table (humain et bots, cinq joueurs, refus et reprise). 75 tests en tout.
 - Parcours joué dans un navigateur réel à quatre et à cinq, de l'accueil au bilan.
 
+### Mise en ligne — 16 octobre 2026
+
+C'est la version mise en service, sur le NAS, derrière son tunnel dédié. Ce qui a été
+fait ce jour-là, en plus du déploiement lui-même :
+
+- **DNSSEC activé** sur le domaine : les réponses DNS sont désormais signées.
+- **Émission de certificats restreinte** par des enregistrements CAA, pour les noms exacts
+  comme pour le joker : seules les autorités employées par l'intermédiaire réseau peuvent
+  délivrer un certificat du domaine.
+- **Le sous-domaine déclare n'envoyer ni ne recevoir de courrier** (politique d'envoi,
+  absence de serveur de réception, politique de rejet) : on ne peut pas écrire en son nom.
+- **Limitation de débit au bord du réseau** sur le chemin temps réel, et **contournement
+  du cache** pour tout ce qui est vivant : un flot est arrêté avant d'atteindre la maison.
+- **Audit des exemptions** : des règles héritées d'une ancienne configuration dispensaient
+  certaines adresses d'une partie des contrôles, sur l'ensemble du compte. Supprimées.
+- **Vérification des options d'injection** : aucune option de l'intermédiaire n'ajoute de
+  JavaScript aux pages — elles contrediraient la CSP du site.
+- Installation de l'application vérifiée sur ordinateur depuis le domaine public.
+
+Les valeurs exactes de cette configuration ne figurent pas dans ce dépôt : elles vivent
+chez l'hébergeur et chez l'intermédiaire réseau. La marche à suivre, elle, est publique
+dans [DEPLOIEMENT.md](DEPLOIEMENT.md).
+
 ---
 
 ## 0.3.1 — 16 octobre 2026
