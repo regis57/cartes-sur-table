@@ -1,0 +1,103 @@
+/*
+ * Jeux de cartes — Copyright (C) 2026 regis57
+ * Licensed under the GNU Affero General Public License v3.0 or later.
+ *
+ * Le tarot : cinq sièges, un pli au centre, le chien et l'écart, les enchères.
+ */
+
+/* Le centre du tarot (contrat, pli, choix) ne doit jamais être écrasé : la grille peut
+   dépasser l'écran et la page défiler un peu, plutôt que de cacher le pli. */
+.tarot .table-jeu-grille {
+  height: auto; min-height: calc(100dvh - 124px);
+  grid-template-rows: auto minmax(max-content, 1fr) auto;
+}
+/* La barre des réactions suit le document au lieu de flotter : rien ne recouvre jamais la main. */
+.tarot .reactions { position: static; background: none; padding-top: 4px; }
+
+/* Cinq sièges : deux en haut, un de chaque côté, le joueur en bas. */
+.table-jeu-grille.cinq {
+  grid-template-columns: minmax(70px, 1fr) minmax(0, 3fr) minmax(70px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "haut-gauche haut-gauche haut-droite"
+    "gauche centre droite"
+    "bas bas bas";
+}
+.table-jeu-grille.quatre {
+  grid-template-areas:
+    "haut haut haut"
+    "gauche centre droite"
+    "bas bas bas";
+}
+.siege.haut-gauche { grid-area: haut-gauche; justify-self: start; }
+.siege.haut-droite { grid-area: haut-droite; justify-self: end; }
+.table-jeu-grille.quatre .siege.haut-gauche { grid-area: haut; justify-self: center; }
+.siege.haut-gauche, .siege.haut-droite { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+/* Les dos des adversaires sont décoratifs : plus petits, ils laissent la place au pli. */
+.tarot .siege:not(.bas) .main { --carte-l: calc(var(--carte-l-base, 72px) * 0.6); --carte-h: calc(var(--carte-h-base, 104px) * 0.6); }
+.tarot .siege.gauche .main.verticale .carte, .tarot .siege.droite .main.verticale .carte { margin-top: calc(var(--carte-h) * -0.78); }
+.tarot .siege.gauche .main.verticale .carte:first-child, .tarot .siege.droite .main.verticale .carte:first-child { margin-top: 0; }
+
+/* Cartes du tarot : atouts et Excuse. */
+.carte.atout { background: linear-gradient(160deg, #fffdf7 0%, #f3ead6 100%); border-color: var(--laiton-sombre); color: #2b2418; }
+.carte.atout .centre { font-size: 1.7em; color: var(--laiton-sombre); }
+.carte.excuse { background: linear-gradient(160deg, #fffdf7 0%, #e8f0ff 100%); border-color: #5b7fb3; color: #2d4a7a; }
+.carte.excuse .centre { font-size: 1.9em; }
+.carte .legende {
+  grid-area: 3 / 1; align-self: end; justify-self: end;
+  font-family: var(--police-ui); font-weight: 600; font-size: 0.42em; letter-spacing: 0.02em; opacity: 0.85;
+}
+.mini.atout { background: var(--laiton); color: var(--laiton-texte); }
+
+/* Le centre : contrat, pli, chien, choix. */
+.tarot .centre { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 0; }
+.contrat { background: var(--toast-fond); color: var(--toast-texte); padding: 6px 14px; border-radius: 18px; text-align: center; line-height: 1.35; max-width: 100%; }
+.pli { position: relative; flex-shrink: 0; width: min(100%, calc(var(--carte-l, 72px) * 3.6)); height: calc(var(--carte-h, 104px) * 1.9); }
+/* Hors du jeu de la carte (enchères, appel, écart), pas de place réservée au pli. */
+.pli:empty { display: none; }
+.tarot .centre.en-jeu .pli:empty { display: block; height: calc(var(--carte-h, 104px) * 1.1); }
+.pli-carte { position: absolute; transition: transform 0.25s; }
+.pli-carte.bas { left: 50%; bottom: 0; transform: translateX(-50%); }
+.pli-carte.haut, .pli-carte.haut-gauche, .pli-carte.haut-droite { left: 50%; top: 0; transform: translateX(-50%); }
+.pli-carte.haut-gauche { left: 32%; }
+.pli-carte.haut-droite { left: 68%; }
+.pli-carte.gauche { left: 0; top: 50%; transform: translateY(-50%); }
+.pli-carte.droite { right: 0; top: 50%; transform: translateY(-50%); }
+.pli-carte.gagnante .carte { outline: 3px solid var(--laiton); outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) { .pli-carte { transition: none; } }
+
+.chien { background: var(--panneau); border: 1px solid var(--panneau-bord); border-radius: var(--rayon); padding: 8px 12px; max-width: 100%; }
+.legende-zone { font-size: 0.9em; opacity: 0.9; margin: 2px 0 6px; text-align: center; }
+.cartes-rangee { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.chien .cartes-rangee { --carte-l: calc(var(--carte-l-base, 72px) * 0.8); --carte-h: calc(var(--carte-h-base, 104px) * 0.8); }
+.cartes-rangee.petite { --carte-l: calc(var(--carte-l-base, 72px) * 0.62); --carte-h: calc(var(--carte-h-base, 104px) * 0.62); }
+.choix { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
+.choix .consigne { margin: 0; background: var(--toast-fond); color: var(--toast-texte); padding: 6px 14px; border-radius: 18px; }
+.choix .boutons { justify-content: center; }
+.compteur-plis { font-size: 0.95em; opacity: 0.9; background: var(--toast-fond); color: var(--toast-texte); padding: 3px 12px; border-radius: 14px; }
+
+/* Une main de 18 (ou 24 pendant l'écart) : chevauchement plus serré, et deux rangées au besoin. */
+.tarot .main.moi { flex-wrap: wrap; row-gap: 8px; }
+.tarot .main.horizontale .carte { margin-left: calc(var(--carte-l) * -0.5); }
+.tarot .main.horizontale .carte:first-child { margin-left: 0; }
+.tarot .main.moi .carte.jouable:hover, .tarot .main.moi .carte.jouable:focus-visible { transform: translateY(-14px); z-index: 5; }
+
+/* Bilan. */
+.bilan-donne p { margin: 4px 0; }
+.gagne { color: #7fd99a; }
+.perdu { color: #f29c9c; }
+:root[data-theme="light"] .gagne, :root:not([data-theme="dark"]) .gagne { color: #1d7a3e; }
+:root[data-theme="light"] .perdu, :root:not([data-theme="dark"]) .perdu { color: #b3261e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gagne { color: #7fd99a; } :root:not([data-theme="light"]) .perdu { color: #f29c9c; } }
+.tableau.historique { font-size: 0.92em; margin-top: 6px; }
+
+/* Lobby commun : options et retour. */
+.retour-jeux { display: inline-block; margin-bottom: 6px; }
+.options { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 18px; margin: 14px 0; }
+.options .ligne { flex: 1 1 200px; }
+.lobby-identite { display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 700px) {
+  .siege.haut-gauche .main, .siege.haut-droite .main { display: none; }
+  .pli { height: calc(var(--carte-h, 104px) * 2); }
+}

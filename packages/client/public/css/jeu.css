@@ -3,10 +3,10 @@
  * Licensed under the GNU Affero General Public License v3.0 or later.
  */
 
-:root { --carte-l: 80px; --carte-h: 116px; }
-@media (max-width: 1100px) { :root { --carte-l: 68px; --carte-h: 98px; } }
-@media (max-width: 820px) { :root { --carte-l: 58px; --carte-h: 84px; } }
-@media (max-width: 480px) { :root { --carte-l: 50px; --carte-h: 72px; } }
+:root { --carte-l-base: 80px; --carte-h-base: 116px; --carte-l: var(--carte-l-base); --carte-h: var(--carte-h-base); }
+@media (max-width: 1100px) { :root { --carte-l-base: 68px; --carte-h-base: 98px; } }
+@media (max-width: 820px) { :root { --carte-l-base: 58px; --carte-h-base: 84px; } }
+@media (max-width: 480px) { :root { --carte-l-base: 50px; --carte-h-base: 72px; } }
 
 body.jeu { overflow-x: hidden; }
 

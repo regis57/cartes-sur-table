@@ -4,7 +4,7 @@ Des jeux de cartes français, jouables dans le navigateur, sur téléphone comme
 ordinateur : seul contre des bots, avec d'autres joueurs, ou entre amis avec un code.
 Sans compte obligatoire, sans publicité, sans pistage, sans messagerie.
 
-Premier jeu : le **8 Américain**. Prochains : la belote, le tarot.
+Deux jeux : le **8 Américain** et le **tarot** (à 4 ou 5, avec appel au Roi). Prochain : la belote.
 
 ## Ce qu'il y a dedans
 
@@ -13,7 +13,12 @@ Premier jeu : le **8 Américain**. Prochains : la belote, le tarot.
   coupure, un bot générique par recherche Monte-Carlo sur ensembles d'information
   (SO-ISMCTS), des profils sans mot de passe ni email, et les briques de sécurité.
 - **Un jeu = un objet qui respecte le contrat** (`packages/games/<jeu>`), avec ses tests.
-  La vue par joueur est obligatoire : le serveur n'envoie jamais un état complet.
+  La vue par joueur est obligatoire : le serveur n'envoie jamais un état complet. Les
+  règles du 8 Américain et du tarot sont celles des jeux d'origine (regis57/8americain,
+  regis57/tarot-francais-enligne), reprises point par point.
+- **Une salle commune** côté client (`salle.ts`) : identité, solo / en ligne / entre amis,
+  niveau des bots, nombre de joueurs, règles, menu, réactions, fin de manche, reprise après
+  coupure. Un jeu n'écrit que le rendu de sa table : le parcours est le même partout.
 - **Un serveur** Express + Socket.io (`packages/server`), un espace de noms par jeu.
 - **Un client** TypeScript sans dépendance (`packages/client`), tapis vert, CSP stricte,
   jamais de HTML construit à partir du réseau.

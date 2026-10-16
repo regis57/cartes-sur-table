@@ -41,8 +41,20 @@ a joué le coup qui y mène). Le coup le plus visité est joué.
 
 Mesuré sur le 8 Américain, contre des adversaires aléatoires : hasard pur 3 % de manches
 gagnées, politique de base 37 %, MCTS à 300 itérations 41 %, à 1 500 itérations 51 %.
-Le 8 Américain est très dépendant de la donne ; l'écart sera bien plus grand à la belote
-et au tarot, où la politique de base ne suffit pas.
+Le 8 Américain est très dépendant de la donne ; l'écart sera bien plus grand à la belote,
+où la politique de base ne suffit pas.
+
+**Quand le jeu impose sa stratégie.** Le contrat offre un crochet facultatif, `botMove` :
+quand il renvoie un coup, le socle le joue tel quel ; quand il renvoie `null`, le MCTS
+générique décide. Le tarot l'utilise pour toutes ses décisions, avec la stratégie du jeu
+d'origine (regis57/tarot-francais-enligne) reprise point par point : évaluation de la main
+pour les enchères, appel dans la couleur longue, écart des plus petites cartes ordinaires,
+puis au jeu de la carte : maîtresses à points en entame, ramasser au moindre coût en dernier,
+protéger les figures, garder l'Excuse pour l'avant-dernier pli. Une donne de tarot, c'est
+cinq enchères, un écart et jusqu'à quatre-vingt-dix cartes : à 150 ms de réflexion le MCTS
+ne converge pas, et il produirait des enchères fantaisistes. La même stratégie sert de
+`rolloutMove`, de sorte qu'un MCTS reste possible en retirant le crochet — rien d'autre
+à changer.
 
 ## Identité sans compte
 

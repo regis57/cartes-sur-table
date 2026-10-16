@@ -6,27 +6,109 @@
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#1e6b45",
   "theme_color": "#1e6b45",
   "lang": "fr",
   "dir": "ltr",
-  "categories": ["games", "entertainment"],
+  "categories": [
+    "games",
+    "entertainment"
+  ],
   "icons": [
-    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "/img/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ],
   "shortcuts": [
-    { "name": "Jouer au 8 Américain", "short_name": "8 Américain", "url": "/jeu/huit-americain/", "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Mon profil", "short_name": "Profil", "url": "/profil/", "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Jouer au 8 Américain",
+      "short_name": "8 Américain",
+      "url": "/jeu/huit-americain/",
+      "icons": [
+        {
+          "src": "/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Jouer au tarot",
+      "short_name": "Tarot",
+      "url": "/jeu/tarot/",
+      "icons": [
+        {
+          "src": "/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Mon profil",
+      "short_name": "Profil",
+      "url": "/profil/",
+      "icons": [
+        {
+          "src": "/img/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ],
   "screenshots": [
-    { "src": "/img/ecran-accueil.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "L'accueil : choisir un jeu et une table" },
-    { "src": "/img/ecran-partie.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "Une partie de 8 Américain" },
-    { "src": "/img/ecran-accueil-mobile.png", "sizes": "412x915", "type": "image/png", "form_factor": "narrow", "label": "L'accueil sur téléphone" },
-    { "src": "/img/ecran-partie-mobile.png", "sizes": "412x915", "type": "image/png", "form_factor": "narrow", "label": "Une partie sur téléphone" }
+    {
+      "src": "/img/ecran-accueil.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "L'accueil : choisir un jeu et une table"
+    },
+    {
+      "src": "/img/ecran-partie.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Une partie de 8 Américain"
+    },
+    {
+      "src": "/img/ecran-accueil-mobile.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "L'accueil sur téléphone"
+    },
+    {
+      "src": "/img/ecran-partie-mobile.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Une partie sur téléphone"
+    }
   ]
 }
