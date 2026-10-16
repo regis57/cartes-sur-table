@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /socket.io/
+Disallow: /profil/
+Disallow: /hors-ligne/
+
+Sitemap: https://jeuxdecartes.altiplume.com/sitemap.xml
