@@ -273,7 +273,12 @@ sont la sécurité du déploiement.
    téléphone ou le PC demande l'empreinte ou le code de verrouillage ; la passkey apparaît
    dans la liste. **Oublier ce profil sur cet appareil**, puis **Se connecter avec une
    passkey** : le profil revient sans code de récupération.
-7. Le contrôle externe hebdomadaire (`.github/workflows/securite.yml`) prend
+7. **Installation en application** : sur l'ordinateur, une icône d'écran avec une flèche
+   vers le bas apparaît à droite de la barre d'adresse de Chrome ou d'Edge ; sur iPhone,
+   Safari → Partager → « Sur l'écran d'accueil ». La page `/installer/` détaille tout, et
+   sert aussi de vérification : elle doit reconnaître votre navigateur et afficher ses
+   étapes. L'installation exige HTTPS — le tunnel s'en charge, rien à faire de plus.
+8. Le contrôle externe hebdomadaire (`.github/workflows/securite.yml`) prend
    `jeuxdecartes.altiplume.com` comme cible : lancez-le une première fois à la main
    (GitHub → **Actions → Sécurité → Run workflow**) et lisez le rapport.
 
@@ -294,6 +299,10 @@ Container Manager → **Projet** → `jeuxdecartes` → bouton **Action** :
 
 Une minute d'indisponibilité ; les profils, passkeys et succès sont dans le volume, rien
 n'est perdu.
+
+Côté navigateurs, l'agent de service porte le numéro de version du projet : à la première
+visite qui suit la mise à jour, il remplace son cache et sert la nouvelle version. Les
+personnes qui ont installé l'application n'ont donc rien à réinstaller.
 
 Pour figer une version précise plutôt que `latest` : dans le compose, remplacez
 `image: ghcr.io/regis57/cartes-sur-table:latest` par `…@sha256:<empreinte>` (donnée par le

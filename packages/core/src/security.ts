@@ -157,7 +157,8 @@ export function getClientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>, tr
 /**
  * Politique de sécurité du contenu. Aucun script ni style en ligne ; les images et
  * polices viennent du site ; `data:` est admis pour les images (texture du tapis en SVG).
- * `connect-src 'self'` couvre le WebSocket de même origine (wss: implicite en HTTPS).
+ * `connect-src 'self'` couvre le WebSocket de même origine (wss: implicite en HTTPS),
+ * `worker-src 'self'` l'agent de service qui rend le site installable.
  */
 export const CSP = [
   "default-src 'none'",
@@ -167,6 +168,7 @@ export const CSP = [
   "font-src 'self'",
   "connect-src 'self'",
   "manifest-src 'self'",
+  "worker-src 'self'",
   "base-uri 'none'",
   "form-action 'self'",
   "frame-ancestors 'none'",

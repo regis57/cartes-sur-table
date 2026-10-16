@@ -1,6 +1,6 @@
 # Bilan : sécurité par conception et durcissement
 
-État au 16 octobre 2026, version 0.2.0. Ce document recense ce qui est **réellement en
+État au 16 octobre 2026, version 0.3.0. Ce document recense ce qui est **réellement en
 place dans le code**, couche par couche, avec le fichier où le vérifier. Le
 [manifeste](MANIFESTE-SECURITE.md) dit ce que le projet promet ; ce bilan dit comment.
 Les contrôles automatiques qui surveillent le tout sont dans [SECURITE.md](SECURITE.md).
@@ -51,13 +51,15 @@ la surface** (deux dépendances, aucun port ouvert, aucune ressource tierce).
 
 | Disposition | Détail |
 |---|---|
-| CSP `default-src 'none'` | `script-src 'self'`, `style-src 'self'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `upgrade-insecure-requests` |
+| CSP `default-src 'none'` | `script-src 'self'`, `style-src 'self'`, `worker-src 'self'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `upgrade-insecure-requests` |
 | **Zéro script ou style en ligne**, zéro CDN | Vérifié à chaque commit par `scripts/hygiene.mjs` (échec si un `src=`/`href=` tiers ou un `onclick=` apparaît) |
 | Le client ne construit jamais de HTML à partir du réseau | Uniquement `textContent` et création de nœuds (`ui.ts`) |
 | En-têtes | HSTS 1 an + sous-domaines, `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy` (géoloc, micro, caméra, paiement, USB, cohortes publicitaires toutes refusées), COOP/CORP/COEP, `X-Frame-Options: DENY`, `X-DNS-Prefetch-Control: off`, pas de `X-Powered-By` |
 | Contrôle d'origine à l'établissement de la connexion WebSocket | `allowRequest` → `isOriginAllowed` : bloque le détournement depuis un site tiers (CSWSH) |
 | Aucun cookie | Donc aucun bandeau à accepter, et aucune CSRF possible |
 | Fichiers statiques : pas de fichiers cachés, pas d'échappement du dossier | `express.static` avec `dotfiles: 'ignore'` |
+| Agent de service (installation) : met en cache **uniquement** les fichiers publics ; `/api/`, `/socket.io/` et `/healthz` sont exclus par liste noire explicite | `public/sw.js` — aucune donnée de profil ni de partie ne touche le cache du navigateur |
+| `/sw.js` servi sans cache, avec `Service-Worker-Allowed: /` | Une version corrigée de l'agent s'applique immédiatement, jamais dans une heure |
 
 ## 5. Passkeys (WebAuthn), vérifiées à la main
 

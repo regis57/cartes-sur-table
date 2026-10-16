@@ -7,6 +7,7 @@
  */
 import './theme.ts';
 import { $, h, img, show, hide, fill, toast, onAction, openDialog, closeDialog } from './ui.ts';
+import { enregistrerAgent } from './installer.ts';
 import { loadLocale, t, has } from './i18n.ts';
 import { identity, getGuest } from './profile.ts';
 import { avatarSrc } from './avatars.ts';
@@ -243,6 +244,7 @@ function backToLobby(): void {
 
 async function main(): Promise<void> {
   await loadLocale();
+  enregistrerAgent();
   const id = await identity();
   me = { name: id.name || t('site.guest'), avatar: id.avatar };
   $('lobby-identite').textContent = '';

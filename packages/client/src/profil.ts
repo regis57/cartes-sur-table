@@ -4,6 +4,7 @@
  */
 import './theme.ts';
 import { $, h, show, hide, toast, onAction, openDialog, closeDialog, fill } from './ui.ts';
+import { enregistrerAgent } from './installer.ts';
 import { loadLocale, t, has } from './i18n.ts';
 import {
   fetchProfile, createProfile, restoreProfile, updateProfile, exportProfile, deleteProfile, getToken, setToken, getGuest, setGuest,
@@ -112,6 +113,7 @@ function renderNone(): void {
 
 async function main(): Promise<void> {
   await loadLocale();
+  enregistrerAgent();
   let current: ProfileData | null = await fetchProfile().catch(() => null);
   if (current) {
     render(current);

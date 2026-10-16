@@ -6,6 +6,38 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+## 0.3.0 — 16 octobre 2026
+
+**Application installable, sur ordinateur comme sur téléphone.**
+
+Ajouté
+- Le site s'installe comme une application : icône sur le bureau, le menu Démarrer,
+  le Dock ou l'écran d'accueil, et ouverture dans sa propre fenêtre, sans barre
+  d'adresse. Manifeste complet (icônes 192, 512 et *maskable*, raccourcis vers le jeu
+  et le profil, captures d'écran pour la fenêtre d'installation).
+- Page « Installer l'application » : marche à suivre pas à pas pour chaque navigateur,
+  celui de la personne affiché en premier, les autres dépliables. Bouton d'installation
+  en un clic là où le navigateur le permet (Chrome, Edge, Opera, Samsung, Firefox Android).
+- **iPhone et iPad** : Apple interdit l'installation automatique, le geste doit venir de
+  la personne. Les cinq étapes Safari (bouton Partager, « Sur l'écran d'accueil »,
+  « Ajouter ») sont détaillées, avec la raison dite franchement.
+- Agent de service : démarrage rapide, accueil affiché même sur réseau capricieux, et
+  page « Pas de connexion » honnête — une partie se joue sur le serveur, on ne fait pas
+  semblant de jouer hors ligne.
+- Bandeau d'installation discret sur l'accueil, écartable d'un clic, affiché uniquement
+  quand le navigateur sait vraiment installer.
+
+Sécurité et vie privée
+- L'agent de service ne met en cache **que** les fichiers publics du site. Jamais `/api/`,
+  jamais `/socket.io/`, jamais une page de profil, jamais une partie.
+- CSP complétée par `worker-src 'self'` ; `/sw.js` servi sans cache et avec
+  `Service-Worker-Allowed: /`, pour qu'une version corrigée s'applique tout de suite.
+- Aucune autorisation d'appareil demandée, aucune donnée supplémentaire collectée.
+- Deux tests d'intégration : manifeste complet et conforme, ressources citées réellement
+  présentes, en-têtes de l'agent de service, version alignée sur `package.json`.
+
+---
+
 ## 0.2.0 — 16 octobre 2026
 
 **Passkeys, mode jour / nuit, lisibilité, documentation.**
