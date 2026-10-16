@@ -236,7 +236,7 @@ ul.sans { list-style: none; padding: 0; margin: 0; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.5; cursor: default; filter: none; }
 .btn-laiton { background: var(--laiton); color: var(--laiton-texte); }
-.btn-craie { background: var(--champ-fond); color: var(--texte); border: 2px solid var(--panneau-bord); }
+.btn-craie { background: var(--champ-fond); color: var(--champ-texte, var(--texte)); border: 2px solid var(--panneau-bord); }
 .btn-rouge { background: var(--carte-rouge); color: var(--texte); }
 .btn-bloc { width: 100%; }
 .boutons { display: flex; flex-wrap: wrap; gap: 10px; }

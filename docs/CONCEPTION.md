@@ -50,7 +50,11 @@ générique décide. Le tarot l'utilise pour toutes ses décisions, avec la stra
 d'origine (regis57/tarot-francais-enligne) reprise point par point : évaluation de la main
 pour les enchères, appel dans la couleur longue, écart des plus petites cartes ordinaires,
 puis au jeu de la carte : maîtresses à points en entame, ramasser au moindre coût en dernier,
-protéger les figures, garder l'Excuse pour l'avant-dernier pli. Une donne de tarot, c'est
+protéger les figures, garder l'Excuse pour l'avant-dernier pli. La belote fait de même avec une
+heuristique plus courte (valeur de la main pour prendre, maîtresses en entame, charger le
+partenaire quand le pli est sûr, ramasser au moindre coût), et c'est elle qui a imposé un
+second crochet, `matchWinners` : dans un jeu par équipes, les deux partenaires gagnent la
+partie, et le socle doit le savoir pour les statistiques et les succès. Une donne de tarot, c'est
 cinq enchères, un écart et jusqu'à quatre-vingt-dix cartes : à 150 ms de réflexion le MCTS
 ne converge pas, et il produirait des enchères fantaisistes. La même stratégie sert de
 `rolloutMove`, de sorte qu'un MCTS reste possible en retirant le crochet — rien d'autre

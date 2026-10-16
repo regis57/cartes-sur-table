@@ -17,7 +17,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/css/site.css">
-  <script type="module" src="/js/theme.js"></script>
+  <script type="module" src="/js/a-propos.js"></script>
 </head>
 <body>
   <a class="drapeau" href="/" aria-label="Jeux de cartes, accueil"><span></span><span></span><span></span></a>
@@ -39,11 +39,15 @@
     <ul>
       <li><a href="/regles/#huit-americain">Le 8 Américain</a> — à quatre.</li>
       <li><a href="/regles/#tarot">Le tarot</a> — à quatre ou cinq, avec enchères, chien et écart, appel au Roi à cinq.</li>
+      <li><a href="/regles/#belote">La belote</a> — à quatre, par équipes, avec la retourne, belote-rebelote et les annonces.</li>
     </ul>
     <p>Elles sont aussi consultables en cours de partie, par le menu en haut à droite.</p>
 
     <h2>Ajouter un jeu</h2>
-    <p>Le socle ne connaît ni les cartes ni les atouts : il connaît un contrat. Un jeu, c'est un objet qui dit comment créer une manche, quels coups sont légaux, comment les appliquer, ce que chaque siège a le droit de voir, et comment tirer un monde possible pour les bots. Écrivez ce contrat, ses tests et ses douze phrases, et le reste (tables, bots, reprise, réseau, profils) vient tout seul. Le guide est dans le dépôt : <a href="https://github.com/regis57/cartes-sur-table" rel="noopener noreferrer">github.com/regis57/cartes-sur-table</a>. La belote est la prochaine.</p>
+    <p>Le socle ne connaît ni les cartes ni les atouts : il connaît un contrat. Un jeu, c'est un objet qui dit comment créer une manche, quels coups sont légaux, comment les appliquer, ce que chaque siège a le droit de voir, et comment tirer un monde possible pour les bots. Écrivez ce contrat, ses tests et ses douze phrases, et le reste (tables, bots, reprise, réseau, profils) vient tout seul. Le guide est dans le dépôt : <a href="https://github.com/regis57/cartes-sur-table" rel="noopener noreferrer">github.com/regis57/cartes-sur-table</a>. Le 8 Américain, le tarot et la belote sont écrits ainsi.</p>
+
+    <h2>Version</h2>
+    <p id="version-texte">Version du jeu en cours : <span id="version-numero">…</span> — <a id="version-lien" href="https://github.com/regis57/cartes-sur-table/blob/main/docs/JOURNAL.md" rel="noopener noreferrer">ce qui a changé dans cette version</a>.</p>
 
     <h2>Licence</h2>
     <p>Tout est publié sous licence AGPL-3.0 : vous pouvez lire, copier, modifier et héberger le site, à condition d'offrir à vos joueurs le code de votre version.</p>

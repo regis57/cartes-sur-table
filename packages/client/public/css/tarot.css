@@ -84,11 +84,10 @@
 
 /* Bilan. */
 .bilan-donne p { margin: 4px 0; }
+/* Le bilan s'affiche dans une boîte toujours vert sombre : des teintes claires, quel que soit le thème. */
 .gagne { color: #7fd99a; }
 .perdu { color: #f29c9c; }
-:root[data-theme="light"] .gagne, :root:not([data-theme="dark"]) .gagne { color: #1d7a3e; }
-:root[data-theme="light"] .perdu, :root:not([data-theme="dark"]) .perdu { color: #b3261e; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gagne { color: #7fd99a; } :root:not([data-theme="light"]) .perdu { color: #f29c9c; } }
+.tableau .gagnant .gagne, .tableau .gagnant .perdu { color: inherit; }
 .tableau.historique { font-size: 0.92em; margin-top: 6px; }
 
 /* Lobby commun : options et retour. */

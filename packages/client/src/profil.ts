@@ -17,6 +17,7 @@ const ALL_ACHIEVEMENTS = [
   'premiere-partie', 'premiere-victoire', 'dix-victoires', 'cinquante-parties', 'touche-a-tout',
   'huit-americain:huit-magique', 'huit-americain:sans-pioche', 'huit-americain:coup-du-sept', 'huit-americain:manche-parfaite',
   'tarot:garde-sans-filet', 'tarot:trois-bouts', 'tarot:petit-au-bout', 'tarot:grande-poignee', 'tarot:defense-de-fer', 'tarot:maitre-du-tarot',
+  'belote:capot', 'belote:belle-prise', 'belote:dedans', 'belote:belote-rebelote', 'belote:cent', 'belote:maitre-de-la-belote',
 ];
 
 let avatarNew = getGuest().avatar;

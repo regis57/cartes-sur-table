@@ -6,8 +6,9 @@ sans pistage.
 **Jouer : https://jeuxdecartes.altiplume.com** — le site s'installe aussi comme une
 application, sur ordinateur, sur Android et sur iPhone : https://jeuxdecartes.altiplume.com/installer/
 
-Au programme : le **8 Américain** à quatre, et le **tarot** à quatre ou cinq (enchères,
-chien et écart, appel au Roi, poignées, Petit au bout). La belote viendra.
+Au programme : le **8 Américain** à quatre, le **tarot** à quatre ou cinq (enchères,
+chien et écart, appel au Roi, poignées, Petit au bout) et la **belote** à quatre, par
+équipes (retourne, atout, belote-rebelote, annonces, dix de der, partie en 1000 points).
 
 - [Journal des versions](Journal) : ce que l'on fait à chaque version, et ce qui a été
   fait le jour de la mise en ligne.

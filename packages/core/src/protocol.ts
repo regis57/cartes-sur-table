@@ -45,6 +45,8 @@ export interface RoundEndPayload {
   seats: PublicSeat[];
   matchOver: boolean;
   winner: number | null;
+  /** Tous les vainqueurs (plusieurs dans un jeu par équipes). */
+  winners: number[];
   achievements: string[][];
 }
 

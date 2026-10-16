@@ -318,7 +318,7 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     box.textContent = '';
     const custom = jeu.renderRoundEnd(data, box, ctx);
     $('manche-sous').textContent = data.matchOver && data.winner !== null
-      ? t('table.match_winner', { name: data.seats[data.winner]?.name ?? '' })
+      ? (data.winners.length > 1 ? custom ?? t('table.match_winners', { names: data.winners.map((w) => data.seats[w]?.name ?? '').join(' & ') }) : t('table.match_winner', { name: data.seats[data.winner]?.name ?? '' }))
       : custom ?? (winnerName ? tg('round_won_by', { name: winnerName }) : tg('round_no_winner'));
     $('btn-manche').textContent = tg('next_round');
     (data.matchOver ? hide : show)($('btn-manche'));
