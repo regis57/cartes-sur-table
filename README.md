@@ -71,6 +71,9 @@ qui oublierait l'empreinte. Reste à écrire l'entrée du [journal](docs/JOURNAL
 ancre `vX.Y.Z` : à la fusion, l'étiquette et la release GitHub sont posées à partir d'elle,
 et la page « À propos » du site pointe dessus.
 
+Les consignes de travail sur ce dépôt (règles de publication, cycle branche → vérification →
+fusion, montée de version, vérification de l'affichage) sont dans [CLAUDE.md](CLAUDE.md).
+
 ## Vérifier
 
 ```bash
