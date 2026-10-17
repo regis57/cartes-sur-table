@@ -6,6 +6,28 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.9"></a>
+## 0.6.9 — 17 octobre 2026
+
+**Le titre de l'accueil ne passe plus sous le drapeau, sur iPhone.**
+
+Corrigé
+- En application sur iPhone, les pages hors jeu commençaient 88 px sous le haut de l'écran,
+  sans compter la hauteur réservée par l'appareil : le drapeau, lui, grandit d'autant, et
+  recouvrait le titre (« Jeux de cartes » amputé de ses trois premières lettres). Le haut et
+  le bas de toutes les pages, ainsi que le lobby de chaque jeu, tiennent maintenant compte
+  des zones réservées.
+
+Vérifié
+- Les hauteurs ont été mesurées écran par écran **avec les zones réservées d'un iPhone
+  simulées** (59 px en haut, 34 px en bas), et non plus seulement sur un navigateur de
+  bureau : accueil (titre sous le drapeau), lobby, table (bandeau de statut à 59, bouton
+  menu à 69, sous l'îlot dynamique), enchères du tarot deux par ligne.
+- Un test refuse désormais une page qui déclarerait l'affichage sous la barre d'état sans
+  demander les zones réservées — l'erreur à l'origine de la série.
+
+---
+
 <a name="v0.6.8"></a>
 ## 0.6.8 — 17 octobre 2026
 

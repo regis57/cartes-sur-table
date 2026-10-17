@@ -75,6 +75,11 @@ test("PWA : manifeste complet, icônes présentes, agent de service servi depuis
     // toujours relues sur le réseau). `node scripts/version.mjs` réaligne le tout.
     for (const page of toutesLesPages()) {
       const html = readFileSync(page, 'utf8');
+      // Déclarer l'affichage sous la barre d'état sans demander les zones réservées met
+      // env(safe-area-inset-*) à zéro : le contenu passe sous l'heure et l'îlot dynamique.
+      if (html.includes('black-translucent')) {
+        assert.ok(html.includes('viewport-fit=cover'), `${path.relative(CLIENT_DIR, page)} : black-translucent sans viewport-fit=cover`);
+      }
       for (const m of html.matchAll(/["'](\/(?:js|css)\/[\w./-]+\.(?:js|css)(?:\?v=[\d.]*)?)["']/g)) {
         const url = m[1] ?? '';
         assert.ok(url.endsWith(`?v=${pkg.version}`), `${path.relative(CLIENT_DIR, page)} : ${url} sans l'empreinte ?v=${pkg.version}`);
