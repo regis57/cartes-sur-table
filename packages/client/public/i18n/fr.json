@@ -171,7 +171,8 @@
     "scoresheet_title": "Feuille de marque",
     "scoresheet_round": "Manche",
     "scoresheet_total": "Total",
-    "scoresheet_empty": "Aucune manche terminée pour l'instant."
+    "scoresheet_empty": "Aucune manche terminée pour l'instant.",
+    "dealer_title": "Donneur"
   },
   "phrases": {
     "huit-americain": {
@@ -580,9 +581,9 @@
     },
     "scored": "Marque : {a} / {b}",
     "history": "La partie",
-    "won_short": "réussie",
-    "lost_short": "dedans",
-    "litige_short": "égalité",
+    "won_short": "Réussie",
+    "lost_short": "Dedans",
+    "litige_short": "Égalité",
     "donne_won": "{name} réussit sa prise",
     "donne_lost": "{name} est dedans",
     "donne_litige": "Égalité : la donne suivante tranchera",
@@ -598,6 +599,14 @@
     "points_so_far": "{a} – {b}",
     "dealer": "donne",
     "belote_badge": "belote",
-    "declarations_none": "Annonces égales : personne ne marque"
+    "declarations_none": "Annonces égales : personne ne marque",
+    "row_cards": "Points des cartes",
+    "row_belote": "Belote-rebelote",
+    "row_declarations": "Annonces",
+    "row_total": "Total",
+    "row_result": "Résultat",
+    "row_scored": "Marque",
+    "row_cumulated": "Score cumulé",
+    "said_pass": "Passe"
   }
 }

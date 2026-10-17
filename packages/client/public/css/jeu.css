@@ -93,7 +93,9 @@ body.jeu { overflow-x: hidden; }
 .main.horizontale .carte:first-child { margin-left: 0; }
 .main.verticale { flex-direction: column; }
 .main.verticale .carte { margin-top: calc(var(--carte-h) * -0.72); }
-.siege.gauche, .siege.droite { min-height: 0; overflow: hidden; }
+/* Le débordement est coupé sur la main, pas sur le siège : une bulle doit pouvoir sortir. */
+.siege.gauche, .siege.droite { min-height: 0; }
+.siege.gauche .main.verticale, .siege.droite .main.verticale { overflow: hidden; }
 .main.verticale { max-height: 100%; }
 .main.verticale .carte:first-child { margin-top: 0; }
 .main.moi { flex-wrap: wrap; gap: 6px 0; }
@@ -115,6 +117,21 @@ body.jeu { overflow-x: hidden; }
 }
 .bulle::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--texte); }
 .bulle img { width: 36px; height: 36px; display: block; }
+/* Les sièges du haut ont le bord de l'écran au-dessus d'eux : leur bulle passe dessous. */
+.siege.haut .bulle, .siege.haut-gauche .bulle, .siege.haut-droite .bulle { bottom: auto; top: calc(100% + 2px); }
+.siege.haut .bulle::after, .siege.haut-gauche .bulle::after, .siege.haut-droite .bulle::after {
+  top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: var(--texte);
+}
+/* L'annonce reste le temps des enchères : on la distingue d'une réaction, qui passe. */
+.bulle.annonce { background: var(--laiton); color: var(--laiton-texte); font-weight: 700; font-family: var(--police-ui); }
+.bulle.annonce::after { border-top-color: var(--laiton); }
+.siege.haut .bulle.annonce::after, .siege.haut-gauche .bulle.annonce::after, .siege.haut-droite .bulle.annonce::after { border-top-color: transparent; border-bottom-color: var(--laiton); }
+/* Le jeton du donneur. */
+.jeton-donneur {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--laiton); color: var(--laiton-texte); font-family: var(--police-ui);
+  font-size: 0.72rem; font-weight: 700; line-height: 1; vertical-align: 1px;
+}
 
 /* Réactions */
 .reactions {

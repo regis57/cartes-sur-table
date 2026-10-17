@@ -114,12 +114,14 @@ function renderTable(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): v
 
     // Étiquette : score, nombre de cartes, rôle (preneur, partenaire), enchère annoncée.
     const bits: string[] = [t('table.cards_n', { n: g.handCounts[abs] ?? 0 })];
-    if (g.phase === 'bidding' && (g.bids[abs] ?? -1) >= 0) bits.push(bidName(g.bids[abs] ?? 0));
     if (g.phase !== 'bidding' && abs === g.preneur && g.preneur >= 0) bits.push(t('tarot.role.preneur'));
     if (g.partner === abs) bits.push(t('tarot.role.partenaire'));
     const poignee = g.poignees.find((p) => p.seat === abs);
     if (poignee) bits.push(t('tarot.poignee_badge', { n: poignee.count }));
-    ctx.seatLabel(zone.querySelector<HTMLElement>('.etiquette') as HTMLElement, seat, abs, g.scores[abs] ?? 0, bits.join(' · '));
+    const etiquette = zone.querySelector<HTMLElement>('.etiquette') as HTMLElement;
+    ctx.seatLabel(etiquette, seat, abs, g.scores[abs] ?? 0, bits.join(' · '), { dealer: abs === g.dealer });
+    // Ce que chacun a dit, posé à côté de lui, le temps des enchères.
+    ctx.seatAnnounce(etiquette, g.phase === 'bidding' && (g.bids[abs] ?? -1) >= 0 ? bidName(g.bids[abs] ?? 0) : null);
 
     const hand = zone.querySelector<HTMLElement>('.main') as HTMLElement;
     hand.className = `main ${pos === 'gauche' || pos === 'droite' ? 'verticale' : 'horizontale'}${i === 0 ? ' moi' : ''}`;

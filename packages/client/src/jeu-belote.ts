@@ -6,9 +6,8 @@
  * Aucune donnée du réseau n'est interprétée comme du HTML.
  */
 import './theme.ts';
-import { $, h, img, show, hide, toast, prefersReducedMotion } from './ui.ts';
+import { $, h, show, hide, toast, prefersReducedMotion } from './ui.ts';
 import { t } from './i18n.ts';
-import { avatarSrc } from './avatars.ts';
 import { demarrerSalle, type SalleContext } from './salle.ts';
 import type { SeatView } from '@jdc/core/table.ts';
 import type { RoundEndPayload } from '@jdc/core/protocol.ts';
@@ -62,6 +61,16 @@ function teamName(team: 0 | 1, me: number): string {
   return teamOf(me) === team ? t('belote.team_we') : t('belote.team_them');
 }
 
+/** Ce qu'un siège a dit pendant les enchères : rien tant qu'il n'a pas parlé. */
+function annonceDe(g: BeloteView, seat: number): string | null {
+  if (g.bidTurn < 0) return null;
+  // Un siège déjà interrogé dans ce tour a forcément passé : une prise clôt les enchères.
+  const depart = (g.dealer + 1) % 4;
+  const place = (seat - depart + 4) % 4;
+  const parle = (g.bidTurn - depart + 4) % 4;
+  return place < parle ? t('belote.said_pass') : null;
+}
+
 function renderTable(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>): void {
   const g = view.game;
   const me = ctx.mySeat();
@@ -79,10 +88,11 @@ function renderTable(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>):
     show(zone);
 
     const bits: string[] = [t('table.cards_n', { n: g.handCounts[abs] ?? 0 })];
-    if (abs === g.dealer) bits.push(t('belote.dealer'));
     if (!bidding && abs === g.taker && g.taker >= 0) bits.push(t('belote.role.preneur'));
     if (g.beloteSeat === abs) bits.push(t('belote.belote_badge'));
-    ctx.seatLabel(zone.querySelector<HTMLElement>('.etiquette') as HTMLElement, seat, abs, g.scores[abs] ?? 0, bits.join(' · '));
+    const etiquette = zone.querySelector<HTMLElement>('.etiquette') as HTMLElement;
+    ctx.seatLabel(etiquette, seat, abs, g.scores[abs] ?? 0, bits.join(' · '), { dealer: abs === g.dealer });
+    ctx.seatAnnounce(etiquette, bidding ? annonceDe(g, abs) : null);
 
     const hand = zone.querySelector<HTMLElement>('.main') as HTMLElement;
     hand.className = `main ${pos === 'gauche' || pos === 'droite' ? 'verticale' : 'horizontale'}${i === 0 ? ' moi' : ''}`;
@@ -261,24 +271,56 @@ function renderStatus(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
 
 // ---------- bilan ----------
 
-function resultLines(r: DonneResult, names: (s: number) => string, me: number): HTMLElement {
-  const box = h('div', 'bilan-donne');
-  const l1 = h('p');
-  l1.append(h('b', '', t('belote.trump_is', { suit: r.trump })), document.createTextNode(` — ${t('belote.taken_by', { name: names(r.taker) })}`));
-  box.append(l1);
+/**
+ * Le bilan d'une donne en deux colonnes, Nous et Eux : c'est ainsi qu'on tient la marque
+ * à une table de belote, et chaque ligne se lit d'un coup — l'atout est posé dans la
+ * colonne de celui qui a pris.
+ */
+function resultTable(r: DonneResult, data: RoundEndPayload, me: number): HTMLElement {
+  const mien = teamOf(me);
+  const ordre: readonly [0 | 1, 0 | 1] = [mien, (1 - mien) as 0 | 1];
+  const noms = (team: 0 | 1): string => [0, 1, 2, 3].filter((i) => teamOf(i) === team).map((i) => data.seats[i]?.name ?? '').join(' & ');
+  const table = h('table', 'tableau bilan-equipes');
+
+  const head = h('tr');
+  head.append(h('th', '', ''));
+  for (const team of ordre) {
+    const th = h('th');
+    th.append(h('b', '', teamName(team, me)), h('span', 'coequipiers', noms(team)));
+    head.append(th);
+  }
+  table.append(head);
+
+  const ligne = (titre: string, cellule: (team: 0 | 1) => Node | string, cls = ''): void => {
+    const row = h('tr', cls);
+    row.append(h('td', 'intitule', titre));
+    for (const team of ordre) {
+      const td = h('td');
+      const v = cellule(team);
+      td.append(typeof v === 'string' ? document.createTextNode(v) : v);
+      row.append(td);
+    }
+    table.append(row);
+  };
+
   const takerTeam = teamOf(r.taker);
-  const l2 = h('p', r.capot !== null ? 'gagne' : r.litige ? '' : r.made ? 'gagne' : 'perdu');
-  l2.textContent = r.capot !== null ? `${t('belote.capot')} (${teamName(r.capot, me)})` : r.litige ? t('belote.litige_result') : t(r.made ? 'belote.contract_won' : 'belote.contract_lost');
-  box.append(l2);
-  box.append(h('p', '', t('belote.cards_points', { a: `${teamName(takerTeam, me)} ${r.cardPoints[takerTeam]}`, b: `${r.cardPoints[1 - takerTeam] ?? 0} ${teamName((1 - takerTeam) as 0 | 1, me)}` })));
-  const bonus: string[] = [];
-  const bel = r.belote[0] ? 0 : r.belote[1] ? 1 : null;
-  if (bel !== null) bonus.push(t('belote.belote_points', { name: teamName(bel, me) }));
-  const dec = r.declarations[0] ? 0 : r.declarations[1] ? 1 : null;
-  if (dec !== null) bonus.push(t('belote.declarations_points', { n: r.declarations[dec], team: teamName(dec, me) }));
-  if (bonus.length) box.append(h('p', '', bonus.join(' · ')));
-  box.append(h('p', '', t('belote.scored', { a: `${teamName(0, me)} +${r.scored[0]}`, b: `+${r.scored[1]} ${teamName(1, me)}` })));
-  return box;
+  ligne(t('belote.trump'), (team) => (team === takerTeam ? suitEl(r.trump) : ''));
+  ligne(t('belote.row_cards'), (team) => String(r.cardPoints[team]));
+  if (r.belote[0] || r.belote[1]) ligne(t('belote.row_belote'), (team) => String(r.belote[team]));
+  if (r.declarations[0] || r.declarations[1]) ligne(t('belote.row_declarations'), (team) => String(r.declarations[team]));
+  ligne(t('belote.row_total'), (team) => String(r.cardPoints[team] + r.belote[team] + r.declarations[team]), 'ligne-total');
+
+  // Le verdict porte sur ce qu'a fait le preneur : il se lit dans sa colonne, comme l'atout.
+  const verdict = r.capot !== null ? t('belote.capot') : r.litige ? t('belote.litige_short') : t(r.made ? 'belote.won_short' : 'belote.lost_short');
+  const ton = r.litige ? 'neutre' : r.capot !== null ? (r.capot === takerTeam ? 'reussi' : 'chute') : r.made ? 'reussi' : 'chute';
+  ligne(t('belote.row_result'), (team) => (team === takerTeam ? h('span', `verdict ${ton}`, verdict) : ''));
+  ligne(t('belote.row_scored'), (team) => `+${r.scored[team]}`, 'ligne-total');
+  ligne(t('belote.row_cumulated'), (team) => {
+    const total = data.summary.perSeat.find((_, i) => teamOf(i) === team)?.total ?? 0;
+    const meneur = total >= (data.summary.perSeat.find((_, i) => teamOf(i) !== team)?.total ?? 0);
+    return h('span', `pastille ${meneur ? 'devant' : 'derriere'}`, String(total));
+  }, 'ligne-cumul');
+  return table;
 }
 
 function renderRoundEnd(data: RoundEndPayload, box: HTMLElement, ctx: SalleContext<BeloteView>): string | void {
@@ -286,7 +328,7 @@ function renderRoundEnd(data: RoundEndPayload, box: HTMLElement, ctx: SalleConte
   const g = view?.game;
   const me = ctx.mySeat();
   const names = (s: number): string => data.seats[s]?.name ?? '';
-  if (g?.result) box.append(resultLines(g.result, names, me));
+  if (g?.result) box.append(resultTable(g.result, data, me));
   let sub: string | undefined;
   if (data.matchOver && data.winners.length) {
     sub = t('table.match_winners', { names: data.winners.map((w) => names(w)).join(' & ') });
@@ -294,21 +336,6 @@ function renderRoundEnd(data: RoundEndPayload, box: HTMLElement, ctx: SalleConte
     const r = g.result;
     sub = r.litige ? t('belote.donne_litige') : r.made ? t('belote.donne_won', { name: names(r.taker) }) : t('belote.donne_lost', { name: names(r.taker) });
   }
-
-  const table = h('table', 'tableau');
-  const head = h('tr');
-  head.append(h('th', '', ''), h('th', '', t('belote.role_col')), h('th', '', t('table.round_points')), h('th', '', t('table.total')));
-  table.append(head);
-  data.summary.perSeat.forEach((ps, i) => {
-    const row = h('tr');
-    const name = h('td');
-    name.append(img(avatarSrc(data.seats[i]?.avatar ?? 0), '', 'avatar'), document.createTextNode(' ' + names(i)));
-    const role = (ps.detail as { role?: string } | null)?.role ?? 'defense';
-    row.append(name, h('td', '', t(`belote.role.${role}`)), h('td', ps.roundPoints > 0 ? 'gagne' : '', `+${ps.roundPoints}`), h('td', '', t('table.score', { n: ps.total })));
-    if (data.winners.includes(i) || (!data.matchOver && g?.result && !g.result.litige && teamOf(i) === (g.result.capot ?? (g.result.made ? teamOf(g.result.taker) : 1 - teamOf(g.result.taker))))) row.classList.add('gagnant');
-    table.append(row);
-  });
-  box.append(table);
 
   if (g && g.history.length > 1) {
     box.append(h('h3', '', t('belote.history')));
