@@ -16,7 +16,7 @@
  * Une partie se joue sur le serveur : hors ligne, on ne fait pas semblant, on l'explique.
  */
 
-const VERSION = '0.6.6';
+const VERSION = '0.6.7';
 const CACHE = `jdc-${VERSION}`;
 const HORS_LIGNE = '/hors-ligne/';
 

@@ -6,6 +6,23 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.7"></a>
+## 0.6.7 — 17 octobre 2026
+
+**Les enchères tiennent dans l'écran d'un téléphone.**
+
+Corrigé
+- Sur un téléphone, le centre de la table n'avait qu'un tiers de la largeur : les six
+  contrats du tarot s'empilaient un par ligne et débordaient sur les sièges et la main. Les
+  sièges de côté se serrent (ils ne portent qu'un avatar, un score et un dos de cartes) et
+  les boutons d'enchère tiennent deux par ligne ; tout est visible sans rien recouvrir. La
+  belote (Je passe / Je prends, puis les trois couleurs) et le 8 Américain en profitent.
+- Pour mémoire, le chevauchement vu sur une ancienne version — statut sur le contrat, main
+  sur les boutons — venait de la grille à hauteur fixe d'avant la 0.6.2 ; l'empreinte de
+  version (0.6.6) fait que ces écrans-là ne reviendront pas.
+
+---
+
 <a name="v0.6.6"></a>
 ## 0.6.6 — 17 octobre 2026
 

@@ -160,6 +160,16 @@ body.jeu { overflow-x: hidden; }
    ce menu, et un second bouton « Menu » attend sous la main, à portée de pouce — une main de
    tarot peut dépasser l'écran, aucun des deux ne doit être le seul chemin. */
 @media (max-width: 700px) {
+  /* Le centre est ce qui compte (enchères, pli, consignes) : les sièges de côté se serrent
+     pour lui laisser la largeur, et les boutons d'enchère tiennent deux par ligne. */
+  body.jeu .table-jeu-grille, body.jeu .table-jeu-grille.cinq, body.jeu .table-jeu-grille.quatre {
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+    gap: 6px;
+  }
+  .choix { width: 100%; }
+  .choix .boutons { gap: 6px; width: 100%; }
+  .choix .boutons .btn { flex: 1 1 44%; min-width: 0; padding: 10px 8px; font-size: 1rem; }
+  .choix .consigne { font-size: 1rem; padding: 5px 12px; }
   body.jeu .theme-btn { display: none; }
   body.jeu .menu-btn { width: 48px; height: 48px; background: var(--toast-fond); border-color: var(--panneau-bord); }
   body.jeu .menu-btn i { background: var(--toast-texte); width: 22px; }
