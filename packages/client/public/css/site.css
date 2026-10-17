@@ -151,7 +151,9 @@ a:hover { filter: brightness(1.1); }
 button { font: inherit; }
 ul.sans { list-style: none; padding: 0; margin: 0; }
 
-.page { width: min(100% - 32px, 980px); margin: 0 auto; padding: 88px 0 48px; }
+/* Le haut de page doit passer sous le drapeau, qui grandit de la hauteur réservée par
+   l'appareil (barre d'état, îlot dynamique) quand le site tourne en application. */
+.page { width: min(100% - 32px, 980px); margin: 0 auto; padding: calc(88px + env(safe-area-inset-top, 0px)) 0 calc(48px + env(safe-area-inset-bottom, 0px)); }
 .page.etroite { max-width: 720px; }
 .page.prose p, .page.prose li { max-width: 72ch; }
 .page.prose h2 { margin-top: 1.8em; }
