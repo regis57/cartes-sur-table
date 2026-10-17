@@ -6,6 +6,23 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.7.1"></a>
+## 0.7.1 — 18 octobre 2026
+
+**Les consignes de travail entrent dans le dépôt.**
+
+Ajouté
+- `CLAUDE.md` : comment on travaille ici. Les règles de publication (tout au nom de Régis,
+  aucune attribution d'assistant nulle part), le cycle branche → `npm run verify` → pull
+  request → fusion automatique en squash, la montée de version et l'empreinte qui livre les
+  correctifs, les trois invariants du contrat de jeu, les exigences d'interface (50 ans et
+  plus, zones réservées, CSP stricte), la façon de vérifier l'affichage — y compris avec les
+  zones réservées d'un iPhone simulées —, ce que le réseau du bac à sable interdit, et la
+  liste des documents à tenir à jour dans la même pull request.
+- Le README y renvoie.
+
+---
+
 <a name="v0.7.0"></a>
 ## 0.7.0 — 17 octobre 2026
 
