@@ -4,7 +4,10 @@ Des jeux de cartes français, jouables dans le navigateur, sur téléphone comme
 ordinateur : seul contre des bots, avec d'autres joueurs, ou entre amis avec un code.
 Sans compte obligatoire, sans publicité, sans pistage, sans messagerie.
 
-Trois jeux : le **8 Américain**, le **tarot** (à 4 ou 5, avec appel au Roi) et la **belote** (à 4, par équipes).
+Trois jeux : le **8 Américain**, le **tarot** (à 4 ou 5, avec enchères jusqu'à la Garde
+contre, appel au Roi, poignées) et la **belote** (à 4, par équipes, annonces comprises).
+Le site est en **version d'essai (bêta)** : tout fonctionne de bout en bout, mais les
+réglages fins, les bots et l'affichage bougent encore d'une semaine à l'autre.
 
 **En ligne : [jeuxdecartes.altiplume.com](https://jeuxdecartes.altiplume.com)** — et
 installable comme une application, sur ordinateur comme sur téléphone
@@ -22,8 +25,9 @@ installable comme une application, sur ordinateur comme sur téléphone
   regis57/tarot-francais-enligne), reprises point par point ; la belote suit les règles
   classiques françaises, écrites noir sur blanc dans la page des règles.
 - **Une salle commune** côté client (`salle.ts`) : identité, solo / en ligne / entre amis,
-  niveau des bots, nombre de joueurs, règles, menu, réactions, fin de manche, reprise après
-  coupure. Un jeu n'écrit que le rendu de sa table : le parcours est le même partout.
+  niveau des bots, nombre de joueurs, règles, menu, réactions, feuille de marque, fin de
+  manche, reprise après coupure. Un jeu n'écrit que le rendu de sa table : le parcours est
+  le même partout, et une correction vaut pour les trois.
 - **Un serveur** Express + Socket.io (`packages/server`), un espace de noms par jeu.
 - **Un client** TypeScript sans dépendance (`packages/client`), tapis vert, CSP stricte,
   jamais de HTML construit à partir du réseau.
@@ -52,6 +56,21 @@ machine locale et garde les profils en mémoire ; voir [SECURITY.md](SECURITY.md
 les variables de configuration et [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md) pour le
 déploiement sur le NAS, derrière un tunnel Cloudflare, sans aucun port ouvert.
 
+## Monter une version
+
+```bash
+node scripts/version.mjs 0.7.0   # package.json, package-lock.json, sw.js, pages
+```
+
+La version est inscrite dans `package.json`, reprise par l'agent de service, et surtout
+posée en **empreinte sur les scripts et les feuilles de style** demandés par les pages
+(`/js/salle.js?v=0.7.0`). Les pages, elles, sont toujours relues sur le réseau : une URL
+neuve ne peut pas être servie depuis un ancien cache, donc un navigateur resté en arrière
+reçoit la nouvelle version au premier chargement, sans rien faire. Un test refuse une page
+qui oublierait l'empreinte. Reste à écrire l'entrée du [journal](docs/JOURNAL.md) sous son
+ancre `vX.Y.Z` : à la fusion, l'étiquette et la release GitHub sont posées à partir d'elle,
+et la page « À propos » du site pointe dessus.
+
 ## Vérifier
 
 ```bash
@@ -64,7 +83,7 @@ npm run verify                        # typage strict, tests, construction, audi
 | Avant chaque commit | hook `pre-commit` : refuse les secrets |
 | Avant chaque push | hook `pre-push` : `npm run verify` |
 | Chaque pull request | CI, gitleaks, CodeQL, zizmor, Opengrep, revue des dépendances, image Docker + Trivy, OWASP ZAP passif |
-| Chaque fusion sur `main` | image publiée sur GHCR avec SBOM et attestation de provenance |
+| Chaque fusion sur `main` | image publiée sur GHCR avec SBOM et attestation de provenance ; étiquette `vX.Y.Z` et release (texte : l'entrée du journal) ; wiki republié |
 | Chaque lundi | contrôle externe du site en ligne, Trivy sur l'image publiée, ZAP sur le site |
 | Chaque semaine | Dependabot (npm, Actions, Docker) ; OpenSSF Scorecard le mardi |
 

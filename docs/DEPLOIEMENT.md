@@ -335,9 +335,16 @@ test). Sinon, laissez-la décochée : la sortie reste lisible dans DSM.
 
 ### 6.3 Ce que voient les joueurs
 
-L'agent de service porte le numéro de version du projet : à la première
-visite qui suit la mise à jour, il remplace son cache et sert la nouvelle version. Les
-personnes qui ont installé l'application n'ont donc rien à réinstaller.
+Rien à faire de leur côté, et rien à réinstaller. Les pages passent toujours par le réseau
+et demandent leurs scripts avec l'empreinte de la version (`?v=x.y.z`) : une URL neuve ne
+peut pas sortir d'un ancien cache, donc la nouvelle version arrive **au premier chargement
+de page** qui suit la mise à jour. Une partie en cours n'est jamais coupée au milieu : le
+rechargement attend la fin de la manche.
+
+Pour vérifier d'un coup d'œil ce qui tourne vraiment : page **À propos → Version**, qui lit
+`/api/version` et affiche le numéro et la révision. C'est aussi le premier endroit à
+regarder quand un écran semble faux — un numéro plus ancien que celui du dépôt signale un
+navigateur resté en arrière (cas qui ne devrait plus se produire depuis la 0.6.6).
 
 ### 6.4 Figer une version
 
@@ -447,7 +454,29 @@ de débrancher la clé de temps en temps, ou d'en faire tourner deux.
 
 ---
 
-## 8. Ce qui est volontairement différent d'Altiplume
+## 8. Référencement (une fois, après l'ouverture)
+
+Le site se décrit lui-même : titres et descriptions par page, liens canoniques, balises
+Open Graph pour l'aperçu quand on partage un lien, `robots.txt` (API, connexions temps
+réel, profil et page hors-ligne exclus) et `sitemap.xml` des pages publiques. Aucun script
+tiers, aucune mesure d'audience : rien à accepter pour le joueur.
+
+Reste ce qui passe par un compte, à faire une fois :
+
+1. **Google Search Console** → *Ajouter une propriété* → **Préfixe d'URL**
+   `https://jeuxdecartes.altiplume.com` → validation par **enregistrement DNS TXT**
+   (à poser sur le sous-domaine, dans Cloudflare → DNS → Records), pas par fichier ni par
+   script.
+2. Une fois validé : **Sitemaps** → soumettre `sitemap.xml`.
+3. **Bing Webmaster Tools** : même chose, ou import depuis Search Console.
+4. Vérifier au passage, dans Search Console, que les pages de jeu sont bien indexables et
+   que `/profil/` et `/hors-ligne/` ressortent en « exclue par la balise noindex » : c'est
+   voulu.
+
+Le `sitemap.xml` est écrit à la main dans `packages/client/public/` : une nouvelle page
+publique s'y ajoute en même temps qu'elle est créée.
+
+## 9. Ce qui est volontairement différent d'Altiplume
 
 | | Altiplume | Cartes sur table |
 |---|---|---|

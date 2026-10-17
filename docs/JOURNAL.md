@@ -6,6 +6,33 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.8"></a>
+## 0.6.8 — 17 octobre 2026
+
+**La documentation rattrape le code.**
+
+Mis à jour
+- **README** : la bêta annoncée dès l'entrée, la feuille de marque dans la salle commune,
+  et une section « Monter une version » — `node scripts/version.mjs x.y.z`, à quoi sert
+  l'empreinte `?v=`, ce que la fusion pose toute seule (étiquette, release, wiki).
+- **Conception** : deux chapitres neufs. « Ce que le socle tient pour tous les jeux »
+  (feuille de marque, vainqueurs par équipes, `botMove`, parcours unique) et « Mettre à
+  jour un joueur qui n'a rien demandé » — le piège du cache d'application, les trois
+  dispositions qui l'évitent, et la règle qui les gouverne : un correctif ne doit jamais
+  dépendre du correctif précédent pour être livré.
+- **Déploiement** : § 6.3 réécrit (ce que voient les joueurs après une mise à jour, et où
+  lire la version qui tourne vraiment) ; nouveau § 8 « Référencement », la seule partie qui
+  passe encore par un compte — Search Console et Bing, validation par enregistrement DNS,
+  soumission du plan du site.
+- **Contrôles de sécurité** : pourquoi la livraison d'un correctif est elle-même une
+  exigence de sécurité.
+- **Guide de contribution** : `viewport-fit=cover` et zones réservées sur toute page
+  nouvelle, et regarder sa table à 393 px avant de la proposer.
+- **Wiki** et **page Confidentialité** (le repère de version gardé par le navigateur) au
+  même niveau.
+
+---
+
 <a name="v0.6.7"></a>
 ## 0.6.7 — 17 octobre 2026
 

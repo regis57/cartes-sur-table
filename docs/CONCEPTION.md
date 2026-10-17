@@ -60,6 +60,47 @@ ne converge pas, et il produirait des enchères fantaisistes. La même stratégi
 `rolloutMove`, de sorte qu'un MCTS reste possible en retirant le crochet — rien d'autre
 à changer.
 
+## Ce que le socle tient pour tous les jeux
+
+Un jeu décrit ses règles et dessine sa table ; tout ce qui se répète d'un jeu à l'autre
+vit une seule fois, dans le socle ou dans la salle.
+
+- **La feuille de marque.** À la fin de chaque manche, le socle garde la ligne que le jeu
+  lui donne (`RoundSummary.label`, où `{0}` est remplacé par le nom du siège 0), les points
+  de chacun et les totaux, dans `SeatView.rounds`. Le menu de table l'affiche. Un nouveau
+  jeu l'a sans écrire une ligne d'affichage.
+- **Les vainqueurs.** `matchWinner` suffit à un jeu individuel ; un jeu par équipes renvoie
+  aussi `matchWinners`, et les deux partenaires comptent la partie comme gagnée, dans les
+  statistiques comme dans les succès.
+- **La stratégie propre au jeu.** `botMove` court-circuite le MCTS quand le jeu sait mieux
+  faire (le tarot et la belote s'en servent) ; `rolloutMove` reste la politique de
+  simulation.
+- **Le parcours**, enfin, est entièrement dans `salle.ts` : modes, file, table privée,
+  niveau, règles, réactions, menu, marque, fin de manche, reprise après coupure.
+
+## Mettre à jour un joueur qui n'a rien demandé
+
+Le site s'installe comme une application : un agent de service garde une copie des fichiers
+publics. C'est ce qui le rend instantané, et c'est aussi le piège classique — un onglet
+peut tourner pendant des jours avec les scripts d'hier face à un serveur d'aujourd'hui, et
+afficher des choses fausses sans que rien ne plante (vu au tarot : un contrat nommé d'après
+l'ancienne liste d'enchères).
+
+Trois dispositions, de la plus fiable à la plus fine :
+
+1. **Les pages passent toujours par le réseau** (le cache n'est qu'un secours hors ligne),
+   et elles demandent leurs scripts et leurs styles avec l'empreinte de la version
+   (`?v=x.y.z`). Une URL neuve ne peut pas être servie depuis un ancien cache : la nouvelle
+   version arrive au premier chargement, quelle que soit la génération de l'agent.
+2. **L'agent neuf prend la main sans attendre** (`skipWaiting` dès l'installation), et la
+   page se recharge quand il devient le sien — immédiatement hors table, à la fin de la
+   manche si une partie est en cours, jamais au milieu d'un pli.
+3. **La page vérifie elle-même** : elle demande sa version à l'agent qui la sert et au
+   serveur la sienne ; si elles diffèrent, elle se recharge une fois.
+
+La première suffit, les deux autres raccourcissent le délai. La règle qui les gouverne :
+un correctif ne doit jamais dépendre du correctif précédent pour être livré.
+
 ## Identité sans compte
 
 Le navigateur tire 256 bits d'aléa, encodés en base32 (52 caractères). Le serveur en

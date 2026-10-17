@@ -36,3 +36,12 @@ Loader ni de beacon), aucun cookie, SPF `-all`, MX nul, DMARC `reject`.
 
 Envoyer un email, écrire ailleurs que dans `/data`, charger une ressource tierce,
 exécuter un script d'installation de dépendance, être joint directement depuis Internet.
+
+## Mise à jour des navigateurs déjà ouverts
+
+Un correctif n'est utile que s'il arrive. Les pages passent toujours par le réseau et
+demandent leurs scripts et leurs styles avec l'empreinte de la version (`?v=x.y.z`), que
+`node scripts/version.mjs` pose partout et qu'un test vérifie : un navigateur servi par
+d'anciens fichiers reçoit la nouvelle version au premier chargement, sans dépendre du code
+qu'il exécute déjà. C'est la même exigence que pour une correction de sécurité côté
+serveur : pas de délai qui dépende du poste du joueur.
