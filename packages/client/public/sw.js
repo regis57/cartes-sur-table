@@ -16,11 +16,16 @@
  * Une partie se joue sur le serveur : hors ligne, on ne fait pas semblant, on l'explique.
  */
 
-const VERSION = '0.6.5';
+const VERSION = '0.6.6';
 const CACHE = `jdc-${VERSION}`;
 const HORS_LIGNE = '/hors-ligne/';
 
-/** Le strict nécessaire pour afficher quelque chose d'utile au premier démarrage. */
+/**
+ * Le strict nécessaire pour afficher quelque chose d'utile au premier démarrage.
+ * Les scripts et les styles portent l'empreinte de la version, comme dans les pages : une
+ * version neuve = des URL neuves, qu'aucun ancien cache ne peut servir à sa place.
+ */
+const empreinte = (u) => (u.startsWith('/js/') || u.startsWith('/css/') ? `${u}?v=${VERSION}` : u);
 const COQUILLE = [
   '/',
   HORS_LIGNE,
@@ -38,7 +43,7 @@ const COQUILLE = [
   '/img/favicon.svg',
   '/img/icon-192.png',
   '/manifest.webmanifest',
-];
+].map(empreinte);
 
 /** Jamais de cache : tout ce qui est personnel, vivant, ou propre à une partie. */
 function jamaisEnCache(url) {

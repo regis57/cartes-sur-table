@@ -40,7 +40,7 @@ body.jeu { overflow-x: hidden; }
   position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 52px;
   display: flex; align-items: center; justify-content: center; gap: 12px;
   /* De la place pour le drapeau à gauche, et pour les deux boutons (thème, menu) à droite. */
-  padding: 0 124px 0 72px;
+  padding: 0 calc(124px + env(safe-area-inset-right, 0px)) 0 calc(72px + env(safe-area-inset-left, 0px));
   z-index: 40;
 }
 .barre .statut { background: var(--toast-fond); color: var(--toast-texte); padding: 8px 18px; font-size: 1.1rem; border-radius: 999px; font-weight: 600; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -122,6 +122,7 @@ body.jeu { overflow-x: hidden; }
   position: static;
   display: flex; justify-content: center; gap: 6px; padding: 6px 12px calc(10px + env(safe-area-inset-bottom, 0px));
 }
+.reactions button[data-action="menu"] { font-weight: 600; }
 .reactions button { background: var(--toast-fond); border: 1px solid var(--panneau-bord); color: var(--toast-texte); border-radius: 999px; padding: 10px 18px; cursor: pointer; min-height: 48px; font-size: 1.05rem; }
 .reactions button:hover { border-color: var(--laiton); }
 .choix-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; }
@@ -153,3 +154,17 @@ body.jeu { overflow-x: hidden; }
 .marque-grille .gagne { color: #7fd99a; }
 .marque-grille .perdu { color: #f29c9c; }
 .marque-grille td.gagnant { font-size: inherit; font-family: inherit; text-decoration: underline; text-decoration-color: var(--laiton); text-underline-offset: 3px; }
+
+/* Sur un téléphone, le haut de l'écran est disputé (encoche, îlot dynamique, statut) : on
+   n'y garde que le menu, plus grand et bien sous la zone réservée ; le thème se règle depuis
+   ce menu, et un second bouton « Menu » attend sous la main, à portée de pouce — une main de
+   tarot peut dépasser l'écran, aucun des deux ne doit être le seul chemin. */
+@media (max-width: 700px) {
+  body.jeu .theme-btn { display: none; }
+  body.jeu .menu-btn { width: 48px; height: 48px; background: var(--toast-fond); border-color: var(--panneau-bord); }
+  body.jeu .menu-btn i { background: var(--toast-texte); width: 22px; }
+  .barre { padding: 0 calc(68px + env(safe-area-inset-right, 0px)) 0 calc(60px + env(safe-area-inset-left, 0px)); }
+}
+@media (min-width: 701px) {
+  .reactions button[data-action="menu"] { display: none; }
+}

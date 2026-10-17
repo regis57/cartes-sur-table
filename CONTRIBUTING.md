@@ -53,7 +53,9 @@ Les commits portent une adresse `@users.noreply.github.com`.
    « manche ») se posent sous `games.<mon-jeu>.ui`.
 6. Mettre à jour `README.md`, la page « À propos » (liste des règles), le raccourci dans
    `manifest.webmanifest`, la liste des succès de `profil.ts` et les tests du serveur.
-7. Monter la version (`package.json`, `package-lock.json`, `sw.js`) et écrire l'entrée du
+7. Monter la version d'un geste : `node scripts/version.mjs x.y.z` (package.json,
+   package-lock.json, `sw.js` et l'empreinte `?v=` des scripts et des styles dans les pages —
+   c'est elle qui sort un navigateur resté sur d'anciens fichiers). Puis écrire l'entrée du
    journal, avec son ancre `<a name="vX.Y.Z"></a>` au-dessus du titre : la page « À propos »
    du site pointe dessus. À la fusion, `etiquette.yml` pose l'étiquette `vX.Y.Z` sur le commit
    de fusion et publie une release GitHub avec cette entrée pour texte ; `release.yml`

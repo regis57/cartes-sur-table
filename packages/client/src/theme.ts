@@ -46,6 +46,13 @@ export function applyTheme(theme: Theme, persist: boolean): void {
   }
 }
 
+/** Bascule jour / nuit, utilisable depuis n'importe quel bouton (le menu de table, par exemple). */
+export function basculerTheme(): Theme {
+  const suivant: Theme = currentTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(suivant, true);
+  return suivant;
+}
+
 function install(): void {
   applyTheme(currentTheme(), false);
   if (!document.querySelector('.theme-btn')) {
