@@ -52,7 +52,12 @@ Les commits portent une adresse `@users.noreply.github.com`.
    menu, réactions, fin de manche, reprise). Les mots propres au jeu (« donne » plutôt que
    « manche ») se posent sous `games.<mon-jeu>.ui`.
 6. Mettre à jour `README.md`, la page « À propos » (liste des règles), le raccourci dans
-   `manifest.webmanifest`, la liste des succès de `profil.ts` et les tests du serveur.
+   `manifest.webmanifest`, la liste des succès de `profil.ts` et les tests du serveur. La
+   nouvelle page doit porter `viewport-fit=cover` et une description : tout ce qui est fixé
+   en haut ou en bas respecte `env(safe-area-inset-*)`, sans quoi l'iPhone en application
+   glisse le contenu sous la barre d'état.
+6 bis. Regarder la table à **393 px de large** avant de proposer : c'est là que le centre
+   (enchères, consignes, pli) se dispute la place avec les sièges et la main.
 7. Monter la version d'un geste : `node scripts/version.mjs x.y.z` (package.json,
    package-lock.json, `sw.js` et l'empreinte `?v=` des scripts et des styles dans les pages —
    c'est elle qui sort un navigateur resté sur d'anciens fichiers). Puis écrire l'entrée du

@@ -9,6 +9,11 @@ application, sur ordinateur, sur Android et sur iPhone : https://jeuxdecartes.al
 Au programme : le **8 Américain** à quatre, le **tarot** à quatre ou cinq (enchères,
 chien et écart, appel au Roi, poignées, Petit au bout) et la **belote** à quatre, par
 équipes (retourne, atout, belote-rebelote, annonces, dix de der, partie en 1000 points).
+Chaque table tient sa feuille de marque, accessible depuis le menu.
+
+Le site est en **version d'essai (bêta)** : tout fonctionne, mais les réglages fins, les
+bots et l'affichage bougent encore. Une version neuve arrive d'elle-même au prochain
+chargement de page : rien à réinstaller.
 
 - [Journal des versions](Journal) : ce que l'on fait à chaque version, et ce qui a été
   fait le jour de la mise en ligne.
