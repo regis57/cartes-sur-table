@@ -6,6 +6,30 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.6.6"></a>
+## 0.6.6 — 17 octobre 2026
+
+**Le menu reste atteignable sur téléphone, et une version neuve chasse l'ancienne pour de bon.**
+
+Corrigé
+- **Dix pages sur treize se glissaient sous la barre d'état de l'iPhone** : elles déclaraient
+  l'affichage sous la barre (`black-translucent`) sans demander les zones réservées
+  (`viewport-fit=cover`), et `env(safe-area-inset-*)` y valait zéro. Les trois pages de jeu
+  l'avaient ; l'accueil, le profil, les règles, non.
+- **Le menu de table sur téléphone** : le bouton est plus grand, bien sous l'îlot dynamique,
+  et un second bouton « Menu » attend sous la main, à portée de pouce — une main de tarot
+  peut dépasser l'écran, aucun des deux ne doit être le seul chemin. Le bouton de thème
+  s'efface du jeu sur petit écran ; le mode jour / nuit se règle depuis le menu.
+- **La mise à jour atteint enfin les navigateurs restés en arrière.** Les correctifs
+  précédents vivaient dans les nouveaux scripts : un navigateur servi par les anciens ne les
+  exécutait jamais. Les pages, elles, sont toujours relues sur le réseau : elles demandent
+  désormais leurs scripts et leurs styles avec l'empreinte de la version (`?v=x.y.z`). Une
+  URL neuve ne peut pas être servie depuis un ancien cache — la nouvelle version arrive donc
+  au premier chargement de page, quelle que soit la génération de l'agent de service.
+  `node scripts/version.mjs x.y.z` pose le tout, et un test refuse une page qui l'oublierait.
+
+---
+
 <a name="v0.6.5"></a>
 ## 0.6.5 — 17 octobre 2026
 

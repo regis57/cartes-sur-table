@@ -17,6 +17,7 @@
 
 import { $, h, img, show, hide, fill, toast, onAction, openDialog, closeDialog } from './ui.ts';
 import { loadLocale, t, has } from './i18n.ts';
+import { basculerTheme, currentTheme } from './theme.ts';
 import { identity } from './profile.ts';
 import { avatarSrc } from './avatars.ts';
 import { connectGame, saveSeat, loadSeat, type GameSocket } from './net.ts';
@@ -208,11 +209,14 @@ function buildDialogs(jeu: SalleJeu<unknown>): void {
     document.body.append(d);
     return d;
   };
-  dlg('dlg-menu', h('h2', '', t('table.menu')), boutons([['close-menu', 'table.resume', 'craie'], ['scoresheet', 'table.scoresheet', 'craie'], ['rules', 'lobby.rules', 'craie'], ['quit', 'table.quit', 'rouge']]));
+  dlg('dlg-menu', h('h2', '', t('table.menu')), boutons([['close-menu', 'table.resume', 'craie'], ['scoresheet', 'table.scoresheet', 'craie'], ['rules', 'lobby.rules', 'craie'], ['theme', 'table.theme', 'craie'], ['quit', 'table.quit', 'rouge']]));
 
   const marque = h('div', 'marque');
   marque.id = 'marque-tableau';
   dlg('dlg-marque', h('h2', '', t('table.scoresheet_title')), marque, boutons([['close-scoresheet', 'site.close', 'craie']]));
+
+  const btnTheme = document.querySelector<HTMLButtonElement>('[data-action="theme"]');
+  if (btnTheme) btnTheme.textContent = t(currentTheme() === 'dark' ? 'table.theme_light' : 'table.theme_dark');
 
   const regles = h('div', 'regles');
   regles.id = 'regles-texte';
@@ -563,6 +567,11 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
       openDialog('dlg-marque');
     },
     'close-scoresheet': () => closeDialog('dlg-marque'),
+    'theme': () => {
+      const suivant = basculerTheme();
+      const b = document.querySelector<HTMLButtonElement>('[data-action="theme"]');
+      if (b) b.textContent = t(suivant === 'dark' ? 'table.theme_light' : 'table.theme_dark');
+    },
     'close-rules': () => closeDialog('dlg-regles'),
     'menu': () => openDialog('dlg-menu'),
     'close-menu': () => closeDialog('dlg-menu'),
