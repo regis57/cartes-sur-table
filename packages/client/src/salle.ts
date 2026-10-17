@@ -35,8 +35,14 @@ export interface SalleContext<V> {
   readonly move: (key: string) => void;
   /** Nom d'un siège, avec « (vous) » pour le sien. */
   readonly seatName: (s: PublicSeat, idx: number) => string;
-  /** Remplit l'étiquette standard d'un siège (avatar, nom, score, bot, en attente), en gardant la bulle. */
-  readonly seatLabel: (label: HTMLElement, s: PublicSeat, idx: number, score: number, extra: string) => void;
+  /** Remplit l'étiquette standard d'un siège (avatar, nom, score, bot, en attente), en gardant les bulles. */
+  readonly seatLabel: (label: HTMLElement, s: PublicSeat, idx: number, score: number, extra: string, options?: { dealer?: boolean }) => void;
+  /**
+   * Pose (ou retire) l'annonce d'un siège : une bulle qui reste, à côté du joueur, le temps
+   * des enchères — « Passe », « Garde », « Je prends ♠ ». C'est la lecture d'une vraie table :
+   * on voit qui a dit quoi sans relire une ligne de texte.
+   */
+  readonly seatAnnounce: (label: HTMLElement, texte: string | null) => void;
 }
 
 export interface SalleJeu<V> {
@@ -283,18 +289,38 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
       if (tableId) socket.emit('move', { tableId, key });
     },
     seatName: (s, idx) => (idx === mySeat ? `${s.name} (${t('table.you').toLowerCase()})` : s.name),
-    seatLabel: (label, s, idx, score, extra) => {
-      const bubble = label.querySelector('.bulle');
+    seatLabel: (label, s, idx, score, extra, options) => {
+      const bulles = [...label.querySelectorAll('.bulle')];
       label.textContent = '';
       label.append(img(avatarSrc(s.avatar), '', 'avatar'));
-      label.append(h('span', 'nom', ctx.seatName(s, idx)));
+      const nom = h('span', 'nom', ctx.seatName(s, idx));
+      if (options?.dealer) {
+        // Le jeton du donneur, comme à la table : une pastille, pas un mot de plus à lire.
+        const jeton = h('span', 'jeton-donneur', 'D');
+        jeton.title = t('table.dealer_title');
+        jeton.setAttribute('aria-label', t('table.dealer_title'));
+        nom.append(document.createTextNode(' '), jeton);
+      }
+      label.append(nom);
       const infos = h('span', 'infos');
       infos.append(h('span', 'pts', t('table.score', { n: score })));
       if (extra) infos.append(document.createTextNode(` · ${extra}`));
       if (s.awaiting) infos.append(h('span', 'etat', ` · ${t('table.awaiting')}`));
       else if (s.isBot) infos.append(h('span', 'etat', ` · ${t('table.bot')}`));
       label.append(infos);
-      if (bubble) label.append(bubble);
+      label.append(...bulles);
+    },
+    seatAnnounce: (label, texte) => {
+      const ancienne = label.querySelector('.bulle.annonce');
+      if (texte === null) {
+        ancienne?.remove();
+        return;
+      }
+      if (ancienne) {
+        ancienne.textContent = texte;
+        return;
+      }
+      label.append(h('div', 'bulle annonce', texte));
     },
   };
 
@@ -387,7 +413,7 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     const zone = jeu.zoneForSeat(seat);
     const label = zone?.querySelector<HTMLElement>('.etiquette');
     if (!label) return;
-    label.querySelector('.bulle')?.remove();
+    label.querySelector('.bulle:not(.annonce)')?.remove();
     const b = h('div', 'bulle');
     b.append(node);
     label.append(b);

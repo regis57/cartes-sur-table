@@ -75,6 +75,9 @@ vit une seule fois, dans le socle ou dans la salle.
 - **La stratégie propre au jeu.** `botMove` court-circuite le MCTS quand le jeu sait mieux
   faire (le tarot et la belote s'en servent) ; `rolloutMove` reste la politique de
   simulation.
+- **Les étiquettes de siège.** `seatLabel` dessine avatar, nom, score, état, et pose le
+  jeton du donneur ; `seatAnnounce` colle au siège une bulle qui reste — ce que la personne
+  vient d'annoncer. Un jeu décide quoi y mettre, jamais comment le dessiner.
 - **Le parcours**, enfin, est entièrement dans `salle.ts` : modes, file, table privée,
   niveau, règles, réactions, menu, marque, fin de manche, reprise après coupure.
 

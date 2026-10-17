@@ -86,3 +86,20 @@
 @media (max-width: 700px) {
   .pli { height: calc(var(--carte-h, 104px) * 2); }
 }
+
+/* Bilan en deux colonnes, Nous et Eux : la lecture d'une feuille de marque de belote. */
+.bilan-equipes th { text-align: center; padding-bottom: 10px; }
+.bilan-equipes th b { display: block; font-size: 1.1rem; }
+.bilan-equipes th .coequipiers { display: block; font-size: 0.85rem; opacity: 0.8; font-weight: 400; max-width: 18ch; margin: 0 auto; }
+.bilan-equipes td { text-align: center; font-size: 1.05rem; padding: 7px 8px; }
+.bilan-equipes td.intitule { text-align: left; opacity: 0.9; }
+.bilan-equipes .ligne-total td { font-weight: 700; border-top: 1px solid var(--panneau-bord); }
+.bilan-equipes .verdict { background: var(--laiton); color: var(--laiton-texte); font-family: var(--police-ui); font-weight: 700; padding: 3px 14px; border-radius: 999px; display: inline-block; }
+.bilan-equipes .verdict.reussi { background: #1d7a3e; color: #ffffff; }
+.bilan-equipes .verdict.chute { background: #8c2f28; color: #ffffff; }
+.bilan-equipes .verdict.neutre { background: var(--panneau-bord); color: var(--texte); }
+.bilan-equipes .ligne-cumul td { padding-top: 10px; }
+.bilan-equipes .pastille { display: inline-block; min-width: 4ch; padding: 5px 14px; border-radius: 10px; font-weight: 700; font-size: 1.15rem; }
+.bilan-equipes .pastille.devant { background: #1d7a3e; color: #ffffff; }
+.bilan-equipes .pastille.derriere { background: #8c2f28; color: #ffffff; }
+.bilan-equipes .atout-symbole { font-size: 1.5em; }

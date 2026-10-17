@@ -6,6 +6,37 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.7.0"></a>
+## 0.7.0 — 17 octobre 2026
+
+**La table se lit comme une vraie table.**
+
+Trois idées reprises d'un jeu de belote sur tablette, regardé pour ce qu'il fait de mieux.
+
+Ajouté
+- **Les annonces en bulle, au siège de celui qui a parlé** : « Passe », « Petite »,
+  « Garde »… Elles restent le temps des enchères, au lieu de se lire dans une ligne de
+  texte sous le nom. Le socle les tient (`seatAnnounce`), le tarot et la belote s'en
+  servent ; une bulle de réaction et une annonce peuvent coexister, et sur les sièges du
+  haut la bulle passe sous l'étiquette pour ne pas sortir de l'écran.
+- **Le jeton du donneur** : une pastille « D » à côté du nom, à la place du mot « donne »
+  noyé dans la ligne d'infos. Au tarot aussi, qui ne l'indiquait pas du tout.
+- **Le bilan de belote en deux colonnes, Nous et Eux**, comme une feuille de marque :
+  l'atout posé dans la colonne de celui qui a pris, les points des cartes, la belote, les
+  annonces, le total, le verdict (réussie, dedans, capot, égalité) en pastille verte ou
+  rouge dans la colonne du preneur, la marque de la donne, et le score cumulé en pastille.
+  Les lignes vides (pas de belote, pas d'annonce) ne s'affichent pas.
+
+Corrigé
+- Les sièges de gauche et de droite coupaient ce qui dépassait : une bulle y était rognée.
+  C'est la main qui est coupée maintenant, pas le siège.
+
+Non repris de ce jeu : le bois verni, le gris clair sur blanc (illisible passé cinquante
+ans), les onglets verticaux qui mangent le cinquième de l'écran, et les étiquettes pivotées
+qu'on relit de travers.
+
+---
+
 <a name="v0.6.9"></a>
 ## 0.6.9 — 17 octobre 2026
 
