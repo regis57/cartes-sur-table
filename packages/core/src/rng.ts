@@ -68,3 +68,60 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   }
   return a;
 }
+
+/**
+ * Répartit des objets entre des places de contenances données, chaque objet n'allant que
+ * sur une place qui l'admet. C'est le cœur de `determinize` : tirer un monde possible où
+ * chaque main respecte ce qui a été observé (« ce joueur n'a plus de pique »).
+ *
+ * À chaque pas, on pose l'objet qui a le moins de places encore ouvertes (à égalité, au
+ * hasard), sur une place tirée parmi celles-ci au prorata de ce qu'il leur reste ; une
+ * impasse fait recommencer avec un autre tirage. Un remplissage main par main, plus simple,
+ * prenait à une main les seules cartes qu'une autre pouvait recevoir, et violait les
+ * renonces alors qu'un monde valide existait.
+ *
+ * La somme des contenances doit égaler le nombre d'objets. Renvoie null si aucune
+ * répartition n'a été trouvée en `essais` tirages.
+ */
+export function repartir<T>(objets: readonly T[], contenances: readonly number[], admis: (place: number, objet: T) => boolean, rng: Rng, essais = 60): T[][] | null {
+  if (contenances.reduce((s, c) => s + c, 0) !== objets.length) throw new RangeError('contenances et objets ne correspondent pas');
+  const options = objets.map((o) => contenances.flatMap((c, i) => (c > 0 && admis(i, o) ? [i] : [])));
+  for (let e = 0; e < essais; e++) {
+    const reste = [...contenances];
+    const places: T[][] = contenances.map(() => []);
+    // L'ordre mélangé départage au hasard les objets également contraints.
+    let restants = shuffle(objets.map((_, k) => k), rng);
+    let impasse = false;
+    while (restants.length > 0) {
+      let meilleur = -1;
+      let libresMeilleur: number[] = [];
+      for (let j = 0; j < restants.length; j++) {
+        const libres = (options[restants[j] as number] as number[]).filter((i) => (reste[i] as number) > 0);
+        if (meilleur === -1 || libres.length < libresMeilleur.length) {
+          meilleur = j;
+          libresMeilleur = libres;
+          if (libres.length <= 1) break;
+        }
+      }
+      if (libresMeilleur.length === 0) {
+        impasse = true;
+        break;
+      }
+      const k = restants[meilleur] as number;
+      restants = [...restants.slice(0, meilleur), ...restants.slice(meilleur + 1)];
+      let r = rng.int(libresMeilleur.reduce((s, i) => s + (reste[i] as number), 0));
+      let choisie = libresMeilleur[0] as number;
+      for (const i of libresMeilleur) {
+        if (r < (reste[i] as number)) {
+          choisie = i;
+          break;
+        }
+        r -= reste[i] as number;
+      }
+      (places[choisie] as T[]).push(objets[k] as T);
+      reste[choisie] = (reste[choisie] as number) - 1;
+    }
+    if (!impasse) return places;
+  }
+  return null;
+}

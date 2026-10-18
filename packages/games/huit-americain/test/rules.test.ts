@@ -221,3 +221,10 @@ test('aléa crypto : une vraie donne reste valide', () => {
   const s = createRound(4, cryptoRng);
   assert.equal(s.deck.length + s.discard.length + s.hands.flat().length, 52);
 });
+
+test('Fin de partie : à charge égale, les moins chargés gagnent ensemble', () => {
+  const fin = { ...createRound(3, seededRng(1)), roundOver: true, scores: [120, 120, 205] };
+  assert.ok(def.isMatchOver(fin));
+  assert.deepEqual(def.matchWinners!(fin), [0, 1]);
+  assert.equal(def.matchWinner(fin), 0);
+});

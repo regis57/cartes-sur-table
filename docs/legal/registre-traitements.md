@@ -18,7 +18,7 @@ réseau.
 | Données | Empreinte SHA-256 du jeton secret ; pseudo ; numéro d'avatar ; date de création et de dernière visite (au jour près) ; par jeu : parties, victoires, manches ; succès et date du jour d'obtention |
 | Données explicitement absentes | Email, nom, mot de passe, adresse IP, historique de parties, empreinte de navigateur, mesure d'audience |
 | Destinataires | L'éditeur seul |
-| Durée | Tant que le profil existe ; effacement automatique après 365 jours sans visite ; effacement immédiat à la demande du joueur depuis le site |
+| Durée | Tant que le profil existe ; effacement automatique après 365 jours sans visite ; effacement immédiat à la demande du joueur depuis le site, jusque dans les fichiers de la base (pages libérées remises à zéro, journal vidé aussitôt) |
 | Lieu | Serveur de l'éditeur, en France (base SQLite dans un volume Docker) |
 | Sauvegardes | Copie cohérente quotidienne, vérifiée, conservée **sept jours au plus** : sept copies tournantes sur le serveur, et une copie chiffrée côté client sur un support USB relié au serveur, en rotation de sept versions. Un profil effacé disparaît donc des sauvegardes au plus tard sept jours après |
 | Sécurité | Jeton jamais stocké (empreinte seule) ; transport par en-tête Authorization en HTTPS ; serveur sans port ouvert, joignable par tunnel sortant seulement ; conteneur en lecture seule, sans privilèges |

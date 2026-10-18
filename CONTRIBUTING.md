@@ -30,11 +30,14 @@ Les commits portent une adresse `@users.noreply.github.com`.
    - `determinize(state, seat, rng)` tire un monde possible **compatible avec la vue**.
    Un coup = un choix : si une décision porte sur plusieurs cartes (un écart), la découper
    en autant de coups ; c'est ce qui garde `legalMoves` énumérable et le bot capable de
-   raisonner. Si le jeu a sa propre stratégie de bot, la brancher par `botMove` (facultatif) ;
-   sinon le MCTS générique joue avec `rolloutMove`. `roundSummary` peut renvoyer un `label`
+   raisonner. Si le jeu a sa propre stratégie de bot, la brancher par `botMove` (facultatif),
+   qui reçoit le niveau de la table : au niveau « facile », c'est à elle de jouer moins bien ;
+   sinon le MCTS générique joue avec `rolloutMove`. Pour `determinize`, `repartir` (socle)
+   distribue les cartes inconnues en respectant les renonces observées. `roundSummary` peut renvoyer un `label`
    (« Garde — {0} », les `{n}` deviennent des noms) : c'est la ligne de la feuille de marque,
-   que le socle tient pour tous les jeux. Dans un jeu par équipes, renvoyer tous
-   les vainqueurs par `matchWinners` (la belote le fait) : chacun compte la partie gagnée.
+   que le socle tient pour tous les jeux. Dans un jeu par équipes, ou dès qu'une égalité en
+   tête est possible, renvoyer tous les vainqueurs par `matchWinners` (les trois jeux le
+   font) : chacun compte la partie gagnée.
 3. Enregistrer le jeu dans `packages/server/src/games.ts`.
 4. Écrire les tests, en copiant la structure de `test/rules.test.ts` :
    - création de manche, coups légaux (clés uniques), coups illégaux refusés, fin de manche

@@ -3,7 +3,7 @@
  * Licensed under the GNU Affero General Public License v3.0 or later.
  */
 
-import { shuffle, type GameDefinition, type GameMeta, type Rng, type RoundSummary, type AchievementContext } from '@jdc/core';
+import { repartir, shuffle, type BotLevel, type GameDefinition, type GameMeta, type Rng, type RoundSummary, type AchievementContext } from '@jdc/core';
 import {
   SUITS, VALUES, buildDeck, cardKey, cardPoints, cardStrength, naturalRank, parseCardKey, sameCard, sortHand,
   type Card, type Suit, type Value,
@@ -66,8 +66,14 @@ export type LastEvent =
   | { readonly type: 'pass'; readonly seat: number }
   | { readonly type: 'take'; readonly seat: number; readonly suit: Suit }
   | { readonly type: 'belote'; readonly seat: number; readonly second: boolean }
-  | { readonly type: 'declarations'; readonly team: 0 | 1; readonly points: number }
-  | { readonly type: 'trick'; readonly winner: number };
+  | { readonly type: 'declarations'; readonly team: 0 | 1; readonly points: number; readonly belote?: BeloteSaid }
+  | { readonly type: 'trick'; readonly winner: number; readonly belote?: BeloteSaid };
+
+/** « Belote » ou « rebelote » dite avec la carte qui ferme le pli : le pli ne doit pas l'effacer. */
+export interface BeloteSaid {
+  readonly seat: number;
+  readonly second: boolean;
+}
 
 /** Le bilan d'une donne terminée. */
 export interface DonneResult {
@@ -470,13 +476,14 @@ function resolveTrick(state: BeloteState): BeloteState {
   const won: [Card[], Card[]] = [[...state.won[0]], [...state.won[1]]];
   won[team].push(...state.trick.map((t) => t.card));
   const tricksPlayed = state.tricksPlayed + 1;
-  let lastEvent: LastEvent = { type: 'trick', winner };
+  const said = state.lastEvent?.type === 'belote' ? { belote: { seat: state.lastEvent.seat, second: state.lastEvent.second } } : {};
+  let lastEvent: LastEvent = { type: 'trick', winner, ...said };
   let declarationsShown = state.declarationsShown;
   if (!declarationsShown) {
     declarationsShown = true;
     if (state.declarationsTeam !== null) {
       const pts = state.declarations.filter((d) => teamOf(d.seat) === state.declarationsTeam).reduce((s, d) => s + d.points, 0);
-      lastEvent = { type: 'declarations', team: state.declarationsTeam, points: pts };
+      lastEvent = { type: 'declarations', team: state.declarationsTeam, points: pts, ...said };
     }
   }
   const next: BeloteState = {
@@ -515,10 +522,16 @@ function scoreRound(state: BeloteState): BeloteState {
   let made = false;
   let litige = false;
   let reserve = state.litige;
-  if (capot !== null) {
-    scored[capot] = 252 + decl[0] + decl[1] + belote[capot];
-    scored[1 - capot] = belote[(1 - capot) as 0 | 1];
-    made = capot === takerTeam;
+  if (capot === takerTeam) {
+    // Capot du preneur : 252 au lieu de ses points de cartes. Les annonces restent à l'équipe
+    // qui détient la plus forte (règle 7) : la défense garde les siennes si c'est elle.
+    made = true;
+    scored[takerTeam] = 252 + decl[takerTeam] + belote[takerTeam];
+    scored[defTeam] = decl[defTeam] + belote[defTeam];
+  } else if (capot === defTeam) {
+    // Capot de la défense : le preneur est dedans, la défense marque 252 et toutes les annonces.
+    scored[defTeam] = 252 + decl[0] + decl[1] + belote[defTeam];
+    scored[takerTeam] = belote[takerTeam];
   } else if (totalTaker > totalDef) {
     made = true;
     scored[takerTeam] = raw[takerTeam] + decl[takerTeam] + belote[takerTeam];
@@ -607,7 +620,12 @@ export function view(state: BeloteState, seat: number): BeloteView {
 
 // ---------- information cachée ----------
 
-/** Un monde possible pour `seat` : ses cartes et celles tombées sont fixes, le reste est redistribué en respectant les renonces observées. */
+/**
+ * Un monde possible pour `seat` : ses cartes et celles tombées sont fixes ; ce que tout le
+ * monde a vu reste où il est (la retourne chez le preneur, les annonces montrées, la seconde
+ * carte de la belote une fois « belote » dite) ; le reste est redistribué en respectant les
+ * renonces observées.
+ */
 export function determinize(state: BeloteState, seat: number, rng: Rng): BeloteState {
   const known = new Set<string>();
   for (const c of state.hands[seat] ?? []) known.add(cardKey(c));
@@ -615,25 +633,34 @@ export function determinize(state: BeloteState, seat: number, rng: Rng): BeloteS
   for (const t of state.trick) known.add(cardKey(t.card));
   const bidding = state.phase !== 'play' && state.phase !== 'over';
   if (bidding) known.add(cardKey(state.turned));
-  const pool = shuffle(buildDeck().filter((c) => !known.has(cardKey(c))), rng);
-  const hands: Card[][] = state.hands.map((h, i) => (i === seat ? [...h] : []));
-  // Les mains les plus contraintes (renonces) se servent d'abord, pour que les contraintes restent satisfaisables.
-  const order = shuffle([0, 1, 2, 3].filter((i) => i !== seat), rng).sort((a, b) => (state.voids[b]?.length ?? 0) - (state.voids[a]?.length ?? 0));
-  for (const i of order) {
-    const need = state.hands[i]?.length ?? 0;
-    const voids = state.voids[i] ?? [];
-    const take: Card[] = [];
-    for (let k = pool.length - 1; k >= 0 && take.length < need; k--) {
-      const c = pool[k] as Card;
-      if (!voids.includes(c.suit)) {
-        take.push(c);
-        pool.splice(k, 1);
-      }
-    }
-    while (take.length < need && pool.length) take.push(pool.pop() as Card);
-    hands[i] = sortHand(take, state.trump);
+
+  // Les cartes publiques encore en main : chacune reste chez celui qui la tient.
+  const fixed: Card[][] = [[], [], [], []];
+  const fix = (holder: number, c: Card): void => {
+    if (holder < 0 || holder === seat || known.has(cardKey(c))) return;
+    if (!(state.hands[holder] ?? []).some((x) => sameCard(x, c))) return;
+    known.add(cardKey(c));
+    (fixed[holder] as Card[]).push(c);
+  };
+  if (!bidding) fix(state.taker, state.turned);
+  if (state.declarationsShown) for (const d of state.declarations) for (const c of d.cards) fix(d.seat, c);
+  if (state.trump && state.beloteAnnounced && state.belotePlayed === 1) {
+    for (const value of ['R', 'D'] as const) fix(state.beloteSeat, { suit: state.trump, value });
   }
-  const talon = bidding ? pool : state.talon;
+
+  const pool = buildDeck().filter((c) => !known.has(cardKey(c)));
+  const others = [0, 1, 2, 3].filter((i) => i !== seat);
+  const needs = others.map((i) => (state.hands[i]?.length ?? 0) - (fixed[i] as Card[]).length);
+  const talonSize = pool.length - needs.reduce((a, b) => a + b, 0);
+  // Les places : les trois autres mains, puis la pioche (pendant les enchères seulement).
+  const contenances = [...needs, talonSize];
+  const admis = (place: number, c: Card): boolean => place === others.length || !(state.voids[others[place] as number] ?? []).includes(c.suit);
+  const placed = repartir(pool, contenances, admis, rng) ?? (repartir(pool, contenances, () => true, rng) as Card[][]);
+  const hands: Card[][] = state.hands.map((h, i) => (i === seat ? [...h] : []));
+  others.forEach((i, k) => {
+    hands[i] = sortHand([...(fixed[i] as Card[]), ...(placed[k] as Card[])], state.trump);
+  });
+  const talon = bidding ? (placed[others.length] as Card[]) : state.talon;
   // La belote et les annonces suivent les mains de ce monde tant qu'elles ne sont pas publiques.
   let beloteSeat = state.beloteSeat;
   let declarations = state.declarations;
@@ -761,10 +788,15 @@ function botPlay(state: BeloteState, seat: number, legal: readonly Move[]): Move
   return { type: 'play', card: lowest(cards) };
 }
 
-export function botMove(state: BeloteState, seat: number, legal: readonly Move[], _rng: Rng): Move | null {
+export function botMove(state: BeloteState, seat: number, legal: readonly Move[], rng: Rng, level: BotLevel = 'normal'): Move | null {
   if (legal.length === 0) return null;
   if (state.phase === 'bid1' || state.phase === 'bid2') return botBid(state, seat, legal);
-  if (state.phase === 'play') return botPlay(state, seat, legal);
+  if (state.phase === 'play') {
+    // Au niveau facile, le bot prend avec bon sens mais joue une fois sur deux une carte
+    // permise au hasard : il laisse passer des plis et gâche des points, sans tricher.
+    if (level === 'facile' && legal.length > 1 && rng.int(2) === 0) return legal[rng.int(legal.length)] as Move;
+    return botPlay(state, seat, legal);
+  }
   return null;
 }
 

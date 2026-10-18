@@ -59,3 +59,16 @@ test('PrivateTables : création, code valide, invitation, départ de l\'hôte, l
   assert.equal(pt.size, 0);
   for (let i = 0; i < 100; i++) assert.ok(isValidInviteCode(newInviteCode()));
 });
+
+test('PrivateTables : le balayage rend les tables expirées, pour que le serveur prévienne leurs membres', async () => {
+  const pt = new PrivateTables(5, 10);
+  const host: LobbyEntry = { humanId: 'h', name: 'Hôte', avatar: 0, profileId: null };
+  const t = pt.create('huit-americain', 4, host);
+  assert.ok(t);
+  assert.deepEqual(pt.sweep(), [], 'rien d\'expiré tout de suite');
+  await new Promise((r) => setTimeout(r, 15));
+  const expired = pt.sweep();
+  assert.deepEqual(expired.map((x) => x.code), [t.code]);
+  assert.equal(pt.findByHuman('h'), null);
+  assert.equal(pt.size, 0);
+});

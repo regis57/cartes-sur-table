@@ -6,6 +6,106 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.8.1"></a>
+## 0.8.1 — 18 octobre 2026
+
+**Une revue complète du code, confrontée aux règles affichées et aux exigences du projet.**
+
+Trois relectures menées en parallèle (règles du tarot, règles de la belote, 8 Américain et
+serveur), chacune appuyée sur des milliers de parties simulées comparées à une
+implémentation indépendante, puis l'écran regardé dans les quatre formats avec les zones
+réservées d'un iPhone simulées. Ce qui suit est ce qui ne tenait pas.
+
+Corrigé — reprise après coupure
+- **Après une coupure (réseau qui change, téléphone en veille), la page ne reprenait pas son
+  siège** : Socket.io se reconnectait de lui-même, mais personne ne redemandait le siège ;
+  la table restait figée et les coups partaient dans le vide. La page redemande désormais
+  son siège à chaque connexion, et ne cesse plus de chercher à se reconnecter (elle
+  abandonnait au cinquième essai).
+- **Revenir avant que le serveur ait vu la coupure faisait perdre le siège** : le serveur ne
+  constate la mort d'une connexion qu'au bout d'une minute environ, et refusait la reprise
+  entre-temps ; la page, croyant la partie finie, oubliait sa clé. La clé fait foi
+  maintenant ; l'ancienne connexion est prévenue (cas d'un second onglet) puis déliée.
+- À plusieurs, quand l'un lançait la donne suivante, le bilan restait ouvert chez les
+  autres, qui risquaient d'être remplacés pour inactivité en le lisant. Il se referme.
+
+Corrigé — règles
+- **Tarot à cinq : le demi-point était mal arrondi** dans une donne sur quatre environ. Il va
+  au camp gagnant avant la multiplication : 40,5 pour 41, c'est chuter d'un point (−26 en
+  Petite, −52 en Garde), et non −25 ou −51.
+- **Tarot : l'Excuse jouée au dernier pli restait à son camp** quand un partenaire remportait
+  le pli, contrairement à la règle affichée (« au dernier pli, elle est perdue »). Elle passe
+  au camp adverse.
+- **Tarot à cinq : on n'entame plus le premier pli dans la couleur du Roi appelé**, sauf avec
+  ce Roi (règlement de la FFT). La règle affichée le dit désormais.
+- **Égalité en tête en fin de partie : un seul vainqueur était compté** (le siège d'indice le
+  plus bas), au tarot comme au 8 Américain. Tous les ex aequo comptent la partie gagnée, et
+  le bilan les nomme.
+- **Belote : en cas de capot du preneur, les annonces de la défense lui étaient données.**
+  Seule l'équipe qui détient la plus forte annonce marque les siennes (règle 7), capot ou
+  non. Le capot de la défense, lui, reste un « dedans » : 252 et toutes les annonces.
+- Belote : « Belote » ou « Rebelote » dite avec la carte qui ferme le pli n'apparaissait
+  jamais dans le bandeau ; elle s'annonce maintenant avec le pli.
+- **Le niveau « Facile » jouait exactement comme « Normal »** au tarot et à la belote. Les
+  bots y enchérissent et écartent avec bon sens, mais jouent une carte sur deux au hasard.
+- Les mondes que les bots imaginent (`determinize`) respectent tout ce qui a été observé, et
+  rien d'autre : renonces (une distribution main par main les violait alors qu'un monde
+  valide existait), cartes montrées (retourne, annonces, belote, chien, atouts écartés),
+  partenaire inconnu à cinq (le preneur seul se devinait). Sans effet sur le jeu actuel,
+  où les bots suivent la stratégie du jeu, mais c'est un invariant du contrat.
+
+Corrigé — écran
+- **Tarot et 8 Américain : la main du joueur n'occupait que la colonne du milieu.** Elle prend
+  toute la largeur : l'écart à vingt-quatre cartes tient enfin dans un téléphone en
+  portrait, sans défiler.
+- **Tarot, mode jour : « Le chien » et « Votre écart » étaient écrits en blanc sur crème.**
+- **Des étiquettes de siège trop longues élargissaient la page**, qui défilait de côté (ou se
+  dézoomait sur téléphone) : siège de droite à cinq, sièges de côté en paysage. Elles vont à
+  la ligne entre deux informations ; à cinq, les deux sièges du haut se partagent la largeur.
+- **Belote : les annonces en images poussaient la main hors de l'écran** pendant les premiers
+  plis, sur téléphone et tablette couchée. Elles s'écrivent en toutes lettres (« 10♣ V♣ D♣ »)
+  là où la hauteur manque, et se posent à côté du pli sur un téléphone couché.
+- **Cibles tactiles sous 44 pixels** : les boutons Réactions et Phrases descendaient à 36 ou
+  40 pixels en paysage, les enchères à 40, le retrait d'une passkey à 40. Tous à 44 au
+  moins. Sur un téléphone couché, Réactions et Phrases passent dans les coins du bas, et la
+  hauteur gagnée rend la page entière visible sans défiler.
+- **Téléphone couché : l'encoche est sur le côté**, et le siège de gauche tombait dessous.
+  La table et les pages respectent maintenant les zones réservées de gauche et de droite.
+
+Corrigé — serveur et données
+- **Les succès d'une manche (« Huit magique », « Capot »…) n'étaient enregistrés que s'ils
+  arrivaient à la dernière manche** de la partie. Ils s'inscrivent à la fin de chaque manche.
+- **Un profil effacé restait lisible dans les fichiers de la base** (journal, pages
+  libérées). Les pages libérées sont remises à zéro et le journal est vidé après chaque
+  effacement : « définitivement » veut dire effacé du disque.
+- Une table laissée au bilan (onglet oublié) gardait sa place indéfiniment ; elle se ferme
+  après quinze minutes sans relance, en prévenant le joueur.
+- Une table privée expirée (trente minutes d'attente) laissait ses membres bloqués :
+  « Lancer » ne répondait plus, aucune autre partie n'était possible. Ils sont prévenus et
+  libérés.
+- Le plafond de connexions par adresse se contournait en groupant les demandes dans une
+  seule requête ; la place est maintenant prise au moment même du contrôle.
+- Un pseudo fait de caractères invisibles (remplissages hangul) passait le filtre ; il
+  retombe sur « Joueur ».
+- En production sans `PUBLIC_ORIGIN`, les passkeys étaient acceptées en tirant le domaine des
+  en-têtes de la requête, contrairement à ce que disaient le bilan et le guide. Elles sont
+  refusées (503).
+
+Vérifié
+- Quatre formats × trois jeux × trois à quatre moments de la donne (enchères, écart à
+  quatre et à cinq, jeu, annonces de belote), avec les zones réservées d'un iPhone simulées
+  en portrait comme en paysage : la main du joueur est visible et la page ne défile ni en
+  hauteur ni en largeur, partout.
+
+Restent à trancher, signalés et non modifiés : la comparaison d'un carré et d'une suite à
+la belote (la règle affichée ne dit rien de l'ordre des carrés), la sous-coupe obligatoire
+(conforme au texte affiché « il faut couper »), la poignée du tarot, annoncée mais pas
+montrée, et l'appel d'un Cavalier avec quatre Rois et quatre Dames. Côté serveur, les bots
+calculent dans le fil principal : quelques dizaines de tables actives suffisent à occuper
+un cœur (voir le bilan de sécurité, « Ce qui reste à faire »).
+
+---
+
 <a name="v0.8.0"></a>
 ## 0.8.0 — 18 octobre 2026
 

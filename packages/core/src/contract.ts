@@ -5,6 +5,9 @@
 
 import type { Rng } from './rng.ts';
 
+/** Niveau des bots d'une table, choisi par le joueur au lancement. */
+export type BotLevel = 'facile' | 'normal';
+
 /**
  * LE CONTRAT DE JEU.
  *
@@ -120,8 +123,13 @@ export interface GameDefinition<S, M, V> {
    * Utile aux jeux dont une manche est trop longue pour que le MCTS converge dans le
    * temps de réflexion imparti (le tarot : enchères, écart, dix-huit plis), ou dont les
    * décisions de début de manche demandent une stratégie plutôt qu'une recherche.
+   *
+   * `level` est le niveau choisi à la table (« normal » s'il est omis). Un jeu qui a sa
+   * propre stratégie la dégrade lui-même au niveau « facile » : le socle ne sait pas ce qui,
+   * dans un coup, relève du bon sens (une enchère) ou de la finesse (la carte jouée), et sans
+   * cela « Facile » jouerait exactement comme « Normal ».
    */
-  botMove?(state: S, seat: number, legal: readonly M[], rng: Rng): M | null;
+  botMove?(state: S, seat: number, legal: readonly M[], rng: Rng, level?: BotLevel): M | null;
 
   /** Bilan d'une manche terminée, pour l'écran de fin et les succès. */
   roundSummary(state: S): RoundSummary;

@@ -189,8 +189,20 @@ export class PrivateTables {
     return t;
   }
 
-  private sweep(): void {
+  /**
+   * Retire les tables en attente depuis trop longtemps et les renvoie : le serveur doit
+   * prévenir leurs membres, sans quoi ils resteraient dans une salle d'attente qui n'existe
+   * plus (« Lancer » sans effet, aucune autre partie possible).
+   */
+  sweep(): PendingPrivateTable[] {
     const limit = Date.now() - this.ttlMs;
-    for (const [code, t] of this.byCode) if (t.createdAt < limit) this.byCode.delete(code);
+    const expired: PendingPrivateTable[] = [];
+    for (const [code, t] of this.byCode) {
+      if (t.createdAt < limit) {
+        this.byCode.delete(code);
+        expired.push(t);
+      }
+    }
+    return expired;
   }
 }

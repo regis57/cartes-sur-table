@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { GameDefinition, RoundSummary } from './contract.ts';
+import type { BotLevel, GameDefinition, RoundSummary } from './contract.ts';
 import { mctsChooseMove } from './mcts.ts';
 import { cryptoRng, seededRng, type Rng } from './rng.ts';
 import { createRateLimiter } from './security.ts';
@@ -39,8 +39,6 @@ export interface PublicSeat {
   awaiting: boolean;
 }
 
-export type BotLevel = 'facile' | 'normal';
-
 export interface Outbox {
   toSeat(seat: number, event: string, payload: unknown): void;
   toAll(event: string, payload: unknown): void;
@@ -54,6 +52,8 @@ export interface TableOptions {
   rejoinGraceMs?: number;
   /** Budget de réflexion du bot MCTS (ms). */
   botThinkMs?: number;
+  /** Durée au bilan (fin de manche ou de partie) sans que personne ne relance, avant fermeture (ms). */
+  idleEndMs?: number;
   rng?: Rng;
   onDestroy?: (table: Table<unknown, unknown, unknown>) => void;
   /** Fin de manche (et de partie si `matchOver`) : pour les profils et les succès. */
@@ -112,6 +112,7 @@ export class Table<S, M, V> {
   private readonly botLevel: BotLevel;
   private readonly rejoinGraceMs: number;
   private readonly botThinkMs: number;
+  private readonly idleEndMs: number;
   private readonly emoteLimiters: (() => boolean)[];
   private readonly onDestroy: TableOptions['onDestroy'];
   private readonly onRoundEnd: TableOptions['onRoundEnd'];
@@ -131,6 +132,7 @@ export class Table<S, M, V> {
     this.botLevel = opts.botLevel ?? 'normal';
     this.rejoinGraceMs = opts.rejoinGraceMs ?? 90_000;
     this.botThinkMs = opts.botThinkMs ?? 150;
+    this.idleEndMs = opts.idleEndMs ?? 15 * 60_000;
     this.onDestroy = opts.onDestroy;
     this.onRoundEnd = opts.onRoundEnd;
     this.onHumanReleased = opts.onHumanReleased;
@@ -234,7 +236,15 @@ export class Table<S, M, V> {
     this.out.toAll('roundEnd', { tableId: this.id, round: this.round, summary, seats: this.publicSeats(), matchOver, winner, winners, achievements });
     this.onRoundEnd?.({ tableId: this.id, round: this.round, matchOver, winner, winners, achievements, seats: this.seats });
     // Une table sans humain ne doit pas tourner à vide.
-    if (!this.anyoneExpected) this.destroy();
+    if (!this.anyoneExpected) {
+      this.destroy();
+      return;
+    }
+    // Au bilan, plus aucune minuterie ne court : un onglet oublié garderait la table (et sa
+    // place parmi celles que le serveur accepte) indéfiniment. Personne ne relance : on ferme.
+    this.schedule(this.idleEndMs, () => {
+      if (this.phase === 'roundEnd' || this.phase === 'matchEnd') this.destroy();
+    });
   }
 
   /** Manche suivante, à la demande d'un humain de la table. */
@@ -321,7 +331,10 @@ export class Table<S, M, V> {
     const legal = this.def.legalMoves(this.state, seat);
     if (legal.length === 0) return;
     let move: M;
-    const propre = this.botLevel === 'facile' ? null : (this.def.botMove?.(this.state, seat, legal, this.botRng) ?? null);
+    // La stratégie propre au jeu passe la première, à tous les niveaux : c'est elle qui sait
+    // jouer moins bien sans jouer n'importe quoi. Sans elle, « facile » s'en tient à la
+    // politique de simulation et « normal » cherche (MCTS).
+    const propre = this.def.botMove?.(this.state, seat, legal, this.botRng, this.botLevel) ?? null;
     if (propre !== null) {
       move = propre;
     } else if (this.botLevel === 'facile' || legal.length === 1) {
@@ -379,12 +392,26 @@ export class Table<S, M, V> {
     }, this.rejoinGraceMs + 50);
   }
 
-  /** Reprise d'un siège par son humain, avec la clé remise au départ. */
+  /**
+   * Reprise d'un siège par son humain, avec la clé remise au départ.
+   *
+   * Le siège peut encore être tenu par l'ancienne connexion : après un changement de réseau
+   * ou une mise en veille, le navigateur se reconnecte en une seconde, alors que le serveur
+   * ne constate la mort de l'ancienne connexion qu'au bout de son délai de battement (près
+   * d'une minute). La clé fait foi : la nouvelle connexion prend la place, l'ancienne est
+   * prévenue (s'il s'agissait d'un second onglet bien vivant) puis déliée.
+   */
   rejoin(rejoinKey: string, humanId: string): number | null {
-    const idx = this.seats.findIndex((s) => s.rejoinKey !== null && s.rejoinKey === rejoinKey && s.isBot && s.rejoinDeadline !== null);
+    const idx = this.seats.findIndex((s) => s.rejoinKey !== null && s.rejoinKey === rejoinKey);
     if (idx === -1) return null;
     const s = this.seats[idx] as Seat;
-    if ((s.rejoinDeadline ?? 0) < Date.now()) return null;
+    if (s.isBot) {
+      if (s.rejoinDeadline === null || s.rejoinDeadline < Date.now()) return null;
+    } else if (s.humanId !== humanId) {
+      const ancien = s.humanId;
+      this.out.toSeat(idx, 'seatTaken', { tableId: this.id });
+      if (ancien) this.onHumanReleased?.(ancien, this.id);
+    }
     s.isBot = false;
     s.humanId = humanId;
     s.rejoinDeadline = null;

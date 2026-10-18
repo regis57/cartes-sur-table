@@ -240,13 +240,15 @@ export function isMatchOver(state: HuitState): boolean {
   return state.roundOver && state.scores.some((s) => s >= MATCH_LIMIT);
 }
 
+/** Les moins chargés gagnent : à égalité, tous ensemble, et pas seulement le premier siège. */
+export function matchWinners(state: HuitState): number[] {
+  if (!isMatchOver(state)) return [];
+  const best = Math.min(...state.scores);
+  return state.scores.flatMap((s, i) => (s === best ? [i] : []));
+}
+
 export function matchWinner(state: HuitState): number | null {
-  if (!isMatchOver(state)) return null;
-  let best = 0;
-  state.scores.forEach((s, i) => {
-    if (s < (state.scores[best] ?? Infinity)) best = i;
-  });
-  return best;
+  return matchWinners(state)[0] ?? null;
 }
 
 export function view(state: HuitState, seat: number): HuitView {
@@ -367,6 +369,7 @@ export const huitAmericain: GameDefinition<HuitState, Move, HuitView> = {
   isMatchOver,
   scores: (s) => [...s.scores],
   matchWinner,
+  matchWinners,
   view,
   determinize,
   evaluate,

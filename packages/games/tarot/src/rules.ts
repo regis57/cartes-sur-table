@@ -3,7 +3,7 @@
  * Licensed under the GNU Affero General Public License v3.0 or later.
  */
 
-import { shuffle, type GameDefinition, type GameMeta, type Rng, type RoundSummary, type AchievementContext } from '@jdc/core';
+import { repartir, shuffle, type BotLevel, type GameDefinition, type GameMeta, type Rng, type RoundSummary, type AchievementContext } from '@jdc/core';
 import {
   SUITS, buildDeck, cardKey, cardPoints, isBout, isKing, parseCardKey, sameCard, sortHand,
   type Card, type Suit,
@@ -21,9 +21,12 @@ import {
  *  - Petite, Pousse et Garde : le chien est montré à tous, puis le preneur fait son écart (ni Roi,
  *    ni bout, et de l'atout seulement s'il n'a pas d'autre carte) ;
  *  - obligation de fournir, de couper, de surcouper ; l'Excuse se joue toujours ;
- *  - l'Excuse ne remporte jamais le pli et reste à son camp (sauf au dernier pli), contre
- *    un demi-point rendu ;
+ *  - à 5 joueurs, l'entame du premier pli ne se fait pas dans la couleur du Roi appelé, sauf
+ *    avec ce Roi lui-même ;
+ *  - l'Excuse ne remporte jamais le pli et reste à son camp contre un demi-point rendu ; au
+ *    dernier pli, elle est perdue : elle passe au camp adverse ;
  *  - objectifs selon les bouts : 56 / 51 / 41 / 36 ; valeur de la donne = (25 + écart) × contrat,
+ *    l'écart arrondi au point supérieur (le demi-point va au camp gagnant),
  *    plus le Petit au bout (10 × contrat) et les poignées (non multipliées) ;
  *  - à 4, le preneur marque trois fois la valeur ; à 5, deux fois (le partenaire une fois),
  *    ou quatre fois s'il est seul ;
@@ -316,7 +319,17 @@ export function currentSeat(state: TarotState): number | null {
 export function legalCards(state: TarotState, seat: number): Card[] {
   const hand = state.hands[seat] ?? [];
   const trick = state.trick;
-  if (trick.length === 0) return [...hand];
+  if (trick.length === 0) {
+    // À cinq, on n'entame pas le premier pli dans la couleur du Roi appelé, sauf avec ce Roi
+    // (règlement de la FFT) : ce serait chercher le partenaire avant même d'avoir joué.
+    // Une main qui n'a rien d'autre (Excuse mise à part) entame comme elle peut.
+    const called = state.calledCard;
+    if (state.seats === 5 && state.tricksPlayed === 0 && called && called.t === 'c') {
+      const permises = hand.filter((c) => !(c.t === 'c' && c.suit === called.suit) || sameCard(c, called));
+      if (permises.some((c) => c.t !== 'e')) return permises;
+    }
+    return [...hand];
+  }
   const led = ledCard(trick);
   if (!led) return [...hand];
 
@@ -550,6 +563,12 @@ function resolveTrick(state: TarotState): TarotState {
     if (t.card.t === 'e' && !isLast) {
       (won[t.seat] as Card[]).push(t.card);
       excuseInfo = { owner: t.seat, trickWinner: winner };
+    } else if (t.card.t === 'e') {
+      // Au dernier pli, l'Excuse est perdue : elle passe au camp adverse, même quand le pli
+      // revient à un partenaire de celui qui l'a jouée.
+      const camp = teamOf(state, t.seat);
+      const adverse = teamOf(state, winner) !== camp ? winner : [...Array(state.seats).keys()].find((i) => teamOf(state, i) !== camp) ?? winner;
+      (won[adverse] as Card[]).push(t.card);
     } else {
       (won[winner] as Card[]).push(t.card);
     }
@@ -612,7 +631,11 @@ function scoreRound(state: TarotState): TarotState {
   const poigneeSum = state.poignees.reduce((s, p) => s + p.bonus, 0);
   const sign = won ? 1 : -1;
   const base = 25 + (state.bestBid === 2 ? POUSSE_BONUS : 0);
-  const value = Math.round((base + Math.abs(diff)) * mult * sign + petit * mult + poigneeSum * sign);
+  // Le demi-point (à cinq, l'attaque peut finir à 40,5) va toujours au camp gagnant : l'écart
+  // s'arrondit au point supérieur avant d'être multiplié. 40,5 pour 41, c'est chuter d'un point ;
+  // arrondir après la multiplication perdait ce point, ou le divisait par deux.
+  const gap = Math.ceil(Math.abs(diff));
+  const value = (base + gap) * mult * sign + petit * mult + poigneeSum * sign;
 
   const deltas: number[] = [];
   if (state.seats === 4) {
@@ -656,13 +679,19 @@ export function isMatchOver(state: TarotState): boolean {
   return state.roundOver && state.roundNumber >= state.totalRounds;
 }
 
+/**
+ * Tous les sièges au plus haut score. Une égalité en tête est fréquente à quatre (deux
+ * défenseurs qui n'ont jamais pris reçoivent les mêmes points) : chacun compte la partie
+ * comme gagnée, et pas seulement celui d'indice le plus bas.
+ */
+export function matchWinners(state: TarotState): number[] {
+  if (!isMatchOver(state)) return [];
+  const best = Math.max(...state.scores);
+  return state.scores.flatMap((s, i) => (s === best ? [i] : []));
+}
+
 export function matchWinner(state: TarotState): number | null {
-  if (!isMatchOver(state)) return null;
-  let best = 0;
-  state.scores.forEach((s, i) => {
-    if (s > (state.scores[best] ?? -Infinity)) best = i;
-  });
-  return best;
+  return matchWinners(state)[0] ?? null;
 }
 
 // ---------- vue ----------
@@ -709,77 +738,88 @@ export function view(state: TarotState, seat: number): TarotView {
 // ---------- information cachée ----------
 
 /**
- * Un monde possible pour `seat` : ses cartes et les cartes tombées sont fixes ; le reste
- * est redistribué entre les autres mains et la pile cachée (chien ou écart), en respectant
- * les renonces observées et, pour l'écart, l'interdiction des Rois et des bouts.
+ * Un monde possible pour `seat`, compatible avec tout ce que ce siège a vu, et avec rien
+ * d'autre :
+ *
+ *  - sa main et les cartes tombées sont fixes ;
+ *  - le chien montré reste chez le preneur (ses Rois et ses bouts ne peuvent pas être à
+ *    l'écart ; ses atouts n'y sont que s'ils ont été montrés) ou dans l'écart ;
+ *  - l'écart que le siège n'a pas fait ne contient ni Roi, ni bout, ni d'autre atout que
+ *    ceux montrés ; le chien fermé (Garde sans, Garde contre) peut contenir n'importe quoi ;
+ *  - chaque main respecte les renonces observées ;
+ *  - à cinq, le partenaire n'est connu que si la carte appelée est tombée, si elle était
+ *    dans le chien montré, ou si ce siège la tient — sinon il suit la carte dans ce monde.
  */
 export function determinize(state: TarotState, seat: number, rng: Rng): TarotState {
   const known = new Set<string>();
-  for (const c of state.hands[seat] ?? []) known.add(cardKey(c));
   for (const c of state.played) known.add(cardKey(c));
   for (const t of state.trick) known.add(cardKey(t.card));
-  const isPreneur = seat === state.preneur;
-  const chienPublic = state.phase === 'ecart';
-  // Le preneur connaît son écart ; sinon la pile cachée est à redistribuer.
-  const pileKnown = (state.phase === 'play' && isPreneur && state.bestBid <= LAST_BID_WITH_CHIEN) || chienPublic;
-  if (pileKnown) {
-    for (const c of state.ecart) known.add(cardKey(c));
-    for (const c of state.chien) known.add(cardKey(c));
+  for (const c of state.hands[seat] ?? []) known.add(cardKey(c));
+
+  const preneur = state.preneur;
+  const chienPris = state.bestBid >= 1 && state.bestBid <= LAST_BID_WITH_CHIEN && state.phase !== 'bidding' && state.phase !== 'callKing';
+  const others = [...Array(state.seats).keys()].filter((i) => i !== seat);
+  const fixed: Card[][] = state.hands.map(() => []);
+  const fixedPile: Card[] = [];
+  const fix = (target: Card[], c: Card): void => {
+    known.add(cardKey(c));
+    target.push(c);
+  };
+
+  // La pile cachée : rien à tirer si ce siège la connaît (le preneur, une fois le chien pris).
+  let pileSize = 0;
+  let pileAdmet: (c: Card) => boolean = () => true;
+  const chienMontre = new Set<string>();
+  if (chienPris && seat === preneur) {
+    for (const c of state.ecart) known.add(cardKey(c)); // son écart, il l'a fait
+  } else if (!chienPris) {
+    pileSize = state.chien.length; // chien fermé : enchères, appel, Garde sans, Garde contre
+  } else if (seat !== preneur) {
+    const montres = new Set(state.phase === 'ecart' ? [] : state.ecart.filter((c) => c.t === 'a').map(cardKey));
+    for (const c of state.chien) {
+      if (known.has(cardKey(c))) continue;
+      if (montres.has(cardKey(c))) fix(fixedPile, c);
+      else if (ecartForbidden(c) || (c.t === 'a' && state.phase !== 'ecart')) fix(fixed[preneur] as Card[], c);
+      else chienMontre.add(cardKey(c)); // chez le preneur, ou dans son écart
+    }
+    for (const c of state.ecart) if (montres.has(cardKey(c)) && !known.has(cardKey(c))) fix(fixedPile, c);
+    pileSize = state.ecart.length - fixedPile.length;
+    // Pendant l'écart, un atout peut encore y aller (main sans autre choix) ; après, tous ceux
+    // qui y sont ont été montrés.
+    pileAdmet = state.phase === 'ecart' ? (c) => !ecartForbidden(c) : (c) => c.t === 'c' && !isKing(c);
   }
-  // Pendant l'écart, les autres joueurs connaissent le chien mais pas ce que le preneur en fera.
-  const pool = shuffle(buildDeck().filter((c) => !known.has(cardKey(c))), rng);
+
+  const pool = buildDeck().filter((c) => !known.has(cardKey(c)));
+  const pile = others.length;
+  const contenances = [...others.map((i) => (state.hands[i]?.length ?? 0) - (fixed[i] as Card[]).length), pileSize];
+  const admis = (place: number, c: Card): boolean => {
+    if (chienMontre.has(cardKey(c)) && place !== pile && others[place] !== preneur) return false;
+    if (place === pile) return pileAdmet(c);
+    const voids = state.voids[others[place] as number] ?? [];
+    return c.t === 'e' || (c.t === 'a' ? !voids.includes('A') : !voids.includes(c.suit));
+  };
+  const placed = repartir(pool, contenances, admis, rng) ?? (repartir(pool, contenances, () => true, rng) as Card[][]);
 
   const hands: Card[][] = state.hands.map((h, i) => (i === seat ? [...h] : []));
-  const order = shuffle([...Array(state.seats).keys()].filter((i) => i !== seat), rng);
-  for (const i of order) {
-    const need = state.hands[i]?.length ?? 0;
-    const voids = state.voids[i] ?? [];
-    const allowed = (c: Card): boolean => (c.t === 'e') || (c.t === 'a' ? !voids.includes('A') : !voids.includes(c.suit));
-    const take: Card[] = [];
-    for (let k = pool.length - 1; k >= 0 && take.length < need; k--) {
-      const c = pool[k] as Card;
-      if (allowed(c)) {
-        take.push(c);
-        pool.splice(k, 1);
-      }
-    }
-    while (take.length < need && pool.length) take.push(pool.pop() as Card); // contraintes insatisfiables : on complète
-    hands[i] = sortHand(take);
-  }
+  others.forEach((i, k) => {
+    hands[i] = sortHand([...(fixed[i] as Card[]), ...(placed[k] as Card[])]);
+  });
+  const tiree = [...fixedPile, ...(placed[pile] as Card[])];
+  const chien = chienPris ? [...state.chien] : tiree;
+  const ecart = chienPris && seat !== preneur ? tiree : [...state.ecart];
 
-  let chien = [...state.chien];
-  let ecart = [...state.ecart];
-  if (!pileKnown) {
-    // Ce qui reste est la pile cachée. Un écart ne contient ni Roi ni bout : on échange avec une main.
-    const pile = pool.splice(0, pool.length);
-    if (state.phase === 'play' && state.bestBid <= LAST_BID_WITH_CHIEN && state.ecart.length > 0) {
-      for (let k = 0; k < pile.length; k++) {
-        if (!ecartForbidden(pile[k] as Card)) continue;
-        for (const i of order) {
-          const j = (hands[i] as Card[]).findIndex((c) => !ecartForbidden(c) && c.t !== 'a');
-          if (j >= 0) {
-            const swap = (hands[i] as Card[])[j] as Card;
-            (hands[i] as Card[])[j] = pile[k] as Card;
-            pile[k] = swap;
-            hands[i] = sortHand(hands[i] as Card[]);
-            break;
-          }
-        }
-      }
-      ecart = pile;
-    } else {
-      chien = pile;
-    }
-  }
-
-  // À 5 joueurs, le partenaire suit la carte appelée dans ce monde.
+  // À cinq, le partenaire suit la carte appelée dans ce monde, sauf si ce siège le connaît.
   let partner = state.partner;
-  if (state.calledCard && !state.partnerRevealed) {
-    partner = state.preneur;
-    hands.forEach((h, i) => {
-      if (has(h, state.calledCard as Card)) partner = i;
-    });
-    if (has(chien, state.calledCard) || has(ecart, state.calledCard)) partner = state.preneur;
+  const called = state.calledCard;
+  if (called) {
+    const connu = has(state.hands[seat] ?? [], called) || has(state.played, called) || state.trick.some((t) => sameCard(t.card, called))
+      || (chienPris && has(state.chien, called));
+    if (!connu) {
+      partner = preneur;
+      hands.forEach((h, i) => {
+        if (has(h, called)) partner = i;
+      });
+    }
   }
   return { ...state, hands, chien, ecart, partner };
 }
@@ -943,15 +983,20 @@ function botPlay(state: TarotState, seat: number, legalMovesList: readonly Move[
 }
 
 /** La stratégie du jeu d'origine, pour toutes les décisions : le socle l'utilise telle quelle. */
-export function botMove(state: TarotState, seat: number, legal: readonly Move[], rng: Rng): Move | null {
+export function botMove(state: TarotState, seat: number, legal: readonly Move[], rng: Rng, level: BotLevel = 'normal'): Move | null {
   if (legal.length === 0) return null;
   switch (state.phase) {
     case 'bidding': return botBid(state, seat);
     case 'callKing': return botCall(state, seat, rng);
     case 'ecart': return botDiscard(state, legal);
-    case 'play':
+    case 'play': {
       if (legal.some((m) => m.type === 'poignee')) return { type: 'poignee' }; // annonce automatique
+      // Au niveau facile, le bot enchérit et écarte avec bon sens, mais joue une fois sur deux
+      // une carte permise au hasard : il gâche des points et des plis, sans jamais tricher.
+      const cartes = legal.filter((m) => m.type === 'play');
+      if (level === 'facile' && cartes.length > 1 && rng.int(2) === 0) return cartes[rng.int(cartes.length)] as Move;
       return botPlay(state, seat, legal);
+    }
     case 'over': return null;
   }
 }
@@ -1007,6 +1052,7 @@ export const tarot: GameDefinition<TarotState, Move, TarotView> = {
   isMatchOver,
   scores: (s) => [...s.scores],
   matchWinner,
+  matchWinners,
   view,
   determinize,
   evaluate,
