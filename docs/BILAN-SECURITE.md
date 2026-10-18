@@ -1,6 +1,6 @@
 # Bilan : sécurité par conception et durcissement
 
-État au 16 octobre 2026, version 0.4.0 — site en ligne. Ce document recense ce qui est **réellement en
+État au 18 octobre 2026, version 0.8.1 — site en ligne. Ce document recense ce qui est **réellement en
 place dans le code**, couche par couche, avec le fichier où le vérifier. Le
 [manifeste](MANIFESTE-SECURITE.md) dit ce que le projet promet ; ce bilan dit comment.
 Les contrôles automatiques qui surveillent le tout sont dans [SECURITE.md](SECURITE.md).
@@ -23,6 +23,7 @@ la surface** (deux dépendances, aucun port ouvert, aucune ressource tierce).
 | Aucune adresse IP persistée (ni journal applicatif, ni base) | `core/src/security.ts`, `app.ts` | L'IP sert aux compteurs en mémoire, et disparaît avec eux |
 | Dates arrondies au jour | `core/src/profiles.ts` | Pas de reconstitution d'habitudes de vie |
 | Effacement réel et immédiat, en cascade | `profiles.ts` (`ON DELETE CASCADE`) | Le droit à l'effacement s'exerce sans formulaire ni délai |
+| Effacement **jusque dans les fichiers** : pages libérées remises à zéro (`secure_delete`), journal vidé après chaque effacement (`wal_checkpoint(TRUNCATE)`) | `profiles.ts` | Un profil effacé ne reste lisible ni dans la base ni dans son journal |
 | Purge automatique : profils à 365 jours, sessions à 180 jours | `app.ts` (minuterie de maintenance) | La donnée dormante finit par disparaître d'elle-même |
 | Export JSON complet depuis la page Profil | `app.ts` `/api/profil/export` | Portabilité sans intervention humaine |
 
@@ -34,13 +35,14 @@ la surface** (deux dépendances, aucun port ouvert, aucune ressource tierce).
 | Le serveur rejoue chaque coup contre `legalMoves` | `core/src/table.ts` | Un client modifié triche sur son écran, pas sur la table |
 | Coups désignés par une **clé opaque**, jamais par un objet reconstruit | `table.ts`, `protocol.ts` | Aucune donnée de jeu fabriquée par le client n'entre dans l'état |
 | Les bots jouent par détermination aléatoire de la même vue | `core/src/mcts.ts`, `determinize` | Le bot ne voit pas les cartes adverses |
+| Le monde tiré respecte tout ce qui a été observé, et rien d'autre (renonces, cartes montrées, partenaire inconnu à cinq) | `core/src/rng.ts` `repartir`, `determinize` de chaque jeu | Aucune fuite par un monde incohérent ; vérifié par des parties simulées |
 | Aléa cryptographique (`node:crypto` `randomInt`), jamais `Math.random` | `core/src/rng.ts`, `lobby.ts` | Donnes et codes d'invitation non prédictibles |
 
 ## 3. Entrées réseau : rien n'est cru sur parole
 
 | Disposition | Où |
 |---|---|
-| Pseudos : normalisation NFC, retrait des caractères de contrôle, de formatage et **bidirectionnels** (« Trojan Source »), liste blanche de caractères, longueur 20 | `security.ts` `sanitizeName` |
+| Pseudos : normalisation NFC, retrait des caractères de contrôle, de formatage, **bidirectionnels** (« Trojan Source ») et **invisibles** (remplissages hangul et autres caractères ignorables), liste blanche de caractères, longueur 20 | `security.ts` `sanitizeName` |
 | Chaque identifiant a son format validé : table (`^(solo\|online\|private)_…`), code d'invitation (alphabet sans 0/O/1/I), jeton (52 base32), clé de reprise (UUID v4), identifiant de passkey (base64url borné) | `security.ts`, `webauthn.ts` |
 | Charge utile Socket.io plafonnée à **4 Ko** | `app.ts` (`maxHttpBufferSize`) |
 | Tout objet reçu passe par `isPlainObject` / `isSmallInt` avant usage | `security.ts`, `app.ts` |
@@ -70,8 +72,10 @@ Implémentation sans dépendance (`core/src/webauthn.ts`), ce qui évite d'ajout
 dans la chaîne d'approvisionnement pour une fonction de 300 lignes.
 
 - Seule la **clé publique** est stockée ; la clé privée ne quitte jamais l'appareil.
-- Origine et domaine (`rpId`) comparés à `PUBLIC_ORIGIN` — sans lui, en production, aucune
-  passkey n'est acceptée.
+- Origine et domaine (`rpId`) comparés à `PUBLIC_ORIGIN` — sans lui, en production
+  (`NODE_ENV=production`), les routes des passkeys répondent 503 : le domaine attendu
+  n'est jamais tiré des en-têtes de la requête. Hors production (développement, tests),
+  il l'est, pour qu'on puisse essayer sur sa machine.
 - Défi à **usage unique**, 5 minutes, lié au profil pour un enregistrement.
 - **Compteur de signatures** vérifié : un authentificateur cloné est refusé.
 - Algorithmes limités à ES256 et RS256 ; attestation non demandée (`none`) : pas de
@@ -89,9 +93,11 @@ dans la chaîne d'approvisionnement pour une fonction de 300 lignes.
 | Création de profil | 10 par heure et par IP | `app.ts` |
 | Routes passkeys | 30 par heure et par IP | `app.ts` |
 | Événements Socket.io | seau à jetons par connexion | `security.ts` `createRateLimiter` |
-| Connexions simultanées par IP | plafonnées | `app.ts` `maxConnPerIp` |
+| Connexions simultanées par IP | plafonnées ; la place est prise au moment du contrôle, si bien que des demandes groupées dans une seule requête ne passent pas en nombre | `app.ts` `maxConnPerIp` |
 | Nombre de tables | plafonné, tables privées comprises | `app.ts` `maxTables` |
 | Tables zombies | détruites par `onDestroy` | `table.ts` |
+| Table laissée au bilan (onglet oublié) | fermée après 15 minutes sans relance | `table.ts` `idleEndMs` |
+| Table privée en attente depuis 30 minutes | retirée, et ses membres prévenus et libérés | `lobby.ts` `sweep`, `app.ts` |
 | Bots | **en pause dès qu'aucun humain** n'est à la table | `table.ts` (`humansPresent === 0`) |
 | Espace de noms Socket.io par défaut | refusé | `app.ts` (`io.of('/')`) |
 | Adresse du client derrière Cloudflare | `CF-Connecting-IP` uniquement, jamais `X-Forwarded-For` | `security.ts` `getClientIp` |
@@ -166,5 +172,7 @@ refaire ces tests est dans le [manifeste](MANIFESTE-SECURITE.md) § 9.
 | Signature des commits (Sigstore / GPG) | Le dépôt n'exige pas encore les commits signés | À activer |
 | Sauvegarde **hors site** | La sauvegarde est faite : copie cohérente quotidienne, intégrité vérifiée, chiffrée côté client sur une clé USB, sept jours au plus. Mais la clé reste branchée au NAS : elle ne protège ni d'un sinistre, ni d'un logiciel malveillant qui prendrait la main sur le serveur | Débrancher la clé régulièrement, ou en faire tourner deux |
 | Audit externe | Pas de budget | Si le projet grandit |
+| Bots calculés dans le fil principal | Un coup de bot réfléchit jusqu'à 150 ms, de façon synchrone : quelques dizaines de tables actives suffisent à occuper un cœur et à ralentir tout le site. Le plafond de tables (300) est bien au-dessus de ce qu'un NAS tient réellement | Baisser `MAX_TABLES` à la mesure du NAS ; à terme, calculer les bots dans un `worker_thread` |
+| En-têtes de sécurité des réponses propres à Socket.io | Le fichier client et les réponses d'interrogation longue ne passent pas par Express, donc sans `nosniff` ; risque faible (ce ne sont pas des documents) | À ajouter par les crochets d'en-têtes d'Engine.IO |
 
 Un manque signalé ici vaut mieux qu'un manque ignoré : ce tableau fait partie du bilan.

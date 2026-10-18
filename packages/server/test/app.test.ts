@@ -327,10 +327,18 @@ test('Profils : une partie complète avec jeton crédite les statistiques et les
     c.on('roundEnd', (e: { matchOver: boolean }) => {
       if (!e.matchOver) setTimeout(() => c.emit('nextRound', { tableId }), 5);
     });
-    const unlocked = once<{ codes: string[] }>(c, 'achievements', 120_000);
+    // Les succès d'une manche arrivent manche par manche ; ceux de la partie, à la fin.
+    const unlocked = new Promise<string[]>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('timeout achievements')), 120_000);
+      c.on('achievements', (d: { codes: string[] }) => {
+        if (d.codes.includes('premiere-partie')) {
+          clearTimeout(t);
+          resolve(d.codes);
+        }
+      });
+    });
     c.emit('solo', { name: 'ignoré', level: 'facile' });
-    const u = await unlocked;
-    assert.ok(u.codes.includes('premiere-partie'));
+    assert.ok((await unlocked).includes('premiere-partie'));
     const v = await once<View>(c, 'state').catch(() => null);
     void v;
     const ex = JSON.parse((await req(port, 'GET', '/api/profil', undefined, { Authorization: `Bearer ${token}` })).body);
@@ -458,6 +466,79 @@ test('Inactivité : le siège libéré peut être repris par la même connexion'
     assert.equal(v.seat, s.seat);
     assert.ok(!v.seats[s.seat]!.isBot);
     c.close();
+  } finally {
+    await server.close();
+  }
+});
+
+test('Reconnexion avant que le serveur ait vu la coupure : la clé reprend le siège, l\'ancienne connexion est prévenue', async () => {
+  const { server, url } = await boot();
+  try {
+    const ancien = client(url);
+    await once(ancien, 'connect');
+    const seat = once<{ tableId: string; seat: number; rejoinKey: string }>(ancien, 'seat');
+    ancien.emit('solo', { name: 'Nomade' });
+    const s = await seat;
+    // L'ancienne connexion est toujours ouverte (le serveur n'a rien vu) quand la nouvelle arrive.
+    const nouveau = client(url);
+    await once(nouveau, 'connect');
+    const prevenu = once<{ tableId: string }>(ancien, 'seatTaken');
+    const vue = once<View>(nouveau, 'state');
+    nouveau.emit('rejoin', { tableId: s.tableId, rejoinKey: s.rejoinKey });
+    const v = await vue;
+    assert.equal(v.seat, s.seat);
+    assert.ok(!v.seats[s.seat]!.isBot);
+    assert.equal((await prevenu).tableId, s.tableId);
+    const table = server.tables.get(s.tableId)!;
+    assert.equal(table.seats[s.seat]!.humanId, nouveau.id);
+    // L'ancienne connexion ne joue plus pour ce siège, et sa fermeture ne le libère pas.
+    ancien.emit('quit', { tableId: s.tableId });
+    ancien.close();
+    await wait(80);
+    assert.equal(table.seats[s.seat]!.isBot, false);
+    assert.equal(table.seats[s.seat]!.humanId, nouveau.id);
+    nouveau.close();
+  } finally {
+    await server.close();
+  }
+});
+
+test('Succès : ceux d\'une manche s\'inscrivent au profil dès la fin de cette manche', async () => {
+  const { server, url, port } = await boot({ timings: { botDelay: 1, forcedDelay: 1, afkTimeout: 60_000 } });
+  try {
+    const token = generateProfileToken();
+    assert.equal((await req(port, 'POST', '/api/profil', { token, pseudo: 'Collection', avatar: 1 })).status, 201);
+    const s = client(url, { auth: { token } });
+    await once(s, 'connect');
+    const seat = once<{ tableId: string }>(s, 'seat');
+    s.emit('solo', { seats: 2 });
+    const { tableId } = await seat;
+    const table = server.tables.get(tableId)!;
+    // L'humain finit la manche sur un 8, sans avoir pioché ; la partie continue.
+    table.state = { ...(table.state as object), current: 0, roundOver: false, replaying: false, hands: [[{ value: '8', suit: '♠' }], [{ value: 'R', suit: '♣' }, { value: 'D', suit: '♣' }]], discard: [{ value: '5', suit: '♥' }], activeSuit: '♥', scores: [0, 0], draws: [0, 0] };
+    const fin = once<{ matchOver: boolean; achievements: string[][] }>(s, 'roundEnd');
+    const recus = once<{ codes: string[] }>(s, 'achievements');
+    s.emit('move', { tableId, key: 'play:8♠>♥' });
+    const r = await fin;
+    assert.equal(r.matchOver, false);
+    assert.ok(r.achievements[0]!.includes('huit-magique'));
+    assert.ok((await recus).codes.includes('huit-americain:huit-magique'), 'le joueur est prévenu tout de suite');
+    const profil = server.store.getByToken(token)!;
+    assert.ok(server.store.achievements(profil.id).some((a) => a.code === 'huit-americain:huit-magique'), 'inscrit sans attendre la fin de la partie');
+    s.close();
+  } finally {
+    await server.close();
+  }
+});
+
+test('Passkeys : en production sans PUBLIC_ORIGIN, refusées', async () => {
+  const { server, port } = await boot({ production: true, publicOrigin: null });
+  try {
+    const token = generateProfileToken();
+    await req(port, 'POST', '/api/profil', { token, pseudo: 'Prudence', avatar: 1 });
+    const r = await req(port, 'POST', '/api/passkeys/options', {}, { Authorization: `Bearer ${token}` });
+    assert.equal(r.status, 503);
+    assert.equal((await req(port, 'POST', '/api/passkeys/auth/options', {})).status, 503);
   } finally {
     await server.close();
   }

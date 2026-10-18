@@ -6,14 +6,17 @@
  */
 
 
-/* Cinq sièges : deux en haut, un de chaque côté, le joueur en bas. */
+/* Cinq sièges : deux en haut, un de chaque côté, le joueur en bas. Quatre colonnes, pour
+   que les deux sièges du haut se partagent la largeur à parts égales : celui de droite,
+   cantonné à la colonne de côté, voyait son étiquette déborder de l'écran ou s'empiler
+   sur quatre lignes. */
 .table-jeu-grille.cinq {
-  grid-template-columns: minmax(70px, 1fr) minmax(0, 3fr) minmax(70px, 1fr);
+  grid-template-columns: minmax(70px, 1fr) minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(70px, 1fr);
   grid-template-rows: auto minmax(max-content, 1fr) auto;
   grid-template-areas:
-    "haut-gauche haut-gauche haut-droite"
-    "gauche centre droite"
-    "bas bas bas";
+    "haut-gauche haut-gauche haut-droite haut-droite"
+    "gauche centre centre droite"
+    "bas bas bas bas";
 }
 .table-jeu-grille.quatre {
   grid-template-areas:
@@ -21,6 +24,13 @@
     "gauche centre droite"
     "bas bas bas";
 }
+/* Chaque siège dans sa zone nommée : sans cela, la main du joueur restait dans la seule
+   colonne du milieu (le placement par défaut du socle), deux fois plus étroite que l'écran
+   sur un téléphone — d'où des rangées de cartes en trop, et une page qui défilait. */
+.tarot .siege.bas { grid-area: bas; }
+.tarot .siege.gauche { grid-area: gauche; }
+.tarot .siege.droite { grid-area: droite; }
+.tarot .centre { grid-area: centre; }
 .siege.haut-gauche { grid-area: haut-gauche; justify-self: start; }
 .siege.haut-droite { grid-area: haut-droite; justify-self: end; }
 .table-jeu-grille.quatre .siege.haut-gauche { grid-area: haut; justify-self: center; }
@@ -58,7 +68,9 @@
 .pli-carte.gagnante .carte { outline: 3px solid var(--laiton); outline-offset: -3px; }
 @media (prefers-reduced-motion: reduce) { .pli-carte { transition: none; } }
 
-.chien { background: var(--panneau); border: 1px solid var(--panneau-bord); border-radius: var(--rayon); padding: 8px 12px; max-width: 100%; }
+/* Le fond et le texte vont ensemble (comme la retourne de la belote) : sur le fond crème du
+   mode jour, le texte blanc du tapis rendait « Le chien » et « Votre écart » illisibles. */
+.chien { background: var(--toast-fond); color: var(--toast-texte); border: 1px solid var(--panneau-bord); border-radius: var(--rayon); padding: 8px 12px; max-width: 100%; }
 .legende-zone { font-size: 0.9em; opacity: 0.9; margin: 2px 0 6px; text-align: center; }
 .cartes-rangee { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .chien .cartes-rangee { --carte-l: calc(var(--carte-l-base, 72px) * 0.8); --carte-h: calc(var(--carte-h-base, 104px) * 0.8); }
@@ -89,7 +101,11 @@
 .lobby-identite { display: flex; align-items: center; gap: 8px; }
 
 @media (max-width: 700px) {
-  .siege.haut-gauche .main, .siege.haut-droite .main { display: none; }
+  /* Les quatre colonnes de la table à cinq, avec les côtés serrés du téléphone. */
+  body.jeu .table-jeu-grille.cinq { grid-template-columns: 60px minmax(0, 1fr) minmax(0, 1fr) 60px; }
+  .siege.haut-gauche .etiquette .infos, .siege.haut-droite .etiquette .infos { line-height: 1.2; }
+  /* Le chien tient sur une rangée : six cartes réduites plutôt que deux rangées. */
+  .chien .cartes-rangee { --carte-l: calc(var(--carte-l-base, 72px) * 0.62); --carte-h: calc(var(--carte-h-base, 104px) * 0.62); gap: 4px; }
   .pli { height: calc(var(--carte-h, 104px) * 2); }
   /* Jusqu'à vingt-quatre cartes en main pendant l'écart : elles se chevauchent davantage
      plutôt que de prendre une rangée de plus, qui pousserait la main hors de l'écran. */

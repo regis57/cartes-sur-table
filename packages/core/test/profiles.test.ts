@@ -57,3 +57,27 @@ test('ProfileStore : cycle de vie complet, export, suppression réelle, purge', 
   assert.deepEqual(store.stats(p!.id), [], 'cascade');
   store.close();
 });
+
+test('ProfileStore : un profil effacé ne laisse aucune trace dans les fichiers de la base', async () => {
+  const { mkdtempSync, readFileSync, existsSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const dir = mkdtempSync(join(tmpdir(), 'jdc-effacement-'));
+  try {
+    const file = join(dir, 'profils.db');
+    const store = new ProfileStore(file);
+    const token = generateProfileToken();
+    const p = store.create(token, 'Marcelline', 3);
+    assert.ok(p);
+    assert.ok(store.delete(p.id));
+    const lire = (f: string): string => (existsSync(f) ? readFileSync(f).toString('latin1') : '');
+    for (const f of [file, `${file}-wal`]) {
+      assert.ok(!lire(f).includes('Marcelline'), `pseudo encore lisible dans ${f}`);
+      assert.ok(!lire(f).includes(p.id), `identifiant encore lisible dans ${f}`);
+    }
+    store.close();
+    assert.ok(!lire(file).includes('Marcelline') && !lire(file).includes(p.id));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

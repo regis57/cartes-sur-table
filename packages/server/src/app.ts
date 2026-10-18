@@ -148,6 +148,16 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
   // viennent de PUBLIC_ORIGIN ; sans lui (développement), de l'hôte demandé.
 
   const challenges = new ChallengeStore();
+  // En production sans PUBLIC_ORIGIN, aucune passkey : le domaine attendu ne doit jamais
+  // être tiré des en-têtes de la requête (c'est ce que promettent le bilan et le guide).
+  const passkeysOff = cfg.production && !cfg.publicOrigin;
+  api.use('/passkeys', (_req, res, next) => {
+    if (passkeysOff) {
+      res.status(503).json({ error: 'passkeys-indisponibles' });
+      return;
+    }
+    next();
+  });
   const rpOf = (req: Request): { rpId: string; origins: string[] } => {
     if (cfg.publicOrigin) return { rpId: new URL(cfg.publicOrigin).hostname, origins: [cfg.publicOrigin, ...cfg.allowedOrigins] };
     const host = String(req.headers.host ?? 'localhost');
@@ -365,11 +375,16 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       toAll: (event, payload) => nsp.to(tableId).emit(event as keyof ServerToClient, payload as never),
     });
 
+    // Les succès d'une manche (« huit magique », « capot »…) s'inscrivent à la fin de chaque
+    // manche : n'enregistrer qu'à la fin de la partie perdait tous ceux des manches d'avant.
+    // La partie elle-même (statistiques, succès communs) s'inscrit à la fin de la partie.
     function onRoundEnd(info: RoundEndInfo): void {
-      if (!info.matchOver) return;
       info.seats.forEach((s, i) => {
         if (s.isBot || !s.profileId) return;
-        const fresh = store.recordMatch(s.profileId, game.meta.id, { won: info.winners.includes(i), rounds: info.round, gameAchievements: info.achievements[i] ?? [] });
+        const propres = info.achievements[i] ?? [];
+        const fresh = info.matchOver
+          ? store.recordMatch(s.profileId, game.meta.id, { won: info.winners.includes(i), rounds: info.round, gameAchievements: propres })
+          : store.unlock(s.profileId, propres.map((c) => `${game.meta.id}:${c}`));
         if (fresh.length > 0 && s.humanId) nsp.to(s.humanId).emit('achievements', { codes: fresh });
       });
     }
@@ -401,6 +416,8 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
         ...(cfg.timings ? { timings: cfg.timings } : {}),
         onDestroy: (t) => {
           tables.delete(t.id);
+          // Prévenir d'abord : une fois les connexions retirées du salon, l'annonce n'atteint plus personne.
+          nsp.to(t.id).emit('tableClosed', { tableId: t.id });
           for (const s of t.seats) {
             const sock = s.humanId ? nsp.sockets.get(s.humanId) : undefined;
             if (sock) {
@@ -408,7 +425,6 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
               sock.data.tableId = null;
             }
           }
-          nsp.to(t.id).emit('tableClosed', { tableId: t.id });
         },
         onRoundEnd,
         onHumanReleased: (humanId, id) => {
@@ -430,6 +446,21 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       table.start();
     }
 
+    /** Une table privée disparaît (hôte parti, attente trop longue) : ses membres sont libérés et prévenus. */
+    function dissolve(humanIds: readonly string[], code: string): void {
+      for (const id of humanIds) {
+        const s = nsp.sockets.get(id);
+        if (s && s.data.privateCode === code) {
+          s.data.privateCode = null;
+          s.emit('privateDissolved', { code });
+        }
+      }
+    }
+
+    function sweepPrivate(): void {
+      for (const t of privateTables.sweep()) dissolve(t.entries.map((e) => e.humanId), t.code);
+    }
+
     function privateStatus(code: string): void {
       const pending = [...nsp.sockets.values()].filter((s) => s.data.privateCode === code);
       for (const s of pending) {
@@ -445,6 +476,20 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
         next(new Error('too_many_connections'));
         return;
       }
+      // La place est prise ici, au moment même du contrôle, et rendue à la fermeture de la
+      // connexion : compter plus tard (à l'événement « connection ») laissait passer d'un
+      // coup des dizaines de demandes groupées dans une seule requête.
+      connectionsPerIp.set(ip, (connectionsPerIp.get(ip) ?? 0) + 1);
+      let rendue = false;
+      const rendre = (): void => {
+        if (rendue) return;
+        rendue = true;
+        const left = (connectionsPerIp.get(ip) ?? 1) - 1;
+        if (left <= 0) connectionsPerIp.delete(ip);
+        else connectionsPerIp.set(ip, left);
+      };
+      socket.once('disconnect', rendre);
+      socket.conn.once('close', rendre);
       socket.data.ip = ip;
       socket.data.profile = null;
       socket.data.tableId = null;
@@ -459,8 +504,6 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     });
 
     nsp.on('connection', (socket: GameSocket) => {
-      const ip = socket.data.ip;
-      connectionsPerIp.set(ip, (connectionsPerIp.get(ip) ?? 0) + 1);
 
       const allow = createRateLimiter({ capacity: cfg.rateBurst, refillPerSec: cfg.ratePerSec });
       let violations = 0;
@@ -530,6 +573,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       });
 
       on('createPrivate', (data) => {
+        sweepPrivate();
         if (!free()) return;
         const d = isPlainObject(data) ? data : {};
         const seatCount = isSmallInt(d['seats'], 2, 9) && game.def.seatCounts.includes(d['seats']) ? d['seats'] : defaultSeats;
@@ -543,6 +587,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       });
 
       on('joinPrivate', (data) => {
+        sweepPrivate();
         if (!free() || !isPlainObject(data)) return;
         const code = typeof data['code'] === 'string' ? data['code'].toUpperCase() : '';
         if (!isValidInviteCode(code)) {
@@ -564,22 +609,20 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
         const r = privateTables.leave(socket.id);
         socket.data.privateCode = null;
         if (!r) return;
-        if (r.dissolved) {
-          for (const e of r.table.entries) {
-            const s = nsp.sockets.get(e.humanId);
-            if (s) {
-              s.data.privateCode = null;
-              s.emit('privateDissolved', { code });
-            }
-          }
-        } else privateStatus(code);
+        if (r.dissolved) dissolve(r.table.entries.map((e) => e.humanId), code);
+        else privateStatus(code);
       });
 
       on('startPrivate', () => {
+        sweepPrivate();
         const code = socket.data.privateCode;
         if (!code) return;
         const t = privateTables.start(code, socket.id);
-        if (!t) return;
+        if (!t) {
+          // La table n'existe plus (expirée) : l'appelant ne doit pas rester bloqué dans l'attente.
+          if (!privateTables.findByHuman(socket.id)) dissolve([socket.id], code);
+          return;
+        }
         launchTable('private', t.entries, t.seats, 'normal');
       });
 
@@ -628,22 +671,12 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       });
 
       socket.on('disconnect', () => {
-        const left = (connectionsPerIp.get(ip) ?? 1) - 1;
-        if (left <= 0) connectionsPerIp.delete(ip);
-        else connectionsPerIp.set(ip, left);
         if (socket.data.inQueue) matchmaking.leave(socket.id);
         if (socket.data.privateCode) {
           const code = socket.data.privateCode;
           const r = privateTables.leave(socket.id);
-          if (r?.dissolved) {
-            for (const e of r.table.entries) {
-              const s = nsp.sockets.get(e.humanId);
-              if (s) {
-                s.data.privateCode = null;
-                s.emit('privateDissolved', { code });
-              }
-            }
-          } else if (r) privateStatus(code);
+          if (r?.dissolved) dissolve(r.table.entries.map((e) => e.humanId), code);
+          else if (r) privateStatus(code);
         }
         const table = socket.data.tableId ? tables.get(socket.data.tableId) : undefined;
         if (table) {

@@ -69,17 +69,23 @@ body.jeu { overflow-x: hidden; }
    s'échappe par effondrement et pousse la page entière vers le bas (page plus haute que
    l'écran, donc défilement, alors que tout tenait). */
 #table { padding-top: calc(56px + env(safe-area-inset-top, 0px)); }
+/* Téléphone couché : l'encoche et les coins arrondis sont sur les côtés. Les sièges de
+   gauche et de droite, centrés en hauteur, tomberaient pile sous l'îlot dynamique. */
+#table { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
 .siege { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; border-radius: 12px; min-width: 0; border: 2px solid transparent; }
 .siege.actif { border-color: var(--laiton); background: rgba(217, 164, 65, 0.1); }
 .siege.haut { grid-column: 2; grid-row: 1; }
 .siege.gauche { grid-column: 1; grid-row: 2; }
 .siege.droite { grid-column: 3; grid-row: 2; }
-.siege.bas { grid-column: 2; grid-row: 3; }
+/* La main du joueur prend toute la largeur : cantonnée à la colonne du milieu, elle avait
+   deux fois moins de place sur un téléphone, d'où des rangées de cartes en trop. */
+.siege.bas { grid-column: 1 / -1; grid-row: 3; }
 .centre { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
-.etiquette { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; align-items: center; background: var(--toast-fond); color: var(--toast-texte); padding: 4px 12px 4px 4px; border-radius: 18px; max-width: 100%; position: relative; line-height: 1.25; }
+.etiquette { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; align-items: center; background: var(--toast-fond); color: var(--toast-texte); padding: 4px 12px 4px 4px; border-radius: 18px; max-width: 100%; position: relative; line-height: 1.25; }
 .etiquette .avatar { width: 34px; height: 34px; grid-row: 1 / 3; }
 .etiquette .nom { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 16ch; }
-.etiquette .infos { grid-column: 2; font-size: 0.95rem; white-space: nowrap; opacity: 0.85; }
+.etiquette .infos { grid-column: 2; font-size: 0.95rem; opacity: 0.85; }
+.etiquette .infos .pts, .etiquette .infos .bout, .etiquette .infos .etat { white-space: nowrap; }
 .etiquette .pts { color: var(--laiton); font-weight: 700; }
 .etiquette .etat { font-style: italic; }
 .siege.gauche .etiquette, .siege.droite .etiquette { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 8px; }
@@ -88,9 +94,14 @@ body.jeu { overflow-x: hidden; }
 .siege.gauche .etiquette .infos, .siege.droite .etiquette .infos { grid-column: 1; }
 @media (max-width: 600px) {
   .siege.gauche .etiquette .nom, .siege.droite .etiquette .nom { display: none; }
-  .siege.gauche .etiquette, .siege.droite .etiquette { padding: 4px 6px; border-radius: 12px; }
-  .siege.gauche .etiquette .infos, .siege.droite .etiquette .infos { white-space: normal; font-size: 0.8rem; line-height: 1.2; }
-  .siege.gauche .etiquette .etat, .siege.droite .etiquette .etat { display: none; }
+  /* Toute la colonne pour l'étiquette : le siège de côté ne garde pas de marge. */
+  .siege.gauche, .siege.droite { padding: 4px 0; }
+  .siege.gauche .etiquette, .siege.droite .etiquette { padding: 4px 2px; border-radius: 12px; }
+  /* Une colonne de cinquante-six pixels : même « 14 cartes » ou « Partenaire » doivent
+     pouvoir se couper, plutôt que d'élargir la page. */
+  .siege.gauche .etiquette .infos, .siege.droite .etiquette .infos { font-size: 0.78rem; line-height: 1.2; overflow-wrap: anywhere; hyphens: auto; }
+  .siege.gauche .etiquette .infos .bout, .siege.droite .etiquette .infos .bout { white-space: normal; }
+  .siege.gauche .etiquette .etat-groupe, .siege.droite .etiquette .etat-groupe { display: none; }
 }
 .main { display: flex; justify-content: center; align-items: center; min-height: calc(var(--carte-h) + 8px); max-width: 100%; }
 .main.horizontale .carte { margin-left: calc(var(--carte-l) * -0.3); }
@@ -186,9 +197,12 @@ body.jeu { overflow-x: hidden; }
   /* Le centre est ce qui compte (enchères, pli, consignes) : les sièges de côté se serrent
      pour lui laisser la largeur, et les boutons d'enchère tiennent deux par ligne. */
   body.jeu .table-jeu-grille, body.jeu .table-jeu-grille.cinq, body.jeu .table-jeu-grille.quatre {
-    grid-template-columns: 56px minmax(0, 1fr) 56px;
+    grid-template-columns: 60px minmax(0, 1fr) 60px;
     gap: 6px;
   }
+  /* Les dos du haut sont décoratifs (le nombre de cartes est dans l'étiquette) : ils cèdent
+     leur hauteur à la main. */
+  .siege.haut .main, .siege.haut-gauche .main, .siege.haut-droite .main { display: none; }
   .choix { width: 100%; }
   .choix .boutons { gap: 6px; width: 100%; }
   .choix .boutons .btn { flex: 1 1 44%; min-width: 0; padding: 10px 8px; font-size: 1rem; }
@@ -224,7 +238,8 @@ body.jeu { overflow-x: hidden; }
   .etiquette .infos { font-size: 0.86rem; }
   .main.verticale .carte { margin-top: calc(var(--carte-h) * -0.82); }
   .reactions { padding: 4px 12px calc(6px + env(safe-area-inset-bottom, 0px)); }
-  .reactions button { min-height: 40px; padding: 6px 16px; font-size: 1rem; }
+  /* 44 pixels au moins : c'est la cible tactile minimale, même quand la hauteur manque. */
+  .reactions button { min-height: 44px; padding: 6px 16px; font-size: 1rem; }
   .couleur { font-size: 1.1rem; padding: 2px 12px; }
   .sens { padding: 2px 10px; }
 }
@@ -238,6 +253,20 @@ body.jeu { overflow-x: hidden; }
   .etiquette .avatar { width: 24px; height: 24px; }
   .etiquette .infos { font-size: 0.8rem; }
   .choix .consigne { font-size: 0.95rem; padding: 3px 10px; }
-  .choix .boutons .btn { min-height: 40px; padding: 7px 12px; font-size: 0.95rem; }
-  .reactions button { min-height: 36px; padding: 4px 14px; font-size: 0.95rem; }
+  .choix .boutons .btn { min-height: 44px; padding: 6px 12px; font-size: 0.95rem; }
+  /* Les réactions quittent la ligne sous la main pour les deux coins du bas, vides sur un
+     écran aussi large : la hauteur gagnée revient aux cartes, et les boutons gardent leurs
+     44 pixels. Le menu reste en haut à droite, à portée de pouce dans cette position. */
+  .reactions {
+    position: fixed; z-index: 30; pointer-events: none;
+    left: calc(8px + env(safe-area-inset-left, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    justify-content: space-between; padding: 0;
+  }
+  .reactions button { pointer-events: auto; min-height: 44px; min-width: 96px; padding: 6px 12px; font-size: 0.95rem; }
+  .reactions button[data-action="menu"] { display: none; }
+  /* La main ne passe pas sous les boutons des coins. */
+  .siege.bas { padding-left: 116px; padding-right: 116px; }
+  #table { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .table-jeu-grille { min-height: calc(100dvh - 46px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 }

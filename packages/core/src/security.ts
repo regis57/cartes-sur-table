@@ -25,6 +25,9 @@ export function sanitizeName(raw: unknown): string {
   const cleaned = raw
     .slice(0, 200)
     .normalize('NFC')
+    // Les caractères « ignorables » (remplissages hangul, jointures…) sont des lettres pour
+    // \p{L} mais ne s'affichent pas : un pseudo n'en contenant que d'eux serait invisible.
+    .replace(/\p{Default_Ignorable_Code_Point}/gu, '')
     .replace(/[^\p{L}\p{N} _'.-]/gu, '')
     .replace(/\s+/g, ' ')
     .trim()

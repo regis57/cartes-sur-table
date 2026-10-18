@@ -20,8 +20,11 @@ export async function connectGame<V>(gameId: string, token: string | null): Prom
   return mod.io(`/jeu/${gameId}`, {
     transports: ['websocket', 'polling'],
     auth: token ? { token } : {},
+    // Pas de limite au nombre d'essais : un téléphone peut rester hors réseau plus de
+    // quelques secondes (tunnel, ascenseur), et la page doit se reconnecter d'elle-même
+    // à son retour, sans qu'on ait à la recharger. Un essai toutes les cinq secondes au plus.
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionDelayMax: 5000,
   }) as unknown as GameSocket<V>;
 }
 

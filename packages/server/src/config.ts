@@ -22,6 +22,8 @@ export interface Config {
   botThinkMs: number;
   rejoinGraceMs: number;
   purgeDays: number;
+  /** En production (NODE_ENV=production), les passkeys exigent PUBLIC_ORIGIN. */
+  production: boolean;
   /** Surcharges de durées de jeu (tests). */
   timings?: { botDelay?: number; forcedDelay?: number; afkTimeout?: number };
 }
@@ -59,5 +61,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     botThinkMs: intFromEnv(env['BOT_THINK_MS'], 150, 1, 5000),
     rejoinGraceMs: intFromEnv(env['REJOIN_GRACE_MS'], 90_000, 1000, 3_600_000),
     purgeDays: intFromEnv(env['PURGE_DAYS'], 365, 1, 3650),
+    production: env['NODE_ENV'] === 'production',
   };
 }

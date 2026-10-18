@@ -365,3 +365,83 @@ test('la définition : 12 phrases, succès connus, évaluation bornée', () => {
   const e = def.evaluate(s, 0);
   assert.ok(e >= 0 && e <= 1);
 });
+
+test('capot du preneur : la défense garde les annonces qu\'elle seule marque', () => {
+  const base = createRound(4, seededRng(2));
+  const tierce = { seat: 1, kind: 'tierce' as const, points: 20, cards: cards('8♥ 9♥ 10♥'), height: 10 };
+  let s: BeloteState = {
+    ...base, phase: 'play', trump: '♠', taker: 0, bidTurn: -1, talon: [],
+    hands: [[], [], [], [c('7♦')]], current: 3, leadSeat: 3, tricksPlayed: 7,
+    trick: [{ seat: 0, card: c('V♠') }, { seat: 1, card: c('9♦') }, { seat: 2, card: c('7♣') }],
+    won: [sortHand(buildDeck().filter((x) => !['V♠', '9♦', '7♣', '7♦'].includes(cardKey(x))), '♠'), []], lastTrickTeam: 0,
+    declarationsShown: true, declarations: [tierce], declarationsTeam: 1,
+  };
+  s = play(s, 3, '7♦');
+  assert.equal(s.result!.capot, 0);
+  assert.deepEqual(s.result!.scored, [252, 20], '252 au preneur, la tierce à la défense');
+  // Capot de la défense : le preneur est dedans, la défense marque 252 et toutes les annonces.
+  const d: BeloteState = { ...s, phase: 'play', roundOver: false, result: null, teamScores: [0, 0], hands: [[], [], [], [c('7♦')]], tricksPlayed: 7, current: 3, leadSeat: 3,
+    trick: [{ seat: 0, card: c('9♦') }, { seat: 1, card: c('V♠') }, { seat: 2, card: c('7♣') }],
+    won: [[], sortHand(buildDeck().filter((x) => !['V♠', '9♦', '7♣', '7♦'].includes(cardKey(x))), '♠')], lastTrickTeam: 1,
+    declarations: [{ ...tierce, seat: 0 }], declarationsTeam: 0 };
+  const fin = play(d, 3, '7♦');
+  assert.equal(fin.result!.capot, 1);
+  assert.equal(fin.result!.made, false);
+  assert.deepEqual(fin.result!.scored, [0, 272]);
+});
+
+test('belote dite avec la carte qui ferme le pli : l\'annonce n\'est pas effacée par le pli', () => {
+  let s = playing(['7♥ 8♣', '8♥ 9♣', '9♥ 10♣', 'D♠ V♣'], { beloteSeat: 3, current: 0, leadSeat: 0 });
+  s = play(s, 0, '7♥');
+  s = play(s, 1, '8♥');
+  s = play(s, 2, '9♥');
+  s = play(s, 3, 'D♠');
+  assert.equal(s.lastEvent?.type, 'trick');
+  assert.deepEqual(s.lastEvent?.type === 'trick' ? s.lastEvent.belote : null, { seat: 3, second: false });
+});
+
+test('determinize : ce que tout le monde a vu reste en place (retourne, annonces, belote)', () => {
+  let s = createRound(4, seededRng(9));
+  const taker = s.bidTurn;
+  s = applyMove(s, taker, { type: 'take', suit: s.turned.suit }, seededRng(1));
+  const voyeur = (taker + 1) % 4;
+  const autre = (taker + 2) % 4;
+  // Une annonce montrée par le siège `autre` : ses cartes sont connues de toute la table.
+  const trump = s.trump!;
+  const deck = buildDeck();
+  const tenue = s.hands[autre]!.slice(0, 3);
+  s = { ...s, declarationsShown: true, declarations: [{ seat: autre, kind: 'tierce', points: 20, cards: tenue, height: 0 }], declarationsTeam: teamOf(autre) };
+  for (let k = 0; k < 30; k++) {
+    const w = determinize(s, voyeur, seededRng(k));
+    assert.ok(w.hands[taker]!.some((x) => cardKey(x) === cardKey(s.turned)), 'la retourne est chez le preneur');
+    for (const x of tenue) assert.ok(w.hands[autre]!.some((y) => cardKey(y) === cardKey(x)), 'les cartes annoncées restent chez leur détenteur');
+    assert.equal(new Set(w.hands.flat().map(cardKey)).size, 32);
+  }
+  // « Belote » dite (la Dame est tombée) : le Roi reste chez celui qui l'a dite.
+  const roi = deck.find((x) => x.suit === trump && x.value === 'R') as Card;
+  const dame = deck.find((x) => x.suit === trump && x.value === 'D') as Card;
+  const b = playing(['7♥ 8♥ 9♥', '10♥ V♥ A♥', `7♣ 8♣ ${cardKey(roi)}`, '9♣ 10♣ V♣'], { trump, beloteSeat: 2, beloteAnnounced: true, belotePlayed: 1, played: [dame], voids: [[], [], [], []] });
+  for (let k = 0; k < 30; k++) {
+    const w = determinize(b, 0, seededRng(k));
+    assert.ok(w.hands[2]!.some((x) => cardKey(x) === cardKey(roi)));
+  }
+});
+
+test('niveau facile : des prises sensées, des cartes parfois jouées au hasard, jamais un coup illégal', () => {
+  const rng = seededRng(4);
+  let differe = 0;
+  for (let partie = 0; partie < 8; partie++) {
+    let s = createRound(4, rng);
+    while (!s.roundOver) {
+      const seat = def.currentSeat(s) as number;
+      const legal = legalMoves(s, seat);
+      const facile = def.botMove!(s, seat, legal, seededRng(partie * 100 + s.played.length), 'facile') as Move;
+      const normal = def.botMove!(s, seat, legal, seededRng(partie * 100 + s.played.length), 'normal') as Move;
+      assert.ok(legal.some((m) => moveKey(m) === moveKey(facile)));
+      if (s.phase !== 'play') assert.equal(moveKey(facile), moveKey(normal));
+      else if (moveKey(facile) !== moveKey(normal)) differe++;
+      s = applyMove(s, seat, facile, rng);
+    }
+  }
+  assert.ok(differe > 10, `le niveau facile doit jouer autrement (${differe})`);
+});

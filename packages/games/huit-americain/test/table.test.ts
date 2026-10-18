@@ -188,3 +188,19 @@ test('Table : le transport est prévenu quand un humain libère son siège (coup
   assert.deepEqual(released, ['h-B', 'h-A'], 'inactivité → libération aussi');
   t.destroy();
 });
+
+test('Table : au bilan, sans personne pour relancer, elle se ferme d\'elle-même', async () => {
+  const out = new Recorder();
+  let destroyed = false;
+  const t = new Table(Table.newId('solo'), def, [seat('Régis', true), seat('Anne', false), seat('Paul', false), seat('Lucie', false)], out, {
+    timings: FAST, rng: seededRng(2), botThinkMs: 5, idleEndMs: 60, onDestroy: () => { destroyed = true; },
+  });
+  t.start();
+  // Une manche finie d'un coup : l'humain pose sa dernière carte.
+  t.state = { ...t.state, current: 0, hands: [[{ value: '5', suit: '♠' }], ...t.state.hands.slice(1)], discard: [{ value: '5', suit: '♥' }], activeSuit: '♥' };
+  assert.ok(t.onMove(0, 'play:5♠'));
+  assert.ok(t.phase === 'roundEnd' || t.phase === 'matchEnd');
+  assert.ok(!destroyed, 'le joueur lit son bilan');
+  await waitFor(() => destroyed, 2000);
+  assert.equal(t.phase, 'destroyed');
+});

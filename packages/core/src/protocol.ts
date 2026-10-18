@@ -60,6 +60,8 @@ export interface ServerToClient<V = unknown> {
   afk: (data: { tableId: string; reason: 'afk' }) => void;
   forced: (data: { tableId: string; moveKey: string }) => void;
   tableClosed: (data: { tableId: string }) => void;
+  /** Le siège a été repris par une autre connexion munie de sa clé (autre onglet, reconnexion). */
+  seatTaken: (data: { tableId: string }) => void;
   seat: (data: { tableId: string; seat: number; rejoinKey: string | null }) => void;
   queueStatus: (data: { players: { name: string; avatar: number }[]; countdown: number }) => void;
   privateStatus: (data: { code: string; seats: number; isHost: boolean; players: { name: string; avatar: number }[] }) => void;

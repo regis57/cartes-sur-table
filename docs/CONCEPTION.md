@@ -74,12 +74,30 @@ vit une seule fois, dans le socle ou dans la salle.
   statistiques comme dans les succès.
 - **La stratégie propre au jeu.** `botMove` court-circuite le MCTS quand le jeu sait mieux
   faire (le tarot et la belote s'en servent) ; `rolloutMove` reste la politique de
-  simulation.
+  simulation. Il reçoit le niveau de la table : c'est au jeu de jouer moins bien au niveau
+  « facile » (le tarot et la belote enchérissent avec bon sens mais jouent une carte sur
+  deux au hasard), parce que le socle ne sait pas ce qui relève du bon sens ou de la
+  finesse. Sans cela, « Facile » jouait exactement comme « Normal ».
+- **Les mondes possibles.** `repartir` (dans `rng.ts`) distribue des cartes entre des places
+  qui ne les admettent pas toutes (« ce joueur n'a plus de pique »), en posant d'abord la
+  carte la plus contrainte. Chaque `determinize` s'en sert ; un remplissage main par main
+  violait les renonces alors qu'un monde valide existait.
 - **Les étiquettes de siège.** `seatLabel` dessine avatar, nom, score, état, et pose le
   jeton du donneur ; `seatAnnounce` colle au siège une bulle qui reste — ce que la personne
   vient d'annoncer. Un jeu décide quoi y mettre, jamais comment le dessiner.
 - **Le parcours**, enfin, est entièrement dans `salle.ts` : modes, file, table privée,
   niveau, règles, réactions, menu, marque, fin de manche, reprise après coupure.
+
+## Reprendre son siège après une coupure
+
+Un téléphone change de réseau, se met en veille, passe dans un tunnel : Socket.io se
+reconnecte de lui-même, avec un nouvel identifiant que rien ne relie au siège. La page
+redemande donc son siège **à chaque connexion**, avec la clé reçue au départ. Côté serveur,
+la clé fait foi même si l'ancienne connexion semble encore vivante : le serveur ne
+constate la mort d'une connexion qu'au bout de son délai de battement (près d'une minute),
+alors que la nouvelle arrive en une seconde. L'ancienne est prévenue (`seatTaken`, au cas
+où ce serait un second onglet bien vivant) puis déliée. La page ne cesse jamais de chercher
+à se reconnecter.
 
 ## Mettre à jour un joueur qui n'a rien demandé
 

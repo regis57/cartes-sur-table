@@ -506,3 +506,128 @@ test('Le bot ne triche pas : il décide avec la vue, pas avec l\'état', () => {
   const b = def.botMove?.(w, seat, legalMoves(w, seat), seededRng(1));
   assert.deepEqual(a, b, 'les mains adverses ne changent pas le coup du bot');
 });
+
+/** Une dernière levée à jouer, l'attaque (sièges 0, et 1 à cinq) ayant déjà ramassé `wonAttack`. */
+function lastTrick(seats: number, bestBid: 1 | 2 | 3, wonAttack: string, trick: [number, string][], extra: Partial<TarotState> = {}): TarotState {
+  const hands = Array.from({ length: seats }, () => [] as Card[]);
+  for (const [seat, key] of trick) (hands[seat] as Card[]).push(c(key));
+  const base = playing(seats, hands.map(() => ''), { bestBid, totalTricks: 1, tricksPlayed: 0, chienSize: seats === 5 ? 3 : 6 });
+  const won = base.won.map(() => [] as Card[]);
+  won[0] = cards(wonAttack);
+  return withState(base, { hands, won, ecart: [], chien: [], current: trick[0]![0], leadSeat: trick[0]![0], lastEvent: null, excuseInfo: null, ...extra });
+}
+function playOut(s: TarotState, trick: [number, string][]): TarotState {
+  for (const [seat, key] of trick) s = applyMove(s, seat, { type: 'play', card: c(key) }, seededRng(0));
+  return s;
+}
+
+test('Demi-point à cinq : il va au camp gagnant, avant la multiplication', () => {
+  // 19 cartes à l'attaque, deux bouts (objectif 41) : 40,5 points. La dernière levée part en défense.
+  const attaque = 'A21 EXC R♥ D♥ C♥ V♥ R♦ D♦ C♦ V♦ C♣ V♣ 2♣ 3♣ 4♣ 5♣ 6♣ 7♣ 8♣';
+  const pli: [number, string][] = [[0, '2♠'], [1, '3♠'], [2, '10♠'], [3, '4♠'], [4, '5♠']];
+  const petite = playOut(lastTrick(5, 1, attaque, pli), pli).result!;
+  assert.equal(petite.attackPoints, 40.5);
+  assert.equal(petite.won, false);
+  assert.equal(petite.value, -26, 'chuter de 0,5, c\'est chuter d\'un point : 25 + 1');
+  assert.deepEqual(petite.deltas, [-52, -26, 26, 26, 26]);
+  const garde = playOut(lastTrick(5, 3, attaque, pli), pli).result!;
+  assert.equal(garde.value, -52, '(25 + 1) × 2, et non 25,5 × 2 arrondi');
+  // 41,5 : faite d'un point.
+  const faite = playOut(lastTrick(5, 3, attaque + ' 9♣ 10♣', pli), pli).result!;
+  assert.equal(faite.attackPoints, 41.5);
+  assert.equal(faite.value, 52);
+});
+
+test("Excuse au dernier pli : elle passe au camp adverse, même si le pli revient à un partenaire", () => {
+  // À quatre, preneur 0. Le défenseur 1 joue l'Excuse, le défenseur 2 remporte le pli.
+  const pli: [number, string][] = [[0, '2♠'], [1, 'EXC'], [2, '10♠'], [3, '3♠']];
+  const fin = playOut(lastTrick(4, 1, 'A21 R♥', pli), pli);
+  assert.ok(fin.won[0]!.some((x) => x.t === 'e'), 'l\'Excuse est perdue pour la défense');
+  assert.ok(!fin.won[2]!.some((x) => x.t === 'e'));
+  assert.equal(fin.result!.bouts, 2);
+  // À cinq, jouée par le preneur et pli remporté par son partenaire : elle part en défense.
+  const pli2: [number, string][] = [[0, 'EXC'], [1, '10♠'], [2, '2♠'], [3, '3♠'], [4, '4♠']];
+  const fin2 = playOut(lastTrick(5, 1, 'A21 R♥', pli2), pli2);
+  assert.ok(fin2.won[0]!.every((x) => x.t !== 'e') && fin2.won[1]!.every((x) => x.t !== 'e'));
+  assert.ok([2, 3, 4].some((i) => fin2.won[i]!.some((x) => x.t === 'e')));
+});
+
+test('À cinq, premier pli : pas d\'entame dans la couleur du Roi appelé, sauf ce Roi', () => {
+  const s = playing(5, ['2♦ 5♦ 3♠ A4', '4♠', '5♠', '6♠', '7♠'], { calledCard: c('R♦'), tricksPlayed: 0 });
+  assert.deepEqual(legalCards(s, 0).map(cardKey).sort(), ['3♠', 'A4'].sort());
+  // Avec le Roi appelé en main, il peut l'entamer, lui seul de la couleur.
+  const roi = withState(s, { hands: [cards('2♦ R♦ 3♠'), ...s.hands.slice(1)] });
+  assert.deepEqual(legalCards(roi, 0).map(cardKey).sort(), ['3♠', 'R♦'].sort());
+  // Rien d'autre que la couleur (et l'Excuse) : tout est permis.
+  const force = withState(s, { hands: [cards('2♦ 5♦ EXC'), ...s.hands.slice(1)] });
+  assert.equal(legalCards(force, 0).length, 3);
+  // Au deuxième pli, la restriction tombe ; à quatre, elle n'existe pas.
+  assert.equal(legalCards(withState(s, { tricksPlayed: 1 }), 0).length, 4);
+});
+
+test('Fin de partie : une égalité en tête fait plusieurs vainqueurs', () => {
+  const s = withState(createRound(4, seededRng(1)), { roundOver: true, phase: 'over', roundNumber: 5, totalRounds: 5, scores: [85, -115, -55, 85] });
+  assert.deepEqual(def.matchWinners!(s), [0, 3]);
+  assert.equal(def.matchWinner(s), 0);
+});
+
+test('Déterminisation à cinq : le preneur seul ne se devine pas, l\'écart reste plausible', () => {
+  // Le preneur (0) a appelé le Roi de ♦ qu'il tient lui-même : personne d'autre ne le sait.
+  const deck = buildDeck();
+  const hands: Card[][] = [[], [], [], [], []];
+  const kd = deck.find((x) => cardKey(x) === 'R♦') as Card;
+  const reste = deck.filter((x) => x !== kd);
+  hands[0] = sortHand([kd, ...reste.slice(0, 14)]);
+  for (let i = 1; i < 5; i++) hands[i] = sortHand(reste.slice(14 + (i - 1) * 15, 14 + i * 15));
+  const chien = reste.slice(74);
+  const s = withState(createRound(5, seededRng(3)), {
+    phase: 'play', hands, chien, ecart: [], bestBid: 4, preneur: 0, partner: 0, partnerRevealed: true,
+    calledCard: kd, current: 1, leadSeat: 1, trick: [], won: hands.map(() => []), voids: hands.map(() => []),
+  });
+  let seul = 0;
+  for (let k = 0; k < 200; k++) {
+    const w = determinize(s, 2, seededRng(k));
+    const holder = w.hands.findIndex((h) => h.some((x) => cardKey(x) === 'R♦'));
+    // Le partenaire suit la carte dans ce monde : jamais « seul » avec le Roi chez un autre.
+    if (holder > 0) assert.equal(w.partner, holder);
+    if (w.partner === 0) seul++;
+  }
+  assert.ok(seul < 150, `le défenseur ne doit pas savoir le preneur seul (${seul}/200)`);
+
+  // Garde à quatre, écart fait avec deux atouts montrés : le monde d'un défenseur les garde.
+  const g = createRound(4, seededRng(8));
+  const p = g.hands[0] as Card[];
+  const atouts = p.filter((x) => x.t === 'a' && !isBout(x)).slice(0, 2);
+  const autres = p.filter((x) => x.t === 'c' && x.value !== 'R').slice(0, 4);
+  const ecart = [...atouts, ...autres];
+  const apres = withState(g, {
+    phase: 'play', bestBid: 3, preneur: 0, hands: [sortHand([...p.filter((x) => !ecart.includes(x)), ...g.chien]), ...g.hands.slice(1)],
+    ecart, current: 1, leadSeat: 1, trick: [], won: g.hands.map(() => []), voids: g.hands.map(() => []),
+  });
+  for (let k = 0; k < 50; k++) {
+    const w = determinize(apres, 2, seededRng(k));
+    assert.deepEqual(w.ecart.filter((x) => x.t === 'a').map(cardKey).sort(), atouts.map(cardKey).sort(), 'les atouts montrés, et eux seuls');
+    assert.ok(w.ecart.every((x) => !isBout(x) && !(x.t === 'c' && x.value === 'R')));
+    // Les Rois et bouts du chien montré sont chez le preneur.
+    for (const x of g.chien) if (isBout(x) || (x.t === 'c' && x.value === 'R')) assert.ok(w.hands[0]!.some((y) => cardKey(y) === cardKey(x)));
+  }
+});
+
+test('Niveau facile : des enchères sensées, des cartes parfois jouées au hasard, jamais un coup illégal', () => {
+  const rng = seededRng(12);
+  let differe = 0;
+  for (let partie = 0; partie < 6; partie++) {
+    let s = createRound(4, rng);
+    while (!s.roundOver) {
+      const seat = def.currentSeat(s) as number;
+      const legal = legalMoves(s, seat);
+      const facile = def.botMove!(s, seat, legal, seededRng(partie * 1000 + s.played.length), 'facile') as Move;
+      const normal = def.botMove!(s, seat, legal, seededRng(partie * 1000 + s.played.length), 'normal') as Move;
+      assert.ok(legal.some((m) => moveKey(m) === moveKey(facile)));
+      if (s.phase !== 'play') assert.equal(moveKey(facile), moveKey(normal), 'enchères, appel et écart : la stratégie du jeu');
+      else if (moveKey(facile) !== moveKey(normal)) differe++;
+      s = applyMove(s, seat, facile, rng);
+    }
+  }
+  assert.ok(differe > 20, `le niveau facile doit jouer autrement (${differe} cartes différentes)`);
+});

@@ -152,8 +152,9 @@ button { font: inherit; }
 ul.sans { list-style: none; padding: 0; margin: 0; }
 
 /* Le haut de page doit passer sous le drapeau, qui grandit de la hauteur réservée par
-   l'appareil (barre d'état, îlot dynamique) quand le site tourne en application. */
-.page { width: min(100% - 32px, 980px); margin: 0 auto; padding: calc(88px + env(safe-area-inset-top, 0px)) 0 calc(48px + env(safe-area-inset-bottom, 0px)); }
+   l'appareil (barre d'état, îlot dynamique) quand le site tourne en application. Sur un
+   téléphone couché, l'encoche est sur le côté : la largeur lui laisse sa place. */
+.page { width: min(100% - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px), 980px); margin: 0 auto; padding: calc(88px + env(safe-area-inset-top, 0px)) 0 calc(48px + env(safe-area-inset-bottom, 0px)); }
 .page.etroite { max-width: 720px; }
 .page.prose p, .page.prose li { max-width: 72ch; }
 .page.prose h2 { margin-top: 1.8em; }
@@ -359,7 +360,7 @@ small { font-size: 0.92em; }
 .passkeys-liste { display: flex; flex-direction: column; gap: 10px; }
 .passkey { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 10px; background: var(--champ-fond); border: 1px solid var(--panneau-bord); }
 .passkey small { display: block; opacity: 0.85; }
-.btn.petit { min-height: 40px; padding: 6px 14px; font-size: 0.95em; }
+.btn.petit { min-height: 44px; padding: 6px 14px; font-size: 0.95em; }
 
 /* --- Installation de l'application ------------------------------------------------ */
 .bandeau-install {

@@ -302,11 +302,16 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
         jeton.setAttribute('aria-label', t('table.dealer_title'));
         label.append(jeton);
       }
+      // Chaque morceau d'information est insécable : quand la place manque, l'étiquette va à
+      // la ligne entre deux morceaux (« 13 cartes » reste d'un seul tenant), sans déborder.
       const infos = h('span', 'infos');
       infos.append(h('span', 'pts', t('table.score', { n: score })));
-      if (extra) infos.append(document.createTextNode(` · ${extra}`));
-      if (s.awaiting) infos.append(h('span', 'etat', ` · ${t('table.awaiting')}`));
-      else if (s.isBot) infos.append(h('span', 'etat', ` · ${t('table.bot')}`));
+      for (const bout of extra ? extra.split(' · ') : []) infos.append(document.createTextNode(' · '), h('span', 'bout', bout));
+      if (s.awaiting || s.isBot) {
+        const etat = h('span', 'etat-groupe');
+        etat.append(document.createTextNode(' · '), h('span', 'etat', t(s.awaiting ? 'table.awaiting' : 'table.bot')));
+        infos.append(etat);
+      }
       label.append(infos);
       label.append(...bulles);
     },
@@ -356,7 +361,9 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     box.textContent = '';
     const custom = jeu.renderRoundEnd(data, box, ctx);
     $('manche-sous').textContent = data.matchOver && data.winner !== null
-      ? (data.winners.length > 1 ? custom ?? t('table.match_winners', { names: data.winners.map((w) => data.seats[w]?.name ?? '').join(' & ') }) : t('table.match_winner', { name: data.seats[data.winner]?.name ?? '' }))
+      // Plusieurs vainqueurs : des partenaires (belote), ou une égalité en tête (tarot). Le
+      // sous-titre propre au jeu, qui parle de la donne, céderait ici la place qui revient à la partie.
+      ? (data.winners.length > 1 ? t('table.match_winners', { names: data.winners.map((w) => data.seats[w]?.name ?? '').join(' & ') }) : t('table.match_winner', { name: data.seats[data.winner]?.name ?? '' }))
       : custom ?? (winnerName ? tg('round_won_by', { name: winnerName }) : tg('round_no_winner'));
     $('btn-manche').textContent = tg('next_round');
     (data.matchOver ? hide : show)($('btn-manche'));
@@ -519,9 +526,20 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
   });
   socket.on('tableStarted', () => closeDialog('dlg-manche'));
   socket.on('state', (v) => {
+    // Une manche commence (un autre joueur de la table a demandé la suivante) : le bilan de
+    // la précédente, encore ouvert ici, se referme, sinon il masquerait la nouvelle donne et
+    // le joueur risquerait d'être remplacé pour inactivité en le lisant.
+    const debutManche = v.phase === 'playing' && view !== null && view.phase !== 'playing';
     view = v;
     mySeat = v.seat;
     tableId = v.tableId;
+    if (debutManche) {
+      closeDialog('dlg-manche');
+      if (nouvelleVersion) {
+        location.reload(); // la reprise rend le siège, avec la vue à jour
+        return;
+      }
+    }
     render();
   });
   socket.on('seats', (d) => {
@@ -544,13 +562,28 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     saveSeat(null);
     info(t('table.closed'), false);
   });
+  socket.on('seatTaken', (d) => {
+    if (d.tableId !== tableId) return;
+    saveSeat(null);
+    tableId = null;
+    info(t('table.seat_taken'), false);
+  });
   socket.on('achievements', (d) => {
     for (const code of d.codes) toast(t('achievements.unlocked', { name: t(`achievements.${code}.name`) }), 'succes');
   });
 
-  // Reprise après rechargement de la page.
-  const saved = loadSeat(jeu.id);
-  if (saved) socket.once('connect', () => socket.emit('rejoin', { tableId: saved.tableId, rejoinKey: saved.rejoinKey }));
+  // Reprise du siège à chaque connexion : après un rechargement de la page, mais aussi après
+  // une coupure (réseau qui change, téléphone en veille), quand Socket.io se reconnecte de
+  // lui-même avec un nouvel identifiant que le serveur ne relie à aucun siège.
+  socket.on('connect', () => {
+    const saved = loadSeat(jeu.id);
+    if (saved) socket.emit('rejoin', { tableId: saved.tableId, rejoinKey: saved.rejoinKey });
+  });
+  // Le serveur oublie la file d'attente et la table privée d'une connexion perdue : plutôt
+  // qu'un compte à rebours figé, on revient au choix du mode.
+  socket.on('disconnect', () => {
+    if (!tableId) showLobbySection('modes');
+  });
 
   onAction({
     'solo': () => {

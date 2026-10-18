@@ -75,11 +75,11 @@
       "rules": {
         "1": "78 cartes : quatre couleurs de 14 cartes (1 à 10, Valet, Cavalier, Dame, Roi), 21 atouts et l'Excuse. Les trois bouts sont le 1 d'atout (le Petit), le 21 et l'Excuse.",
         "2": "À quatre, chacun reçoit 18 cartes et le chien en compte 6 ; à cinq, 15 cartes et un chien de 3. Chaque joueur parle une fois, en commençant à gauche du donneur : Passe, Petite (×1), Pousse (×1, mais la donne vaut 45 points de base au lieu de 25), Garde (×2), Garde sans le chien (×4) ou Garde contre le chien (×6). Il faut surenchérir. Si tout le monde passe, on redonne. Un joueur qui n'a que le Petit comme atout, sans l'Excuse (« Petit sec »), fait annuler la donne : on redonne.",
-        "3": "À cinq joueurs, le preneur appelle un Roi (une Dame s'il a les quatre Rois). Celui qui le détient devient son partenaire, à l'insu de tous jusqu'à ce que la carte tombe. Si le preneur l'a lui-même ou si elle est au chien, il joue seul.",
+        "3": "À cinq joueurs, le preneur appelle un Roi (une Dame s'il a les quatre Rois). Celui qui le détient devient son partenaire, à l'insu de tous jusqu'à ce que la carte tombe. Si le preneur l'a lui-même ou si elle est au chien, il joue seul. Au premier pli, on n'entame pas dans la couleur du Roi appelé, sauf avec ce Roi lui-même.",
         "4": "Petite, Pousse et Garde : le chien est montré à tous, le preneur le prend et écarte autant de cartes, une par une. Ni Roi ni bout à l'écart ; de l'atout seulement s'il n'a rien d'autre, et ces atouts sont alors montrés à tous. Garde sans et Garde contre : le chien reste fermé, personne ne le voit et il n'y a pas d'écart ; il compte pour le preneur (Garde sans) ou pour la défense (Garde contre).",
         "5": "On entame à gauche du donneur. Il faut fournir la couleur demandée ; sinon couper, et surcouper si l'on peut ; à l'atout, monter si l'on peut. L'Excuse se joue quand on veut : elle ne remporte jamais le pli et reste à son camp, contre un demi-point, sauf au dernier pli où elle est perdue.",
         "6": "Le preneur doit atteindre 56 points sans bout, 51 avec un bout, 41 avec deux, 36 avec les trois. Un Roi vaut 4,5, une Dame 3,5, un Cavalier 2,5, un Valet 1,5, les bouts 4,5, les autres cartes 0,5.",
-        "7": "La donne vaut 25 points (45 en Pousse) plus l'écart à l'objectif, le tout multiplié par le contrat. Petit au bout : 10 points, multipliés, pour le camp qui remporte le dernier pli avec le Petit. Poignée annoncée avant sa première carte : 10, 13 ou 15 atouts à quatre (8, 10 ou 13 à cinq) rapportent 20, 30 ou 40 points, non multipliés, au camp vainqueur.",
+        "7": "La donne vaut 25 points (45 en Pousse) plus l'écart à l'objectif, arrondi au point supérieur (le demi-point va au camp gagnant), le tout multiplié par le contrat. Petit au bout : 10 points, multipliés, pour le camp qui remporte le dernier pli avec le Petit. Poignée annoncée avant sa première carte : 10, 13 ou 15 atouts à quatre (8, 10 ou 13 à cinq) rapportent 20, 30 ou 40 points, non multipliés, au camp vainqueur.",
         "8": "À quatre, le preneur marque trois fois la valeur et chaque défenseur la perd une fois. À cinq, le preneur en marque deux fois et son partenaire une fois ; seul, quatre fois. La partie se joue en cinq donnes : le plus haut score gagne."
       },
       "ui": {
@@ -152,6 +152,7 @@
     "rejoin": "Reprendre mon siège",
     "rejoin_failed": "Impossible de reprendre ce siège : la partie est finie ou le délai est passé.",
     "closed": "La table est fermée.",
+    "seat_taken": "Votre siège a été repris depuis une autre fenêtre ou un autre appareil. La partie continue là-bas.",
     "emotes": "Réactions",
     "phrases": "Phrases",
     "menu": "Menu",

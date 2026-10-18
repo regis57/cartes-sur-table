@@ -89,6 +89,20 @@
 
 @media (max-width: 700px) {
   .pli { height: calc(var(--carte-h, 104px) * 2); }
+  .annonces { padding: 4px 8px; }
+  .annonces .annonce { margin: 2px 0; gap: 0 6px; }
+  .annonces .annonce .qui { font-size: 0.95rem; }
+  /* Le temps des annonces, le compteur de plis leur laisse sa ligne. */
+  .belote .centre:has(.annonces:not([hidden])) .compteur-plis { display: none; }
+}
+
+/* Les annonces s'écrivent en toutes lettres (« 10♣ V♣ D♣ ») : en images, elles prenaient la
+   moitié d'un écran de téléphone ou de tablette couchée pendant les premiers plis, et
+   poussaient la main dehors. Les images ne restent que là où la hauteur ne manque pas. */
+.annonces .cartes-rangee { display: none; }
+@media (min-width: 701px) and (min-height: 760px) {
+  .annonces .cartes-rangee { display: flex; }
+  .annonces .annonce-minis { display: none; }
 }
 
 /* Bilan en deux colonnes, Nous et Eux : la lecture d'une feuille de marque de belote. */
@@ -129,4 +143,17 @@
   .retourne, .annonces { padding: 3px 8px; }
   .retourne .cartes-rangee { --carte-l: calc(var(--carte-l-base) * 0.62); --carte-h: calc(var(--carte-h-base) * 0.62); }
   .annonces .cartes-rangee { --carte-l: calc(var(--carte-l-base) * 0.4); --carte-h: calc(var(--carte-h-base) * 0.4); }
+  /* Le temps des annonces : elles se posent à côté du pli plutôt que dessous (la hauteur
+     manque, la largeur non), une ligne serrée par annonce, et le compteur de plis leur
+     laisse sa place. */
+  .belote .centre:has(.annonces:not([hidden])) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; }
+  .belote .centre:has(.annonces:not([hidden])) > :not(.pli):not(.annonces) { grid-column: 1 / -1; justify-self: center; }
+  .belote .centre:has(.annonces:not([hidden])) .pli { width: calc(var(--carte-l, 72px) * 3.6); }
+  .belote .centre:has(.annonces:not([hidden])) .annonces { justify-self: start; }
+  .annonces .legende-zone { font-size: 0.8rem; margin: 0; }
+  .annonces .annonce { margin: 0; gap: 0 6px; line-height: 1.25; flex-wrap: nowrap; }
+  .annonces .annonce .qui { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .annonces .annonce-minis { white-space: nowrap; }
+  .annonces .mini { font-size: 0.8rem; padding: 0 4px; margin: 0 1px; }
+  .belote .centre:has(.annonces:not([hidden])) .compteur-plis { display: none; }
 }

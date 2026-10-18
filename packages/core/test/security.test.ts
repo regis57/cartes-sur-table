@@ -72,3 +72,10 @@ test('CSP : aucun inline, aucun tiers', () => {
   assert.ok(!CSP.includes('unsafe'));
   assert.ok(!CSP.includes('http'));
 });
+
+test('sanitizeName : un pseudo fait de caractères invisibles retombe sur le nom par défaut', () => {
+  assert.equal(sanitizeName('ㅤㅤㅤ'), 'Joueur');
+  assert.equal(sanitizeName('ﾠᅟᅠ'), 'Joueur');
+  assert.equal(sanitizeName('Annaㅤ'), 'Anna');
+  assert.equal(sanitizeName('Zoé'), 'Zoé');
+});

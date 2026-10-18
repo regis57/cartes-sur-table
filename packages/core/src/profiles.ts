@@ -111,7 +111,9 @@ export class ProfileStore {
 
   constructor(path: string) {
     this.db = new DatabaseSync(path);
-    this.db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 2000;');
+    // secure_delete : une page libérée est remise à zéro, au lieu de garder l'ancien contenu
+    // lisible dans le fichier jusqu'à ce qu'elle soit réutilisée.
+    this.db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 2000; PRAGMA secure_delete = ON;');
     this.migrate();
   }
 
@@ -369,6 +371,7 @@ export class ProfileStore {
   /** Effacement réel et immédiat (les tables liées suivent par cascade). */
   delete(id: string): boolean {
     const r = this.db.prepare('DELETE FROM profils WHERE id = ?').run(id);
+    if (r.changes > 0) this.viderJournal();
     return r.changes > 0;
   }
 
@@ -376,6 +379,19 @@ export class ProfileStore {
   purgeInactive(days: number): number {
     const limit = nowSec() - days * DAY;
     const r = this.db.prepare('DELETE FROM profils WHERE vu_le < ?').run(limit);
+    if (r.changes > 0) this.viderJournal();
     return Number(r.changes);
+  }
+
+  /**
+   * Après un effacement, le journal (fichier -wal) garde encore les pages d'avant : on le
+   * reporte dans la base et on le vide, pour que « effacé » veuille dire effacé du disque.
+   */
+  private viderJournal(): void {
+    try {
+      this.db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch {
+      /* base occupée : le prochain point de contrôle automatique s'en chargera */
+    }
   }
 }

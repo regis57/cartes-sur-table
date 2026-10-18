@@ -202,7 +202,10 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
       line.append(h('span', 'qui', `${name(d.seat)} : ${t(`belote.declaration.${d.kind}`)} (${d.points})`));
       const row = h('div', 'cartes-rangee');
       for (const c of d.cards) row.append(cardEl(c, g.trump));
-      line.append(row);
+      // La même annonce en toutes lettres, pour les écrans étroits (la feuille de style choisit).
+      const minis = h('span', 'annonce-minis');
+      for (const c of d.cards) minis.append(h('span', `mini${isRed(c.suit) ? ' rouge' : ''}`, cardKey(c)));
+      line.append(row, minis);
       annonces.append(line);
     }
   } else hide(annonces);
@@ -268,6 +271,10 @@ function renderStatus(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
       case 'belote': prefix = t(ev.second ? 'belote.event.rebelote' : 'belote.event.belote', { name: name(ev.seat) }); break;
       case 'declarations': prefix = t('belote.event.declarations', { team: teamName(ev.team, me), n: ev.points }); break;
       case 'trick': prefix = t('belote.event.trick', { name: name(ev.winner) }); break;
+    }
+    // La belote dite avec la carte qui a fermé le pli s'annonce avec lui.
+    if ((ev.type === 'trick' || ev.type === 'declarations') && ev.belote) {
+      prefix = `${t(ev.belote.second ? 'belote.event.rebelote' : 'belote.event.belote', { name: name(ev.belote.seat) })} · ${prefix}`;
     }
   }
   statut.textContent = prefix ? `${prefix} — ${txt}` : txt;
