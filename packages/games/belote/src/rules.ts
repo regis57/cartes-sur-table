@@ -247,14 +247,18 @@ export function findDeclarations(hand: readonly Card[], seat: number): Declarati
 /** L'équipe qui marque ses annonces, ou null si personne n'en a (ou égalité parfaite). */
 export function declaringTeam(decls: readonly Declaration[], trump: Suit): 0 | 1 | null {
   if (decls.length === 0) return null;
-  const rank = (d: Declaration): [number, number, number] => [d.points, d.height, d.kind !== 'carre' && (d.cards[0] as Card).suit === trump ? 1 : 0];
+  // Règles de la Fédération française de belote : la plus forte en points ; à points égaux,
+  // le carré bat la suite (un carré de 100 bat un cent) ; entre annonces de même sorte, la
+  // plus haute carte (As, Roi, Dame, Valet, 10…) ; à hauteur égale, celle d'atout. Comparer
+  // la hauteur d'un carré à celle d'une suite, comme avant, mêlait deux échelles sans rapport.
+  const rank = (d: Declaration): [number, number, number, number] => [d.points, d.kind === 'carre' ? 1 : 0, d.height, d.kind !== 'carre' && (d.cards[0] as Card).suit === trump ? 1 : 0];
   let best: Declaration | null = null;
   let tie = false;
   for (const d of decls) {
     if (!best) { best = d; continue; }
     const a = rank(d);
     const b = rank(best);
-    const cmp = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+    const cmp = a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || a[3] - b[3];
     if (cmp > 0) { best = d; tie = false; } else if (cmp === 0 && teamOf(d.seat) !== teamOf(best.seat)) tie = true;
   }
   return best && !tie ? teamOf(best.seat) : null;

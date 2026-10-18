@@ -16,8 +16,9 @@ import {
  *  - enchères en un tour : Passe, Petite (×1), Pousse (×1, base 45 au lieu de 25), Garde (×2),
  *    Garde Sans (×4), Garde Contre (×6) ;
  *    tout le monde passe → nouvelle donne, qui ne compte pas ;
- *  - à 5 joueurs, le preneur appelle un Roi (une Dame s'il a les quatre Rois) ; le porteur
- *    de la carte appelée est son partenaire, révélé quand la carte tombe ;
+ *  - à 5 joueurs, le preneur appelle un Roi (une Dame s'il a les quatre Rois, un Cavalier
+ *    s'il a aussi les quatre Dames) ; le porteur de la carte appelée est son partenaire,
+ *    révélé quand la carte tombe ;
  *  - Petite, Pousse et Garde : le chien est montré à tous, puis le preneur fait son écart (ni Roi,
  *    ni bout, et de l'atout seulement s'il n'a pas d'autre carte) ;
  *  - obligation de fournir, de couper, de surcouper ; l'Excuse se joue toujours ;
@@ -56,7 +57,7 @@ export type Phase = 'bidding' | 'callKing' | 'ecart' | 'play' | 'over';
 
 export type Move =
   | { readonly type: 'bid'; readonly bid: Bid }
-  | { readonly type: 'call'; readonly suit: Suit; readonly value: 'R' | 'D' }
+  | { readonly type: 'call'; readonly suit: Suit; readonly value: CallValue }
   | { readonly type: 'discard'; readonly card: Card }
   | { readonly type: 'poignee' }
   | { readonly type: 'play'; readonly card: Card };
@@ -66,10 +67,22 @@ export interface TrickCard {
   readonly card: Card;
 }
 
+/** Figure appelée à cinq : un Roi ; une Dame si l'on a les quatre Rois ; un Cavalier si l'on a aussi les quatre Dames… */
+export type CallValue = 'R' | 'D' | 'C' | 'V';
+const CALL_VALUES: readonly CallValue[] = ['R', 'D', 'C', 'V'];
+const CALL_RANK: Record<CallValue, number> = { R: 14, D: 13, C: 12, V: 11 };
+
+/** La figure à appeler : la plus haute dont il manque au moins une à la main du preneur. */
+export function callValueFor(hand: readonly Card[]): CallValue {
+  return CALL_VALUES.find((v) => hand.filter((c) => c.t === 'c' && c.value === v).length < 4) ?? 'V';
+}
+
 export interface Poignee {
   readonly seat: number;
   readonly count: number;
   readonly bonus: number;
+  /** Les atouts présentés à la table (règlement de la FFT), l'Excuse seulement s'il en manque. */
+  readonly cards: readonly Card[];
 }
 
 /** Ce qui vient de se passer, pour l'affichage (jamais nécessaire aux règles). */
@@ -371,8 +384,7 @@ export function legalMoves(state: TarotState, seat: number): Move[] {
     }
     case 'callKing': {
       const hand = state.hands[seat] ?? [];
-      const kings = hand.filter(isKing).length;
-      const value: 'R' | 'D' = kings >= 4 ? 'D' : 'R';
+      const value = callValueFor(hand);
       return SUITS.map((suit) => ({ type: 'call', suit, value }));
     }
     case 'ecart':
@@ -422,7 +434,7 @@ export function parseMoveKey(key: string): Move | null {
   if (kind === 'call' && rest) {
     const value = rest.slice(0, -1);
     const suit = rest.slice(-1) as Suit;
-    if ((value === 'R' || value === 'D') && SUITS.includes(suit)) return { type: 'call', suit, value };
+    if ((CALL_VALUES as readonly string[]).includes(value) && SUITS.includes(suit)) return { type: 'call', suit, value: value as CallValue };
     return null;
   }
   if ((kind === 'discard' || kind === 'play') && rest) {
@@ -463,8 +475,8 @@ function applyBid(state: TarotState, seat: number, bid: Bid, rng: Rng): TarotSta
   return proceedToChien(next);
 }
 
-function applyCall(state: TarotState, seat: number, suit: Suit, value: 'R' | 'D'): TarotState {
-  const called: Card = { t: 'c', suit, value, rank: value === 'R' ? 14 : 13 };
+function applyCall(state: TarotState, seat: number, suit: Suit, value: CallValue): TarotState {
+  const called: Card = { t: 'c', suit, value, rank: CALL_RANK[value] };
   let partner = state.preneur;
   state.hands.forEach((hand, i) => {
     if (has(hand, called)) partner = i;
@@ -496,7 +508,13 @@ function applyDiscard(state: TarotState, seat: number, card: Card): TarotState {
 function applyPoignee(state: TarotState, seat: number): TarotState {
   const level = poigneeLevel(state.seats, state.hands[seat] ?? []);
   if (!level) return state;
-  const p: Poignee = { seat, count: level.count, bonus: level.bonus };
+  // La poignée se présente à la table : autant d'atouts que le palier en demande, les plus
+  // petits (le joueur garde pour lui ce qu'il a au-delà), et l'Excuse seulement s'il manque
+  // un atout — elle dit alors qu'il n'en a pas d'autre.
+  const hand = state.hands[seat] ?? [];
+  const atouts = hand.filter((c) => c.t === 'a').sort((a, b) => (a.t === 'a' && b.t === 'a' ? a.rank - b.rank : 0));
+  const cards = atouts.length >= level.count ? atouts.slice(0, level.count) : [...atouts, ...hand.filter((c) => c.t === 'e')];
+  const p: Poignee = { seat, count: level.count, bonus: level.bonus, cards };
   return { ...state, poignees: [...state.poignees, p], lastEvent: { type: 'poignee', seat, count: p.count, bonus: p.bonus } };
 }
 
@@ -789,6 +807,12 @@ export function determinize(state: TarotState, seat: number, rng: Rng): TarotSta
     pileAdmet = state.phase === 'ecart' ? (c) => !ecartForbidden(c) : (c) => c.t === 'c' && !isKing(c);
   }
 
+  // Une poignée présentée est publique : ses cartes encore en main restent chez leur détenteur.
+  for (const p of state.poignees) {
+    if (p.seat === seat) continue;
+    for (const c of p.cards) if (!known.has(cardKey(c))) fix(fixed[p.seat] as Card[], c);
+  }
+
   const pool = buildDeck().filter((c) => !known.has(cardKey(c)));
   const pile = others.length;
   const contenances = [...others.map((i) => (state.hands[i]?.length ?? 0) - (fixed[i] as Card[]).length), pileSize];
@@ -903,7 +927,7 @@ function botBid(state: TarotState, seat: number): Move {
 
 function botCall(state: TarotState, seat: number, rng: Rng): Move {
   const hand = state.hands[seat] ?? [];
-  const value: 'R' | 'D' = hand.filter(isKing).length >= 4 ? 'D' : 'R';
+  const value = callValueFor(hand);
   let bestSuit: Suit | null = null;
   let bestLen = -1;
   for (const suit of SUITS) {

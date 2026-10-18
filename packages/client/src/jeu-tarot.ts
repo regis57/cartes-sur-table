@@ -24,6 +24,10 @@ const POSITIONS: Record<number, string[]> = {
 const ZONE_FOR: Record<string, number> = { bas: 0, gauche: 1, 'haut-gauche': 2, haut: 2, 'haut-droite': 3, droite: 4 };
 const BID_KEYS = ['passe', 'petite', 'pousse', 'garde', 'garde-sans', 'garde-contre'];
 
+/** La poignée se montre à la table dix secondes, puis s'efface (le badge reste sur l'étiquette). */
+const POIGNEE_MS = 10_000;
+const poigneesVues = new Map<string, number>();
+let poigneeTimer: ReturnType<typeof setTimeout> | null = null;
 let lastTrickShownAt = 0;
 let lastTrickKey = '';
 let hideTrickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -238,6 +242,38 @@ function renderCentre(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
     }
   } else hide(chien);
 
+  // Une poignée vient d'être annoncée : ses atouts sont présentés à toute la table.
+  const panneau = $('poignee');
+  panneau.textContent = '';
+  const maintenant = Date.now();
+  const visibles = g.poignees.filter((p) => {
+    const cle = `${g.roundNumber}:${p.seat}`;
+    if (!poigneesVues.has(cle)) poigneesVues.set(cle, maintenant);
+    return maintenant - (poigneesVues.get(cle) ?? 0) < POIGNEE_MS;
+  });
+  if (visibles.length && !g.roundOver) {
+    show(panneau);
+    for (const p of visibles) {
+      panneau.append(h('div', 'legende-zone', t('tarot.poignee_shown', { name: name(p.seat), n: p.count })));
+      const rangee = h('div', 'poignee-cartes');
+      for (const c of p.cards) rangee.append(miniCard(c));
+      panneau.append(rangee);
+    }
+    panneau.onclick = (): void => {
+      for (const p of visibles) poigneesVues.set(`${g.roundNumber}:${p.seat}`, 0);
+      const fresh = ctx.view();
+      if (fresh) renderCentre(fresh, ctx);
+    };
+    // Au terme des dix secondes, on redessine depuis la vue du moment.
+    if (poigneeTimer) clearTimeout(poigneeTimer);
+    const reste = Math.min(...visibles.map((p) => POIGNEE_MS - (maintenant - (poigneesVues.get(`${g.roundNumber}:${p.seat}`) ?? 0))));
+    poigneeTimer = setTimeout(() => {
+      poigneeTimer = null;
+      const fresh = ctx.view();
+      if (fresh) renderCentre(fresh, ctx);
+    }, Math.max(reste, 50));
+  } else hide(panneau);
+
   // Les choix du moment : enchères, appel au Roi, poignée.
   const choix = $('choix');
   choix.textContent = '';
@@ -258,7 +294,7 @@ function renderCentre(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
     const row = h('div', 'cartes-rangee');
     for (const l of legal) {
       if (l.move.type !== 'call') continue;
-      const c: Card = { t: 'c', suit: l.move.suit, value: l.move.value, rank: l.move.value === 'R' ? 14 : 13 };
+      const c: Card = { t: 'c', suit: l.move.suit, value: l.move.value, rank: { R: 14, D: 13, C: 12, V: 11 }[l.move.value] };
       const el = cardEl(c, 'jouable');
       el.setAttribute('role', 'button');
       el.tabIndex = 0;
