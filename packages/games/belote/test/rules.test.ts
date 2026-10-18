@@ -445,3 +445,22 @@ test('niveau facile : des prises sensées, des cartes parfois jouées au hasard,
   }
   assert.ok(differe > 10, `le niveau facile doit jouer autrement (${differe})`);
 });
+
+test('annonces : à points égaux le carré bat la suite ; entre carrés, le plus haut (règles de la Fédération)', () => {
+  const carre = (seat: number, v: string) => findDeclarations(cards(`${v}♠ ${v}♥ ${v}♣ ${v}♦`), seat)[0]!;
+  const cent = (seat: number, suit: string, top: string) => {
+    const ordre = ['7', '8', '9', '10', 'V', 'D', 'R', 'A'];
+    const i = ordre.indexOf(top);
+    return findDeclarations(cards(ordre.slice(i - 4, i + 1).map((v) => `${v}${suit}`).join(' ')), seat)[0]!;
+  };
+  // Carré de 10 (100) contre cent au Roi : le carré.
+  assert.equal(declaringTeam([carre(0, '10'), cent(1, '♥', 'R')], '♠'), 0);
+  // Carré d'As contre cent à l'As d'atout : le carré.
+  assert.equal(declaringTeam([carre(0, 'A'), cent(1, '♠', 'A')], '♠'), 0);
+  // Carré de Rois contre cent au Roi hors atout : le carré (on ne compare plus des hauteurs sans rapport).
+  assert.equal(declaringTeam([carre(1, 'R'), cent(0, '♥', 'R')], '♠'), 1);
+  // Entre deux carrés de 100 : le plus haut.
+  assert.equal(declaringTeam([carre(0, 'D'), carre(1, 'A')], '♠'), 1);
+  // Le carré de Valets (200) reste au-dessus de tout.
+  assert.equal(declaringTeam([carre(0, 'V'), carre(1, '9')], '♠'), 0);
+});

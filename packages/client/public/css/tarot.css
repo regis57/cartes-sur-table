@@ -72,6 +72,19 @@
    mode jour, le texte blanc du tapis rendait « Le chien » et « Votre écart » illisibles. */
 .chien { background: var(--toast-fond); color: var(--toast-texte); border: 1px solid var(--panneau-bord); border-radius: var(--rayon); padding: 8px 12px; max-width: 100%; }
 .legende-zone { font-size: 0.9em; opacity: 0.9; margin: 2px 0 6px; text-align: center; }
+/* La poignée présentée : des atouts en toutes lettres, sur fond sombre en nuit, crème en jour.
+   Elle se pose par-dessus le haut du centre (le contrat) le temps de la lire, au lieu de
+   pousser la main hors de l'écran ; un toucher la referme. */
+.tarot .centre { position: relative; }
+.poignee-montree {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 15;
+  width: max-content; max-width: 100%; cursor: pointer;
+  background: var(--toast-fond); color: var(--toast-texte); border: 2px solid var(--laiton); border-radius: var(--rayon);
+  padding: 6px 10px; box-shadow: 0 6px 18px var(--ombre);
+}
+/* Le bouton d'annonce de la poignée : une ligne, pas un pavé. */
+.tarot .choix > .btn { font-size: 1rem; padding: 8px 16px; min-height: 44px; }
+.poignee-cartes { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
 .cartes-rangee { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .chien .cartes-rangee { --carte-l: calc(var(--carte-l-base, 72px) * 0.8); --carte-h: calc(var(--carte-h-base, 104px) * 0.8); }
 .cartes-rangee.petite { --carte-l: calc(var(--carte-l-base, 72px) * 0.62); --carte-h: calc(var(--carte-h-base, 104px) * 0.62); }

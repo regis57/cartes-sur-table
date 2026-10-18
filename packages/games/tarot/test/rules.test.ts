@@ -293,7 +293,7 @@ test("Le pli : l'atout l'emporte, sinon la plus forte de la couleur ; l'Excuse n
 
 test('Décompte : objectifs selon les bouts, Petit au bout, poignée, répartition à 4 et à 5', () => {
   // Un dernier pli construit pour que l'attaque (siège 0, Garde) finisse avec des points connus.
-  const make = (seats: number, bestBid: 1 | 2 | 3 | 4 | 5, wonAttack: string, wonDef: string, lastTrick: { seat: number; card: Card }[], winner: number, poignees: { seat: number; count: number; bonus: number }[] = [], pile = ''): TarotState => {
+  const make = (seats: number, bestBid: 1 | 2 | 3 | 4 | 5, wonAttack: string, wonDef: string, lastTrick: { seat: number; card: Card }[], winner: number, poignees: { seat: number; count: number; bonus: number; cards: Card[] }[] = [], pile = ''): TarotState => {
     const hands = Array.from({ length: seats }, () => '');
     const base = playing(seats, hands, { bestBid, totalTricks: 1, tricksPlayed: 0, chienSize: seats === 5 ? 3 : 6 });
     const won = base.won.map(() => [] as Card[]);
@@ -344,7 +344,7 @@ test('Décompte : objectifs selon les bouts, Petit au bout, poignée, répartiti
   // Poignée : bonus non multiplié, au camp vainqueur. Garde Sans (×4) perdue.
   const weak = 'A21 2♥ 3♥ 4♥';
   const strong = defCards + ' EXC R♥ D♥ C♥ V♥ R♦ D♦ C♦ V♦ R♣ D♣ C♣ V♣ A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20';
-  let q = make(4, 4, weak, strong, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }], 0, [{ seat: 2, count: 10, bonus: 20 }]);
+  let q = make(4, 4, weak, strong, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }], 0, [{ seat: 2, count: 10, bonus: 20, cards: [] }]);
   q = finish(q, [{ seat: 0, card: c('R♠') }, { seat: 1, card: c('2♠') }, { seat: 2, card: c('3♠') }, { seat: 3, card: c('4♠') }]);
   assert.ok(q.result);
   assert.equal(q.result.won, false);
@@ -401,7 +401,9 @@ test('Poignée : annonçable avant sa première carte seulement, aux seuils du n
   assert.deepEqual(view(s, 0).myPoignee, { count: 10, bonus: 20 });
   assert.equal(legalMoves(s, 0)[0]?.type, 'poignee');
   s = applyMove(s, 0, { type: 'poignee' }, seededRng(0));
-  assert.deepEqual(s.poignees, [{ seat: 0, count: 10, bonus: 20 }]);
+  assert.deepEqual(s.poignees, [{ seat: 0, count: 10, bonus: 20, cards: cards('A2 A3 A4 A5 A6 A7 A8 A9 A10 EXC') }]);
+  // Présentée à toute la table : chaque vue la porte, cartes comprises.
+  for (let seat = 1; seat < 4; seat++) assert.equal(view(s, seat).poignees[0]?.cards.length, 10);
   assert.ok(!canAnnouncePoignee(s, 0), 'une fois seulement');
   s = applyMove(s, 0, { type: 'play', card: c('2♠') }, seededRng(0));
   assert.ok(!canAnnouncePoignee(s, 0));
@@ -630,4 +632,29 @@ test('Niveau facile : des enchères sensées, des cartes parfois jouées au hasa
     }
   }
   assert.ok(differe > 20, `le niveau facile doit jouer autrement (${differe} cartes différentes)`);
+});
+
+test('À cinq, quatre Rois et quatre Dames : on appelle un Cavalier', () => {
+  const s = playing(5, ['R♠ R♥ R♣ R♦ D♠ D♥ D♣ D♦ 2♠', '3♠', '4♠', '5♠', '6♠'], { phase: 'callKing', bestBid: 1, bidsPlaced: 5 });
+  const appels = legalMoves(s, 0);
+  assert.ok(appels.length === 4 && appels.every((m) => m.type === 'call' && m.value === 'C'));
+  assert.deepEqual(parseMoveKey('call:C♥'), { type: 'call', suit: '♥', value: 'C' });
+  const apres = applyMove(s, 0, { type: 'call', suit: '♥', value: 'C' }, seededRng(0));
+  assert.equal(apres.calledCard && apres.calledCard.t === 'c' ? `${apres.calledCard.value}${apres.calledCard.suit}` : '', 'C♥');
+  assert.equal(def.botMove!(s, 0, appels, seededRng(1))?.type === 'call' && (def.botMove!(s, 0, appels, seededRng(1)) as { value: string }).value, 'C');
+});
+
+test('Poignée présentée : les atouts du palier, les plus petits, et le monde des bots les garde chez leur détenteur', () => {
+  const quinze = 'A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 2♠ 3♠ 4♠ 5♠';
+  let s = playing(5, [quinze, '6♠ 7♠ 8♠ 9♠ 10♠ V♠ C♠ D♠ R♠ 2♥ 3♥ 4♥ 5♥ 6♥ 7♥', '8♥ 9♥ 10♥ V♥ C♥ D♥ R♥ 2♣ 3♣ 4♣ 5♣ 6♣ 7♣ 8♣ 9♣', '10♣ V♣ C♣ D♣ R♣ 2♦ 3♦ 4♦ 5♦ 6♦ 7♦ 8♦ 9♦ 10♦ V♦', 'C♦ D♦ R♦ A1 A13 A14 A15 A16 A17 A18 A19 A20 A21 EXC 1♠']);
+  // Garde sans : le chien, fermé, tient les trois cartes qui ne sont dans aucune main.
+  const tenues = new Set(s.hands.flat().map(cardKey));
+  s = withState(s, { bestBid: 4, chien: buildDeck().filter((x) => !tenues.has(cardKey(x))) });
+  s = applyMove(s, 0, { type: 'poignee' }, seededRng(0));
+  // Onze atouts, palier de dix à cinq : on montre les dix plus petits.
+  assert.deepEqual(s.poignees[0]?.cards.map(cardKey), ['A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11']);
+  for (let k = 0; k < 20; k++) {
+    const w = determinize(s, 2, seededRng(k));
+    for (const x of s.poignees[0]!.cards) assert.ok(w.hands[0]!.some((y) => cardKey(y) === cardKey(x)));
+  }
 });

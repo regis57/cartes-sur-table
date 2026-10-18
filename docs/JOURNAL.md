@@ -6,6 +6,37 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.8.2"></a>
+## 0.8.2 — 18 octobre 2026
+
+**Les questions de règles laissées ouvertes par la revue sont tranchées.**
+
+Changé
+- **Belote, annonces** : à points égaux, le carré bat la suite (un carré de 100 bat un cent),
+  comme le veulent les règles officielles de la Fédération française de belote ; entre deux
+  suites, la plus haute carte puis l'atout ; entre deux carrés, le plus haut. Avant, la
+  hauteur d'un carré se comparait à celle d'une suite, deux échelles sans rapport : un carré
+  de 10 perdait contre n'importe quel cent. La règle affichée le détaille désormais.
+- **Belote, coupe** : rien ne change dans le jeu, la Fédération confirme qu'il faut couper
+  plus petit (« pisser ») quand on ne peut pas surcouper un adversaire. La règle affichée le
+  dit explicitement.
+- **Tarot, poignée présentée** : les atouts annoncés (ceux du palier, les plus petits ;
+  l'Excuse seulement s'il en manque un) sont montrés à toute la table pendant dix
+  secondes, par-dessus le haut du centre ; un toucher les referme. Les bots en tiennent
+  compte dans les mondes qu'ils imaginent.
+- **Tarot à cinq** : avec les quatre Rois et les quatre Dames, le preneur appelle un Cavalier
+  (règlement de la FFT), au lieu d'une de ses propres Dames.
+- **8 Américain** : la pioche volontaire, déjà permise, est écrite dans les règles (« on peut
+  aussi piocher par choix, même avec une carte jouable »).
+- Tarot : le bouton « Annoncer une poignée » tient sur une ligne.
+
+Déploiement
+- **Plafond de tables ramené à dix sur le NAS** (`MAX_TABLES=10` dans le `.env`) : les bots
+  réfléchissent sur le fil du serveur, et au-delà d'une dizaine de tables actives le DS218+
+  ralentissait tout le site. La marche à suivre est dans le guide de déploiement, § 3.
+
+---
+
 <a name="v0.8.1"></a>
 ## 0.8.1 — 18 octobre 2026
 
