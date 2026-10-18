@@ -6,6 +6,40 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.8.0"></a>
+## 0.8.0 — 18 octobre 2026
+
+**Le jeu tient dans un écran couché.**
+
+Corrigé
+- **Sur une tablette en paysage, il fallait faire défiler la page pour voir ses propres
+  cartes**, dans les trois jeux. Deux causes. D'abord une marge : le décalage sous le bandeau
+  de statut était une marge haute, qui s'échappe par effondrement et pousse la page entière
+  vers le bas — la page faisait quarante-six pixels de trop alors que tout tenait. C'est un
+  remplissage désormais. Ensuite la hauteur : les cartes se mesuraient sur la largeur de
+  l'écran, or un écran couché est large et bas. Elles se mesurent maintenant aussi en hauteur
+  d'écran, les barres et les étiquettes se resserrent, les dos des adversaires rapetissent,
+  et sur un téléphone tourné ils s'effacent — le nombre de cartes de chacun est écrit dans
+  son étiquette.
+- Le contrat ne s'empile plus sur trois lignes : ses morceaux sont séparés par des points
+  médians et tiennent sur une ligne dès qu'il y a la place.
+- Pendant les enchères, sur un écran très bas, le rappel du contrat au centre et le compteur
+  de plis s'effacent : le bandeau de statut et les bulles disent déjà qui a dit quoi.
+
+Changé
+- **Belote : la retourne est posée à côté des boutons d'enchère**, là où se prend la
+  décision, au lieu d'un panneau séparé plus haut. Plus court, et plus proche d'une vraie
+  table.
+- Le jeton du donneur se pose sur le coin de l'avatar : il reste visible quand la place
+  manque pour écrire le nom.
+
+Vérifié
+- Quatre formats × trois jeux × trois moments de la donne, mesurés : la main du joueur est
+  visible sans défiler partout, sauf le tarot en portrait pendant l'écart (vingt-quatre
+  cartes en main), où la page défile encore un peu.
+
+---
+
 <a name="v0.7.1"></a>
 ## 0.7.1 — 18 octobre 2026
 

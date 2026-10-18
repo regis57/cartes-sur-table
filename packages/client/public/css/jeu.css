@@ -63,8 +63,12 @@ body.jeu { overflow-x: hidden; }
   height: auto;
   min-height: calc(100dvh - 130px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   grid-template-rows: auto minmax(max-content, 1fr) auto;
-  margin: calc(56px + env(safe-area-inset-top, 0px)) auto 0;
+  margin: 0 auto;
 }
+/* Le décalage sous le bandeau de statut est un remplissage, pas une marge : une marge
+   s'échappe par effondrement et pousse la page entière vers le bas (page plus haute que
+   l'écran, donc défilement, alors que tout tenait). */
+#table { padding-top: calc(56px + env(safe-area-inset-top, 0px)); }
 .siege { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; border-radius: 12px; min-width: 0; border: 2px solid transparent; }
 .siege.actif { border-color: var(--laiton); background: rgba(217, 164, 65, 0.1); }
 .siege.haut { grid-column: 2; grid-row: 1; }
@@ -126,11 +130,13 @@ body.jeu { overflow-x: hidden; }
 .bulle.annonce { background: var(--laiton); color: var(--laiton-texte); font-weight: 700; font-family: var(--police-ui); }
 .bulle.annonce::after { border-top-color: var(--laiton); }
 .siege.haut .bulle.annonce::after, .siege.haut-gauche .bulle.annonce::after, .siege.haut-droite .bulle.annonce::after { border-top-color: transparent; border-bottom-color: var(--laiton); }
-/* Le jeton du donneur. */
+/* Le jeton du donneur, posé sur le coin de l'avatar. */
 .jeton-donneur {
-  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  position: absolute; left: -4px; top: -4px; z-index: 2;
+  display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
   background: var(--laiton); color: var(--laiton-texte); font-family: var(--police-ui);
-  font-size: 0.72rem; font-weight: 700; line-height: 1; vertical-align: 1px;
+  font-size: 0.72rem; font-weight: 700; line-height: 1;
+  box-shadow: 0 1px 4px var(--ombre);
 }
 
 /* Réactions */
@@ -194,4 +200,44 @@ body.jeu { overflow-x: hidden; }
 }
 @media (min-width: 701px) {
   .reactions button[data-action="menu"] { display: none; }
+}
+
+/*
+ * ÉCRAN COUCHÉ, ET PEU HAUT : tablette en paysage, téléphone tourné, fenêtre basse.
+ * Là, c'est la hauteur qui manque, pas la largeur : les cartes se mesurent en hauteur
+ * d'écran, les barres se resserrent, et les dos des adversaires — purement décoratifs —
+ * rapetissent et se chevauchent davantage. L'exigence : la main du joueur doit tenir dans
+ * l'écran sans faire défiler la page, quel que soit le jeu.
+ */
+@media (orientation: landscape) and (max-height: 900px) {
+  :root { --carte-h-base: min(116px, 13.5vh); --carte-l-base: calc(min(116px, 13.5vh) / 1.45); }
+  .contrat .sep { opacity: 0.6; }
+  .barre { height: 44px; }
+  #table { padding-top: calc(46px + env(safe-area-inset-top, 0px)); }
+  .table-jeu-grille {
+    min-height: calc(100dvh - 104px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    gap: 4px;
+  }
+  .siege { gap: 3px; padding: 3px; }
+  .etiquette { padding: 2px 10px 2px 3px; }
+  .etiquette .avatar { width: 28px; height: 28px; }
+  .etiquette .infos { font-size: 0.86rem; }
+  .main.verticale .carte { margin-top: calc(var(--carte-h) * -0.82); }
+  .reactions { padding: 4px 12px calc(6px + env(safe-area-inset-bottom, 0px)); }
+  .reactions button { min-height: 40px; padding: 6px 16px; font-size: 1rem; }
+  .couleur { font-size: 1.1rem; padding: 2px 12px; }
+  .sens { padding: 2px 10px; }
+}
+@media (orientation: landscape) and (max-height: 720px) {
+  :root { --carte-h-base: min(116px, 12vh); --carte-l-base: calc(min(116px, 12vh) / 1.45); }
+}
+/* Téléphone tourné : il ne reste pas de quoi montrer des dos de cartes. Le nombre de
+   cartes de chacun est écrit dans son étiquette ; c'est la main du joueur qui prime. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .siege:not(.bas) .main { display: none; }
+  .etiquette .avatar { width: 24px; height: 24px; }
+  .etiquette .infos { font-size: 0.8rem; }
+  .choix .consigne { font-size: 0.95rem; padding: 3px 10px; }
+  .choix .boutons .btn { min-height: 40px; padding: 7px 12px; font-size: 0.95rem; }
+  .reactions button { min-height: 36px; padding: 4px 14px; font-size: 0.95rem; }
 }

@@ -293,15 +293,15 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
       const bulles = [...label.querySelectorAll('.bulle')];
       label.textContent = '';
       label.append(img(avatarSrc(s.avatar), '', 'avatar'));
-      const nom = h('span', 'nom', ctx.seatName(s, idx));
+      label.append(h('span', 'nom', ctx.seatName(s, idx)));
       if (options?.dealer) {
-        // Le jeton du donneur, comme à la table : une pastille, pas un mot de plus à lire.
+        // Le jeton du donneur, comme à la table : posé sur l'avatar, il reste visible même
+        // quand la place manque pour écrire le nom.
         const jeton = h('span', 'jeton-donneur', 'D');
         jeton.title = t('table.dealer_title');
         jeton.setAttribute('aria-label', t('table.dealer_title'));
-        nom.append(document.createTextNode(' '), jeton);
+        label.append(jeton);
       }
-      label.append(nom);
       const infos = h('span', 'infos');
       infos.append(h('span', 'pts', t('table.score', { n: score })));
       if (extra) infos.append(document.createTextNode(` · ${extra}`));

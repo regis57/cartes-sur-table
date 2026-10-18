@@ -174,13 +174,11 @@ function renderCentre(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
     contrat.append(h('b', '', bidName(g.bestBid)));
     contrat.append(document.createTextNode(` — ${t('tarot.taken_by', { name: name(g.preneur) })}`));
     if (g.calledCard) {
-      contrat.append(h('br'));
-      contrat.append(document.createTextNode(t('tarot.called', { card: `${g.calledCard.t === 'c' ? g.calledCard.value : ''}${g.calledCard.t === 'c' ? g.calledCard.suit : ''}` })));
+      contrat.append(h('span', 'sep', ' · '), document.createTextNode(t('tarot.called', { card: `${g.calledCard.t === 'c' ? g.calledCard.value : ''}${g.calledCard.t === 'c' ? g.calledCard.suit : ''}` })));
       if (g.partner !== null) contrat.append(document.createTextNode(` · ${t('tarot.partner_is', { name: name(g.partner) })}`));
     }
     if (g.ecartAtouts.length) {
-      contrat.append(h('br'));
-      contrat.append(document.createTextNode(t('tarot.ecart_atouts', { cards: g.ecartAtouts.map((c) => (c.t === 'a' ? String(c.rank) : '')).join(', ') })));
+      contrat.append(h('span', 'sep', ' · '), document.createTextNode(t('tarot.ecart_atouts', { cards: g.ecartAtouts.map((c) => (c.t === 'a' ? String(c.rank) : '')).join(', ') })));
     }
   } else if (g.phase === 'bidding') {
     contrat.append(h('b', '', t('tarot.bidding')));

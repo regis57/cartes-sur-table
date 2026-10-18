@@ -59,6 +59,10 @@
 .choix .consigne { margin: 0; background: var(--toast-fond); color: var(--toast-texte); padding: 6px 14px; border-radius: 18px; }
 .choix .boutons { justify-content: center; }
 .choix .btn .atout-symbole { font-size: 1.3em; margin-right: 4px; }
+/* La retourne et les boutons d'enchère, côte à côte. */
+.encheres-rangee { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px 16px; }
+.retourne-carte { display: flex; flex-direction: column; align-items: center; gap: 2px; --carte-l: calc(var(--carte-l-base, 72px) * 0.85); --carte-h: calc(var(--carte-h-base, 104px) * 0.85); }
+.retourne-carte .legende-zone { margin: 0; }
 .choix .btn .atout-symbole.rouge { color: var(--carte-rouge); }
 .compteur-plis { font-size: 0.95em; opacity: 0.9; background: var(--toast-fond); color: var(--toast-texte); padding: 3px 12px; border-radius: 14px; text-align: center; }
 
@@ -103,3 +107,26 @@
 .bilan-equipes .pastille.devant { background: #1d7a3e; color: #ffffff; }
 .bilan-equipes .pastille.derriere { background: #8c2f28; color: #ffffff; }
 .bilan-equipes .atout-symbole { font-size: 1.5em; }
+
+/* Écran couché : les dos des adversaires s'effacent au profit du pli et de la main. */
+@media (orientation: landscape) and (max-height: 900px) {
+  .belote .siege:not(.bas) .main { --carte-l: calc(var(--carte-l-base) * 0.45); --carte-h: calc(var(--carte-h-base) * 0.45); }
+  .belote .centre { gap: 4px; }
+  .pli { height: calc(var(--carte-h, 104px) * 1.3); }
+  .contrat { padding: 3px 12px; line-height: 1.25; }
+  .compteur-plis { padding: 1px 10px; font-size: 0.88rem; }
+  .legende-zone { margin: 0 0 3px; font-size: 0.82rem; }
+  .retourne, .annonces { padding: 4px 10px; }
+}
+
+/* Téléphone couché : le pli s'aplatit, la retourne et les annonces se font petites. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .pli { height: calc(var(--carte-h, 104px) * 1.15); }
+  /* Pendant les enchères, le bandeau de statut et les bulles disent déjà qui a dit quoi :
+     sur un écran aussi bas, le rappel au centre et le compteur cèdent la place aux cartes. */
+  .belote .centre:not(.en-jeu) .contrat, .belote .centre:not(.en-jeu) .compteur-plis { display: none; }
+  .belote .main.moi { row-gap: 3px; }
+  .retourne, .annonces { padding: 3px 8px; }
+  .retourne .cartes-rangee { --carte-l: calc(var(--carte-l-base) * 0.62); --carte-h: calc(var(--carte-h-base) * 0.62); }
+  .annonces .cartes-rangee { --carte-l: calc(var(--carte-l-base) * 0.4); --carte-h: calc(var(--carte-h-base) * 0.4); }
+}
