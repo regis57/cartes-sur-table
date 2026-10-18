@@ -69,7 +69,7 @@
 .compteur-plis { font-size: 0.95em; opacity: 0.9; background: var(--toast-fond); color: var(--toast-texte); padding: 3px 12px; border-radius: 14px; }
 
 /* Une main de 18 (ou 24 pendant l'écart) : chevauchement plus serré, et deux rangées au besoin. */
-.tarot .main.moi { flex-wrap: wrap; row-gap: 8px; }
+.tarot .main.moi { flex-wrap: wrap; row-gap: 5px; }
 .tarot .main.horizontale .carte { margin-left: calc(var(--carte-l) * -0.5); }
 .tarot .main.horizontale .carte:first-child { margin-left: 0; }
 .tarot .main.moi .carte.jouable:hover, .tarot .main.moi .carte.jouable:focus-visible { transform: translateY(-14px); z-index: 5; }
@@ -91,4 +91,30 @@
 @media (max-width: 700px) {
   .siege.haut-gauche .main, .siege.haut-droite .main { display: none; }
   .pli { height: calc(var(--carte-h, 104px) * 2); }
+  /* Jusqu'à vingt-quatre cartes en main pendant l'écart : elles se chevauchent davantage
+     plutôt que de prendre une rangée de plus, qui pousserait la main hors de l'écran. */
+  .tarot .main.moi .carte { margin-left: calc(var(--carte-l) * -0.6); }
+}
+
+/* Écran couché : les dos des adversaires s'effacent au profit du pli et de la main. */
+@media (orientation: landscape) and (max-height: 900px) {
+  .tarot .siege:not(.bas) .main { --carte-l: calc(var(--carte-l-base) * 0.45); --carte-h: calc(var(--carte-h-base) * 0.45); }
+  .tarot .centre { gap: 4px; }
+  .pli { height: calc(var(--carte-h, 104px) * 1.3); }
+  .contrat { padding: 3px 12px; line-height: 1.25; }
+  .compteur-plis { padding: 1px 10px; font-size: 0.88rem; }
+  .legende-zone { margin: 0 0 3px; font-size: 0.82rem; }
+  .chien { padding: 4px 8px; }
+  .chien .cartes-rangee { --carte-l: calc(var(--carte-l-base) * 0.58); --carte-h: calc(var(--carte-h-base) * 0.58); }
+  .cartes-rangee.petite { --carte-l: calc(var(--carte-l-base) * 0.45); --carte-h: calc(var(--carte-h-base) * 0.45); }
+}
+
+/* Téléphone couché : le pli s'aplatit encore, le chien tient sur une ligne discrète. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .pli { height: calc(var(--carte-h, 104px) * 1.15); }
+  /* Pendant les enchères, le bandeau de statut et les bulles disent déjà qui a dit quoi :
+     sur un écran aussi bas, le rappel au centre et le compteur cèdent la place aux cartes. */
+  .tarot .centre:not(.en-jeu) .contrat, .tarot .centre:not(.en-jeu) .compteur-plis { display: none; }
+  .tarot .main.moi { row-gap: 3px; }
+  .chien .cartes-rangee { --carte-l: calc(var(--carte-l-base) * 0.5); --carte-h: calc(var(--carte-h-base) * 0.5); }
 }

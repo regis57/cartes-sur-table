@@ -82,10 +82,13 @@ La page « À propos » du site pointe sur cette ancre, et la release reprend ce
 
 - `npm run verify` au vert (typage strict, construction du client, tests `node --test`,
   audit des dépendances de production, hygiène).
-- **Regarder l'écran**, pas seulement les tests : une capture dans Chromium à **1100 px** et
-  à **393 px**, et pour tout ce qui touche au cadrage, **avec les zones réservées d'un iPhone
-  simulées** (voir « Vérifier l'affichage »). Trois régressions de suite sont venues de
-  mesures prises sans elles.
+- **Regarder l'écran**, pas seulement les tests. Quatre formats, à chaque fois que la
+  disposition bouge : **1100×820** (ordinateur), **393×852** (téléphone debout),
+  **1024×640** (tablette couchée) et **844×390** (téléphone couché). Pour tout ce qui touche
+  au cadrage, ajouter **les zones réservées d'un iPhone simulées** (voir « Vérifier
+  l'affichage »). L'exigence, dans les quatre : **la main du joueur est visible sans faire
+  défiler la page**. Les régressions de cette semaine sont toutes venues de mesures prises
+  sur un seul format.
 - Les règles d'un jeu se vérifient par des parties simulées, pas à l'œil.
 
 ## Architecture

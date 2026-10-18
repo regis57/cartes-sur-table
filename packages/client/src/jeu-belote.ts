@@ -141,10 +141,12 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
   const contrat = $('contrat');
   contrat.textContent = '';
   if (!bidding && g.trump && g.taker >= 0) {
+    // Des morceaux séparés par « · » : une seule ligne quand l'écran est large et bas,
+    // plusieurs quand il est étroit, sans jamais imposer trois lignes.
     contrat.append(h('b', '', t('belote.trump')), document.createTextNode(' '), suitEl(g.trump));
-    contrat.append(h('br'), document.createTextNode(t('belote.taken_by', { name: name(g.taker) })));
+    contrat.append(h('span', 'sep', ' · '), document.createTextNode(t('belote.taken_by', { name: name(g.taker) })));
     if (g.phase === 'play' || g.roundOver) {
-      contrat.append(h('br'), document.createTextNode(`${teamName(0, me)} ${g.wonPoints[0]} – ${g.wonPoints[1]} ${teamName(1, me)}`));
+      contrat.append(h('span', 'sep', ' · '), document.createTextNode(`${teamName(0, me)} ${g.wonPoints[0]} – ${g.wonPoints[1]} ${teamName(1, me)}`));
     }
   } else if (bidding) {
     contrat.append(h('b', '', t('belote.bidding')));
@@ -184,16 +186,9 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
     pli.append(slot);
   }
 
-  // La retourne, pendant les enchères.
-  const retourne = $('retourne');
-  retourne.textContent = '';
-  if (bidding && g.turned) {
-    show(retourne);
-    retourne.append(h('div', 'legende-zone', t('belote.turned')));
-    const row = h('div', 'cartes-rangee');
-    row.append(cardEl(g.turned, g.phase === 'bid1' ? g.turned.suit : null));
-    retourne.append(row);
-  } else hide(retourne);
+  // La retourne n'a plus de panneau à elle : elle est posée à côté des boutons d'enchère,
+  // là où se prend la décision (voir plus bas). Rien à dessiner ici.
+  hide($('retourne'));
 
   // Les annonces, une fois montrées.
   const annonces = $('annonces');
@@ -218,6 +213,14 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
   const legal = g.legal;
   if (bidding && legal.length) {
     choix.append(h('p', 'consigne', t(g.phase === 'bid1' ? 'belote.your_bid_1' : 'belote.your_bid_2')));
+    // La carte retournée et les boutons côte à côte : on décide en regardant un seul endroit.
+    const rangee = h('div', 'encheres-rangee');
+    if (g.turned) {
+      const carte = h('div', 'retourne-carte');
+      carte.append(cardEl(g.turned, g.phase === 'bid1' ? g.turned.suit : null));
+      carte.append(h('span', 'legende-zone', t('belote.turned')));
+      rangee.append(carte);
+    }
     const row = h('div', 'boutons');
     for (const l of legal) {
       if (l.move.type === 'pass') {
@@ -233,7 +236,8 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
         row.append(b);
       }
     }
-    choix.append(row);
+    rangee.append(row);
+    choix.append(rangee);
   }
 
   // Compteur de plis, numéro de donne, objectif.
