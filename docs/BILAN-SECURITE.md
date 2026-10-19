@@ -56,7 +56,7 @@ la surface** (deux dépendances, aucun port ouvert, aucune ressource tierce).
 | CSP `default-src 'none'` | `script-src 'self'`, `style-src 'self'`, `worker-src 'self'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `upgrade-insecure-requests` |
 | **Zéro script ou style en ligne**, zéro CDN | Vérifié à chaque commit par `scripts/hygiene.mjs` (échec si un `src=`/`href=` tiers ou un `onclick=` apparaît) |
 | Le client ne construit jamais de HTML à partir du réseau | Uniquement `textContent` et création de nœuds (`ui.ts`) |
-| En-têtes | HSTS 1 an + sous-domaines, `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy` (géoloc, micro, caméra, paiement, USB, cohortes publicitaires toutes refusées), COOP/CORP/COEP, `X-Frame-Options: DENY`, `X-DNS-Prefetch-Control: off`, pas de `X-Powered-By` |
+| En-têtes | HSTS 1 an + sous-domaines, `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy` (géoloc, micro, caméra, paiement, USB, cohortes publicitaires toutes refusées), COOP/CORP/COEP, `X-Frame-Options: DENY`, `X-DNS-Prefetch-Control: off`, pas de `X-Powered-By`. Les mêmes sur les réponses de Socket.io (fichier client, interrogation longue), posés par un écouteur placé devant le sien depuis la 0.9.1 ; testé dans `app.test.ts`, contrôlé de l'extérieur chaque lundi |
 | Contrôle d'origine à l'établissement de la connexion WebSocket | `allowRequest` → `isOriginAllowed` : bloque le détournement depuis un site tiers (CSWSH) |
 | Aucun cookie | Donc aucun bandeau à accepter, et aucune CSRF possible |
 | Fichiers statiques : pas de fichiers cachés, pas d'échappement du dossier | `express.static` avec `dotfiles: 'ignore'` |
@@ -174,6 +174,5 @@ refaire ces tests est dans le [manifeste](MANIFESTE-SECURITE.md) § 9.
 | Sauvegarde **hors site** | La sauvegarde est faite : copie cohérente quotidienne, intégrité vérifiée, chiffrée côté client sur une clé USB, sept jours au plus. Mais la clé reste branchée au NAS : elle ne protège ni d'un sinistre, ni d'un logiciel malveillant qui prendrait la main sur le serveur | Débrancher la clé régulièrement, ou en faire tourner deux |
 | Audit externe | Pas de budget | Si le projet grandit |
 | Processeur du NAS partagé par les bots | Depuis la 0.9.0, les bots calculent dans un fil à part et ne ralentissent plus les connexions (essai : 2 ms au lieu de 5 s à trente tables). Mais le NAS n'a que deux cœurs : très chargé, les bots jouent moins bien (budget réduit) avant que quiconque n'attende. Le plafond de 30 tables conseillé n'a pas été mesuré sur le NAS lui-même | Relever `MAX_TABLES` par paliers de dix en observant le jeu des bots ; mesurer sur le NAS si le site grandit |
-| En-têtes de sécurité des réponses propres à Socket.io | Le fichier client et les réponses d'interrogation longue ne passent pas par Express, donc sans `nosniff` ; risque faible (ce ne sont pas des documents) | À ajouter par les crochets d'en-têtes d'Engine.IO |
 
 Un manque signalé ici vaut mieux qu'un manque ignoré : ce tableau fait partie du bilan.

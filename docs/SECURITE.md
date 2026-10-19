@@ -13,7 +13,7 @@
 | Image : construction, démarrage, absence de gestionnaire de paquets, Trivy | `release.yml` | chaque PR, chaque fusion | bloquant (critique corrigée) |
 | Provenance et SBOM de l'image | `release.yml`, attestation GitHub | chaque fusion | vérifiable par `gh attestation verify` |
 | OWASP ZAP passif sur l'image | `zap.yml` | chaque PR, chaque lundi | bloquant (moyen ou haut) |
-| Contrôle externe du site en ligne (Observatory, DNS, en-têtes, cookies, redirection, version, Socket.io) | `securite.yml` → `scripts/securite-check.mjs` | chaque lundi, à la demande | bloquant |
+| Contrôle externe du site en ligne (Observatory, DNS, en-têtes, cookies, redirection, version, Socket.io et ses en-têtes) | `securite.yml` → `scripts/securite-check.mjs` | chaque lundi, à la demande | bloquant |
 | Trivy sur l'image publiée | `securite.yml` | chaque lundi | bloquant |
 | ZAP passif sur le site en ligne | `securite.yml` | chaque lundi | bloquant |
 | Mises à jour | Dependabot (npm, Actions, Docker) | chaque semaine | PR à fusionner |

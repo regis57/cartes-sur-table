@@ -6,6 +6,34 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.9.1"></a>
+## 0.9.1 — 19 octobre 2026
+
+**Trois petits points de la revue : en-têtes de Socket.io, dernier pli visible, annonces de belote de l'équipe qui ne marque pas.**
+
+Corrigé
+- **Dernier pli du tarot et de la belote** : à la dernière carte, le bilan s'ouvrait par-dessus
+  la table et la dernière levée n'était jamais vue. Le dernier pli reste maintenant au centre
+  le temps de le lire (1,6 s ; 0,6 s pour qui a demandé moins de mouvement), puis le bilan
+  s'ouvre, à condition que la donne soit toujours finie.
+- **En-têtes de sécurité de Socket.io** : le fichier client et l'interrogation longue sont
+  servis par Socket.io avant Express, donc sans aucun en-tête de sécurité. Ils portent
+  maintenant les mêmes que le reste du site (`nosniff`, CSP, `X-Frame-Options`, politiques
+  d'origine, HSTS en HTTPS). Le contrôle externe du lundi vérifie `nosniff` sur ce point
+  d'entrée : il échouera tant que le NAS n'a pas cette version.
+
+Changé
+- **Belote, annonces** : seule l'équipe qui marque ses annonces montre ses cartes, comme à une
+  vraie table. L'autre équipe garde son jeu caché, pour les joueurs comme pour les bots : ses
+  cartes n'étaient pas à connaître et ne sont plus communiquées. À égalité parfaite, la table
+  lit toujours « Annonces égales : personne ne marque », sans carte. La règle affichée le dit.
+
+Documentation
+- Bilan de sécurité : les en-têtes de Socket.io passent de « reste à faire » à « en place ».
+- Manifeste de sécurité, § 9 : une ligne pour vérifier ces en-têtes à la main.
+
+---
+
 <a name="v0.9.0"></a>
 ## 0.9.0 — 19 octobre 2026
 

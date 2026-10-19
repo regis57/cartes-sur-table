@@ -6,7 +6,7 @@
  * Aucune donnée du réseau n'est interprétée comme du HTML.
  */
 import './theme.ts';
-import { $, h, img, show, hide, toast, prefersReducedMotion } from './ui.ts';
+import { $, h, img, show, hide, toast, dernierPliMs } from './ui.ts';
 import { t } from './i18n.ts';
 import { avatarSrc } from './avatars.ts';
 import { demarrerSalle, type SalleContext } from './salle.ts';
@@ -202,7 +202,8 @@ function renderCentre(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
     clearTimeout(hideTrickTimer);
     hideTrickTimer = null;
   }
-  if (g.trick.length === 0 && g.lastTrick && g.phase === 'play') {
+  // Y compris à la dernière carte : la donne est finie, mais on voit encore le pli avant le bilan.
+  if (g.trick.length === 0 && g.lastTrick && (g.phase === 'play' || g.roundOver)) {
     const key = g.lastTrick.cards.map((c) => cardKey(c.card)).join(',') + `:${g.tricksPlayed}`;
     if (key !== lastTrickKey) {
       lastTrickKey = key;
@@ -212,9 +213,9 @@ function renderCentre(view: SeatView<TarotView>, ctx: SalleContext<TarotView>): 
       hideTrickTimer = setTimeout(() => {
         const fresh = ctx.view();
         if (fresh) renderCentre(fresh, ctx);
-      }, prefersReducedMotion() ? 600 : 1600);
+      }, dernierPliMs());
     }
-    if (Date.now() - lastTrickShownAt < (prefersReducedMotion() ? 600 : 1600)) {
+    if (Date.now() - lastTrickShownAt < dernierPliMs()) {
       shown = g.lastTrick.cards;
       winner = g.lastTrick.winner;
     }
@@ -430,6 +431,7 @@ demarrerSalle<TarotView>({
   renderTable,
   renderRoundEnd,
   forcedKey: 'tarot.forced_play',
+  pauseAvantBilan: true,
 }).catch((err: unknown) => {
   console.error(err);
   toast(t('site.offline'), 'erreur');

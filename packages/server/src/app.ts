@@ -348,6 +348,15 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     allowRequest: (req, cb) => cb(null, isOriginAllowed(req.headers.origin, req.headers.host, cfg.allowedOrigins)),
   });
 
+  // Socket.io répond lui-même à `/socket.io/` (fichier client, interrogation longue), avant
+  // Express : sans ceci, ces réponses partiraient sans aucun des en-têtes de sécurité. Cet
+  // écouteur passe devant celui de Socket.io (d'où sa place après la création du serveur),
+  // et les en-têtes sont posés avant, qu'Engine.IO fusionne avec les siens en écrivant la réponse.
+  const enTetesSocketIo = securityHeaders({ hsts: true });
+  httpServer.prependListener('request', (req, res) => {
+    if (req.url?.startsWith('/socket.io/')) enTetesSocketIo(req, res, () => undefined);
+  });
+
   const connectionsPerIp = new Map<string, number>();
 
   // L'espace de noms par défaut « / » n'a aucun usage : refusé, pour qu'il ne serve pas

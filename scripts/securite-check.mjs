@@ -102,6 +102,8 @@ try {
     connue ? '' : 'Le conteneur ne tourne pas une image publiée : relancer le projet sur le NAS');
   const sio = await fetch(`https://${host}/socket.io/?EIO=4&transport=polling`, { headers: { 'user-agent': UA } });
   row('Point d\'entrée Socket.io', 'répond (200)', String(sio.status), sio.status === 200, sio.status === 200 ? '' : 'Vérifier la règle de cache /socket.io/* (Bypass) et le conteneur');
+  const sioNosniff = sio.headers.get('x-content-type-options');
+  row('En-têtes de Socket.io', 'nosniff comme le reste du site', sioNosniff ?? 'absent', sioNosniff === 'nosniff', sioNosniff === 'nosniff' ? '' : 'Version antérieure à la 0.9.1 : mettre le conteneur à jour');
 } catch (e) {
   row('Version déployée', '—', `indisponible (${e.message})`, null);
 }

@@ -6,7 +6,7 @@
  * Aucune donnée du réseau n'est interprétée comme du HTML.
  */
 import './theme.ts';
-import { $, h, show, hide, toast, prefersReducedMotion } from './ui.ts';
+import { $, h, show, hide, toast, dernierPliMs } from './ui.ts';
 import { t } from './i18n.ts';
 import { demarrerSalle, type SalleContext } from './salle.ts';
 import type { SeatView } from '@jdc/core/table.ts';
@@ -163,7 +163,8 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
     clearTimeout(hideTrickTimer);
     hideTrickTimer = null;
   }
-  if (g.trick.length === 0 && g.lastTrick && g.phase === 'play') {
+  // Y compris à la dernière carte : la donne est finie, mais on voit encore le pli avant le bilan.
+  if (g.trick.length === 0 && g.lastTrick && (g.phase === 'play' || g.roundOver)) {
     const key = g.lastTrick.cards.map((c) => cardKey(c.card)).join(',') + `:${g.tricksPlayed}`;
     if (key !== lastTrickKey) {
       lastTrickKey = key;
@@ -173,9 +174,9 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
       hideTrickTimer = setTimeout(() => {
         const fresh = ctx.view();
         if (fresh) renderCentre(fresh, ctx);
-      }, prefersReducedMotion() ? 600 : 1600);
+      }, dernierPliMs());
     }
-    if (Date.now() - lastTrickShownAt < (prefersReducedMotion() ? 600 : 1600)) {
+    if (Date.now() - lastTrickShownAt < dernierPliMs()) {
       shown = g.lastTrick.cards;
       winner = g.lastTrick.winner;
     }
@@ -193,11 +194,11 @@ function renderCentre(view: SeatView<BeloteView>, ctx: SalleContext<BeloteView>)
   // Les annonces, une fois montrées.
   const annonces = $('annonces');
   annonces.textContent = '';
-  if (g.declarations && g.declarations.length && g.phase === 'play' && g.tricksPlayed <= 2) {
+  if (((g.declarations && g.declarations.length) || g.declarationsEgales) && g.phase === 'play' && g.tricksPlayed <= 2) {
     show(annonces);
     const team = g.declarationsTeam;
-    annonces.append(h('div', 'legende-zone', team === null ? t('belote.declarations_none') : t('belote.declarations_points', { n: g.declarations.filter((d) => teamOf(d.seat) === team).reduce((s, d) => s + d.points, 0), team: teamName(team, me) })));
-    for (const d of g.declarations as readonly Declaration[]) {
+    annonces.append(h('div', 'legende-zone', team === null ? t('belote.declarations_none') : t('belote.declarations_points', { n: (g.declarations ?? []).filter((d) => teamOf(d.seat) === team).reduce((s, d) => s + d.points, 0), team: teamName(team, me) })));
+    for (const d of (g.declarations ?? []) as readonly Declaration[]) {
       const line = h('div', `annonce${team === teamOf(d.seat) ? '' : ' perdu'}`);
       line.append(h('span', 'qui', `${name(d.seat)} : ${t(`belote.declaration.${d.kind}`)} (${d.points})`));
       const row = h('div', 'cartes-rangee');
@@ -378,6 +379,7 @@ demarrerSalle<BeloteView>({
   renderTable,
   renderRoundEnd,
   forcedKey: 'belote.forced_play',
+  pauseAvantBilan: true,
 }).catch((err: unknown) => {
   console.error(err);
   toast(t('site.offline'), 'erreur');

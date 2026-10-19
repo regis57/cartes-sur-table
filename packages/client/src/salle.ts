@@ -15,7 +15,7 @@
  * est le même pour tous les jeux, et une correction ici vaut pour tous.
  */
 
-import { $, h, img, show, hide, fill, toast, onAction, openDialog, closeDialog } from './ui.ts';
+import { $, h, img, show, hide, fill, toast, onAction, openDialog, closeDialog, dernierPliMs } from './ui.ts';
 import { loadLocale, t, has } from './i18n.ts';
 import { basculerTheme, currentTheme } from './theme.ts';
 import { identity } from './profile.ts';
@@ -57,6 +57,11 @@ export interface SalleJeu<V> {
    * un sous-titre propre au jeu (sinon « manche remportée par … »).
    */
   renderRoundEnd(data: RoundEndPayload, container: HTMLElement, ctx: SalleContext<V>): string | void;
+  /**
+   * Le jeu se joue en plis : à la dernière carte, le bilan attend le temps de voir le dernier
+   * pli au centre (sans cela, il s'ouvre par-dessus et la dernière carte n'est jamais vue).
+   */
+  readonly pauseAvantBilan?: boolean;
   /** Boîtes de dialogue propres au jeu, fermées quand la partie est interrompue. */
   readonly dialogs?: readonly string[];
   /** Clé i18n du bandeau quand le socle joue un coup forcé pour la personne. */
@@ -368,7 +373,16 @@ export async function demarrerSalle<V>(jeu: SalleJeu<V>): Promise<void> {
     $('btn-manche').textContent = tg('next_round');
     (data.matchOver ? hide : show)($('btn-manche'));
     (data.matchOver ? show : hide)($('btn-rejouer'));
-    openDialog('dlg-manche');
+    if (!jeu.pauseAvantBilan) {
+      openDialog('dlg-manche');
+      return;
+    }
+    // La table a pu bouger pendant la pause (retour à l'accueil, partie interrompue) : on ne
+    // rouvre le bilan que si la manche est toujours finie.
+    setTimeout(() => {
+      const phase = ctx.view()?.phase;
+      if (phase === undefined || phase === 'roundEnd' || phase === 'matchEnd') openDialog('dlg-manche');
+    }, dernierPliMs());
   };
 
   /**
