@@ -364,7 +364,7 @@ function resultLines(r: DonneResult, names: (s: number) => string): HTMLElement 
   if (r.partner !== null) l1.append(document.createTextNode(` · ${t('tarot.partner_is', { name: names(r.partner) })}`));
   box.append(l1);
   const l2 = h('p', r.won ? 'gagne' : 'perdu');
-  l2.textContent = `${t(r.won ? 'tarot.contract_won' : 'tarot.contract_lost')} : ${t('tarot.points_vs_target', { pts: r.attackPoints, target: r.target, bouts: r.bouts })}`;
+  l2.textContent = `${t(r.won ? 'tarot.contract_won' : 'tarot.contract_lost')} : ${t('tarot.points_vs_target', { pts: r.attackPoints, target: r.target, bouts: t(r.bouts > 1 ? 'tarot.bouts_plusieurs' : 'tarot.bouts_un', { n: r.bouts }) })}`;
   box.append(l2);
   const bonus: string[] = [];
   if (r.petitAuBout !== 0) bonus.push(`${t('tarot.petit_au_bout')} ${r.petitAuBout > 0 ? '+' : ''}${r.petitAuBout}`);
@@ -385,14 +385,16 @@ function renderRoundEnd(data: RoundEndPayload, box: HTMLElement, ctx: SalleConte
 
   const table = h('table', 'tableau');
   const head = h('tr');
-  head.append(h('th', '', ''), h('th', '', t('tarot.role_col')), h('th', '', t('table.round_points')), h('th', '', t('table.total')));
+  head.append(h('th', '', ''), h('th', 'col-role', t('tarot.role_col')), h('th', '', t('table.round_points')), h('th', '', t('table.total')));
   table.append(head);
   data.summary.perSeat.forEach((ps, i) => {
     const row = h('tr');
-    const name = h('td');
-    name.append(img(avatarSrc(data.seats[i]?.avatar ?? 0), '', 'avatar'), document.createTextNode(' ' + names(i)));
     const role = (ps.detail as { role?: string } | null)?.role ?? 'defense';
-    row.append(name, h('td', '', t(`tarot.role.${role}`)), h('td', ps.roundPoints >= 0 ? 'gagne' : 'perdu', `${ps.roundPoints >= 0 ? '+' : ''}${ps.roundPoints}`), h('td', '', t('table.score', { n: ps.total })));
+    const name = h('td');
+    // Sur un écran étroit, le rôle passe sous le nom et sa colonne disparaît : quatre colonnes
+    // ne tiennent pas dans la boîte d'un téléphone debout.
+    name.append(img(avatarSrc(data.seats[i]?.avatar ?? 0), '', 'avatar'), document.createTextNode(' ' + names(i)), h('span', 'role-sous', t(`tarot.role.${role}`)));
+    row.append(name, h('td', 'col-role', t(`tarot.role.${role}`)), h('td', ps.roundPoints >= 0 ? 'gagne' : 'perdu', `${ps.roundPoints >= 0 ? '+' : ''}${ps.roundPoints}`), h('td', '', t('table.score', { n: ps.total })));
     if (i === data.summary.roundWinner) row.classList.add('gagnant');
     table.append(row);
   });

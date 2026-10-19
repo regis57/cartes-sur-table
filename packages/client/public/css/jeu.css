@@ -270,3 +270,20 @@ body.jeu { overflow-x: hidden; }
   #table { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .table-jeu-grille { min-height: calc(100dvh - 46px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 }
+
+/* Bilan de donne sur un écran étroit (téléphone debout). La boîte ne laisse qu'environ 300 px :
+   on resserre la boîte et les cellules, et le rôle passe sous le nom plutôt que dans une
+   quatrième colonne qui ferait déborder le tableau. */
+.tableau .role-sous { display: none; }
+@media (max-width: 520px) {
+  #dlg-manche {
+    width: calc(100% - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    padding: 20px 12px;
+  }
+  #dlg-manche .tableau th, #dlg-manche .tableau td { padding: 8px 4px; }
+  #dlg-manche .tableau .avatar { width: 32px; height: 32px; }
+  #dlg-manche .tableau td:nth-child(n+3) { white-space: nowrap; }
+  #dlg-manche .tableau .col-role { display: none; }
+  #dlg-manche .tableau .role-sous { display: block; font-size: 0.9rem; opacity: 0.85; }
+  #dlg-manche .tableau .mini { margin: 1px; padding: 1px 4px; }
+}
