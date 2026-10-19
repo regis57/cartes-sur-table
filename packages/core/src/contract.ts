@@ -31,6 +31,10 @@ export type BotLevel = 'facile' | 'normal';
  *     de jouer à n'importe quel jeu sans tricher : il ne raisonne que sur des mondes
  *     possibles, jamais sur le vrai.
  *
+ * Les bots calculent dans un fil à part, qui reçoit une copie de l'état : S et M doivent donc
+ * être des données simples (objets, tableaux, nombres, chaînes), sans fonctions ni classes
+ * à méthodes.
+ *
  * Paramètres de type :
  *  - S : l'état complet d'une manche (connu du serveur seul)
  *  - M : un coup (ce que le client envoie, toujours revalidé par `legalMoves`)

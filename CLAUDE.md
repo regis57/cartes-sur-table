@@ -98,6 +98,8 @@ La page « À propos » du site pointe sur cette ancre, et la release reprend ce
   ensembles d'information), profils, feuille de marque.
 - `packages/games/<jeu>` — un jeu = un objet qui respecte le contrat, avec ses tests.
 - `packages/server` — Express + Socket.io, un espace de noms par jeu, SQLite (`node:sqlite`).
+  Les bots calculent dans des `worker_thread` (`bot-pool.ts`) ; l'état d'un jeu doit donc se
+  copier tel quel (données simples, ni fonctions ni classes à méthodes).
 - `packages/client` — TypeScript sans dépendance, compilé vers `public/js`. `salle.ts` tient
   tout le parcours commun ; un jeu n'écrit que le rendu de sa table et de son bilan.
 
@@ -191,6 +193,8 @@ chiffrée sur clé USB). Une fusion ne déploie pas : le dire quand une version 
   contre, appel au Roi à cinq, poignées, Petit au bout, Petit sec. Belote : retourne, deux
   tours d'enchères, belote-rebelote, annonces, dix de der, partie en 1000 points.
 - Feuille de marque commune, annonces en bulle au siège, jeton du donneur.
+- Bots dans des fils de calcul depuis la 0.9.0 ; plafond de tables conseillé sur le NAS : 30
+  (non mesuré sur le NAS lui-même).
 - **Sur l'étagère, discutés et non faits** : « Rejouer la donne » (rejouer la même
   distribution, faisable grâce aux règles pures et à l'aléa injecté) ; un onglet « Plis »
   pour revoir les plis d'une donne ; le chelem et les misères au tarot (écartés pour

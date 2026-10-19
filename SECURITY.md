@@ -61,11 +61,12 @@ Seule la branche `main` (et l'image `latest` qui en est publiée) reçoit des co
 | `PUBLIC_ORIGIN` | *(aucune)* | Origine publique : redirection HTTP → HTTPS derrière le tunnel ; domaine et origine attendus par les passkeys (sans elle, en production, aucune passkey n'est acceptée) |
 | `DATABASE_PATH` | `:memory:` | Base SQLite des profils |
 | `MAX_CONN_PER_IP` | `10` | Connexions simultanées par IP |
-| `MAX_TABLES` | `300` | Tables simultanées |
+| `MAX_TABLES` | `300` | Tables simultanées (30 conseillé sur le NAS) |
 | `MATCHMAKING_SECONDS` | `60` | Attente avant complément par des bots |
 | `RATE_BURST` / `RATE_PER_SEC` | `20` / `5` | Messages par connexion |
 | `HTTP_MAX_PER_MINUTE` | `300` | Requêtes HTTP par IP et par minute |
-| `BOT_THINK_MS` | `150` | Budget de réflexion du bot (ms) |
+| `BOT_THINK_MS` | `150` | Budget de réflexion du bot (ms) ; réduit automatiquement quand la file d'attente s'allonge |
+| `BOT_WORKERS` | un de moins que les cœurs, de 1 à 4 | Fils de calcul des bots ; `0` = dans le fil principal |
 | `REJOIN_GRACE_MS` | `90000` | Délai pour reprendre son siège après une coupure |
 | `PURGE_DAYS` | `365` | Profils sans visite effacés après ce délai |
 

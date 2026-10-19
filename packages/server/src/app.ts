@@ -18,6 +18,7 @@ import {
 } from '@jdc/core';
 import { loadConfig, type Config } from './config.ts';
 import { GAMES, SOON } from './games.ts';
+import { createBotPool } from './bot-pool.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const CLIENT_DIR = path.resolve(here, '../../client/public');
@@ -47,6 +48,8 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
   const cfg: Config = { ...loadConfig(), ...overrides };
   const store = new ProfileStore(cfg.databasePath);
   const tables = new Map<string, Table<unknown, unknown, unknown>>();
+  // Les fils de calcul des bots ne se lancent qu'à la première demande d'un bot.
+  const botPool = cfg.botWorkers > 0 ? createBotPool({ size: cfg.botWorkers }) : null;
 
   // ---------- HTTP ----------
 
@@ -412,6 +415,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
       const table = new Table(tableId, game.def, seats, outbox(tableId, () => seats), {
         botLevel,
         botThinkMs: cfg.botThinkMs,
+        ...(botPool ? { botEngine: botPool } : {}),
         rejoinGraceMs: cfg.rejoinGraceMs,
         ...(cfg.timings ? { timings: cfg.timings } : {}),
         onDestroy: (t) => {
@@ -721,7 +725,7 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
     return new Promise((resolve) => {
       io.close(() => {
         store.close();
-        resolve();
+        void (botPool ? botPool.close() : Promise.resolve()).then(resolve, resolve);
       });
     });
   }

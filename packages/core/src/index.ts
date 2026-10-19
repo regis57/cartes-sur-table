@@ -8,6 +8,7 @@ export * from './rng.ts';
 export * from './security.ts';
 export * from './names.ts';
 export * from './mcts.ts';
+export * from './bot.ts';
 export * from './table.ts';
 export * from './lobby.ts';
 export * from './profiles.ts';

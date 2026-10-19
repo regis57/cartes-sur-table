@@ -3,6 +3,7 @@
  * Licensed under the GNU Affero General Public License v3.0 or later.
  */
 
+import { availableParallelism } from 'node:os';
 import { parseAllowedOrigins, parseTrustProxy, type TrustProxy } from '@jdc/core';
 
 export interface Config {
@@ -20,6 +21,8 @@ export interface Config {
   ratePerSec: number;
   httpMaxPerMinute: number;
   botThinkMs: number;
+  /** Fils de calcul des bots ; 0 = les bots réfléchissent dans le fil principal (tests, essais). */
+  botWorkers: number;
   rejoinGraceMs: number;
   purgeDays: number;
   /** En production (NODE_ENV=production), les passkeys exigent PUBLIC_ORIGIN. */
@@ -59,6 +62,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ratePerSec: intFromEnv(env['RATE_PER_SEC'], 5, 1, 10_000),
     httpMaxPerMinute: intFromEnv(env['HTTP_MAX_PER_MINUTE'], 300, 1, 1_000_000),
     botThinkMs: intFromEnv(env['BOT_THINK_MS'], 150, 1, 5000),
+    // Un cœur reste au fil principal (connexions, pages) ; au plus quatre fils de calcul.
+    botWorkers: intFromEnv(env['BOT_WORKERS'], Math.max(1, Math.min(4, availableParallelism() - 1)), 0, 16),
     rejoinGraceMs: intFromEnv(env['REJOIN_GRACE_MS'], 90_000, 1000, 3_600_000),
     purgeDays: intFromEnv(env['PURGE_DAYS'], 365, 1, 3650),
     production: env['NODE_ENV'] === 'production',
