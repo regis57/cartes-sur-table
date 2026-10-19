@@ -30,7 +30,9 @@ Les commits portent une adresse `@users.noreply.github.com`.
    - `determinize(state, seat, rng)` tire un monde possible **compatible avec la vue**.
    Un coup = un choix : si une décision porte sur plusieurs cartes (un écart), la découper
    en autant de coups ; c'est ce qui garde `legalMoves` énumérable et le bot capable de
-   raisonner. Si le jeu a sa propre stratégie de bot, la brancher par `botMove` (facultatif),
+   raisonner. L'état et les coups doivent être **copiables tels quels** (objets simples,
+   tableaux, nombres, chaînes : ni fonctions ni classes à méthodes) : les bots calculent dans
+   un fil à part, qui en reçoit une copie. Si le jeu a sa propre stratégie de bot, la brancher par `botMove` (facultatif),
    qui reçoit le niveau de la table : au niveau « facile », c'est à elle de jouer moins bien ;
    sinon le MCTS générique joue avec `rolloutMove`. Pour `determinize`, `repartir` (socle)
    distribue les cartes inconnues en respectant les renonces observées. `roundSummary` peut renvoyer un `label`

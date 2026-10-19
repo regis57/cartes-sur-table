@@ -180,14 +180,26 @@ Sur votre ordinateur, dans le Bloc-notes, collez en remplaçant la première val
 ```
 TUNNEL_TOKEN=eyJ…le jeton du tunnel nas-jeuxdecartes, en entier, sans espace ni retour à la ligne…
 PUBLIC_ORIGIN=https://jeuxdecartes.altiplume.com
-MAX_TABLES=10
+MAX_TABLES=30
 ```
 
 `MAX_TABLES` n'est pas un secret, mais un réglage propre à cette machine : le nombre de
-tables ouvertes en même temps. Les bots réfléchissent sur le fil unique du serveur
-(jusqu'à 150 ms par coup) ; au-delà d'une dizaine de tables actives, un DS218+ ralentit
-tout le site. Au-delà du plafond, un nouveau venu lit « Le serveur est complet pour le moment » et réessaie plus
-tard. Sans cette ligne, le plafond est de 300 tables, bien trop pour ce NAS.
+tables ouvertes en même temps. Depuis la version 0.9.0, les bots réfléchissent dans des fils
+de calcul à part (jusqu'à 150 ms par coup) : ils ne ralentissent plus le site, mais ils se
+partagent le processeur. Un DS218+ a deux cœurs : le serveur y lance **un** fil de calcul, et
+le second cœur reste aux connexions et aux pages. Quand beaucoup de tables jouent, les bots
+réfléchissent moins longtemps (ils jouent un peu moins bien), sans jamais faire attendre.
+
+Valeur conseillée : **30**, à relever par paliers de dix. Elle vient d'un essai de charge sur
+un ordinateur à quatre cœurs, pas du NAS lui-même ; si les bots jouent visiblement plus
+mal, ou si une partie traîne, redescendez. Au-delà du plafond, un nouveau venu lit « Le
+serveur est complet pour le moment » et réessaie plus tard. Sans cette ligne, le plafond est
+de 300 tables, bien trop pour ce NAS.
+
+`BOT_WORKERS` (facultatif) fixe le nombre de fils de calcul : par défaut, un de moins que les
+cœurs, entre un et quatre. Chaque fil coûte environ 30 Mo et un processus système, très en
+deçà des limites du conteneur (`mem_limit: 512m`, `pids_limit: 128`). `BOT_WORKERS=0` remet
+les bots dans le fil principal, comme avant la 0.9.0 : utile seulement pour comparer.
 
 Enregistrez sous le nom **`.env`** : dans la boîte de dialogue, tapez le nom **avec des
 guillemets** (`".env"`) et *Type : Tous les fichiers*, sinon Windows ajoute `.txt`.
@@ -200,14 +212,14 @@ d'email.
 1. **File Station** → dossier `docker/jeuxdecartes`. Si le fichier `.env` n'apparaît pas :
    **Paramètres → Afficher les fichiers cachés**.
 2. Clic droit sur `.env` → **Télécharger**. Ouvrez-le dans le Bloc-notes.
-3. Ajoutez en dernière ligne `MAX_TABLES=10` (sans espace), enregistrez. Gardez le nom
+3. Ajoutez en dernière ligne `MAX_TABLES=30` (sans espace), ou changez le nombre s'il y est déjà, enregistrez. Gardez le nom
    `.env` exactement (Bloc-notes : *Type : Tous les fichiers*).
 4. File Station → **Charger → Charger – Écraser** ce fichier dans `docker/jeuxdecartes`.
 5. Lancez la tâche de mise à jour (§ 6.2 : Planificateur de tâches → la tâche → **Exécuter**).
    Elle recrée le conteneur, qui lit le `.env` à son démarrage ; sans cela, la nouvelle
    valeur n'est pas prise en compte.
 6. Vérifiez : Container Manager → **Conteneur** → `jeuxdecartes-api` → **Détails** →
-   onglet **Environnement** : la ligne `MAX_TABLES` = `10` y figure. Tout le reste de la configuration est dans `docker-compose.yml`, versionné.
+   onglet **Environnement** : la ligne `MAX_TABLES` = `30` y figure. Tout le reste de la configuration est dans `docker-compose.yml`, versionné.
 
 ---
 

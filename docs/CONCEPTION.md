@@ -10,7 +10,7 @@ les jeux de cartes à plusieurs :
 |---|---|---|
 | Table | `table.ts` | Sièges, manches, parties, bots qui « réfléchissent », coups forcés, inactivité, coupure et reprise, réactions |
 | Matchmaking | `lobby.ts` | File publique avec compte à rebours ; tables privées par code |
-| Bot | `mcts.ts` | SO-ISMCTS générique : ne voit que `view`, raisonne sur `determinize` |
+| Bot | `mcts.ts`, `bot.ts` | SO-ISMCTS générique : ne voit que `view`, raisonne sur `determinize` ; `chooseBotMove` choisit le coup, où qu'il soit calculé |
 | Profils | `profiles.ts` | Jeton sans mot de passe, statistiques, succès, export, effacement, purge |
 | Sécurité | `security.ts` | Assainissement, limites, origine, en-têtes, adresse derrière Cloudflare |
 | Protocole | `protocol.ts` | Les événements client ↔ serveur, typés des deux côtés |
@@ -87,6 +87,38 @@ vit une seule fois, dans le socle ou dans la salle.
   vient d'annoncer. Un jeu décide quoi y mettre, jamais comment le dessiner.
 - **Le parcours**, enfin, est entièrement dans `salle.ts` : modes, file, table privée,
   niveau, règles, réactions, menu, marque, fin de manche, reprise après coupure.
+
+## Les bots hors du fil principal
+
+Un coup de bot occupe le processeur pendant tout son budget (150 ms par défaut). Dans le
+fil unique de Node, c'est tout le site qui attend : à trente tables actives, une simple
+requête `/healthz` mettait plus de cinq secondes à répondre. Le calcul est donc sorti.
+
+- **Une fonction pure.** `chooseBotMove(def, état, siège, niveau, budget, rng)` (`core/src/bot.ts`)
+  est la seule façon dont un bot choisit un coup : stratégie propre au jeu d'abord, puis MCTS.
+  Elle ne connaît ni table ni fil.
+- **Un moteur facultatif.** `Table` accepte un `BotEngine` (`choose(job): Promise<coup>`).
+  Sans lui, le bot calcule sur place, comme avant : c'est le cas des tests et de `BOT_WORKERS=0`.
+  Avec lui, la table envoie l'état et attend la réponse sans rien bloquer.
+- **La table reste maîtresse.** Au retour d'une réponse, elle ne joue le coup que si l'état
+  est exactement celui qu'elle avait envoyé, si la table est encore ouverte et si le siège est
+  toujours tenu par un bot. Sinon la réponse est jetée : un humain qui reprend son siège
+  pendant le calcul ne se fait pas jouer à sa place. Une réponse absente, illégale ou en
+  erreur est remplacée par un coup de secours (la politique de simulation du jeu) : aucune
+  panne de calcul ne peut figer une partie.
+- **Un pool côté serveur** (`server/src/bot-pool.ts`, `bot-worker.ts`). Les fils sont lancés à
+  la première demande, relancés s'ils tombent, et chaque demande a un délai. Le fil ne garde
+  rien d'un appel à l'autre : l'état est copié à chaque envoi (`postMessage`), le générateur
+  d'aléa est reconstruit depuis une graine donnée par la table. La décision reste donc
+  rejouable, et ne dépend pas du fil qui la calcule.
+- **Sous charge, on réfléchit moins.** Le budget d'une demande est divisé par `1 + file / fils`,
+  avec un plancher de 30 ms. Un bot joue un peu moins bien quand le site est très sollicité,
+  mais personne n'attend.
+
+Ce que cela impose à un jeu : son état et ses coups doivent être copiables tels quels
+(objets simples, tableaux, nombres, chaînes ; pas de fonctions ni de classes à méthodes).
+Les trois jeux le respectent ; le test « chaque jeu joue une manche entière » du serveur le
+vérifie pour tout jeu enregistré dans `games.ts`.
 
 ## Reprendre son siège après une coupure
 

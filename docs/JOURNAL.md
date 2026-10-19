@@ -6,6 +6,41 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.9.0"></a>
+## 0.9.0 — 19 octobre 2026
+
+**Les bots réfléchissent dans des fils de calcul à part : le site ne ralentit plus quand les tables se multiplient.**
+
+Changé
+- **Bots hors du fil principal** : jusqu'ici, chaque coup de bot occupait le serveur pendant
+  tout son budget de réflexion (150 ms), et tout le reste attendait : les autres tables, les
+  connexions, les pages. Le calcul se fait maintenant dans un petit nombre de `worker_thread`
+  (un de moins que les cœurs de la machine, de un à quatre ; réglable par `BOT_WORKERS`,
+  `0` pour revenir à l'ancien fonctionnement). La table reste seule maîtresse de la partie :
+  elle envoie l'état au fil, reçoit un coup, et ne le joue que si rien n'a bougé entre-temps
+  (table fermée, humain revenu à son siège, partie relancée).
+- **Mesuré** (essai de charge, quatre cœurs, bots à 100 ms d'écart, 150 ms de réflexion) :
+  avec 30 tables actives, une requête `/healthz` attendait **5,3 s** quand les bots calculaient
+  dans le fil principal, **2 ms** avec un fil de calcul. Avec 10 tables : 1,1 s contre 2 ms.
+- **Jamais de table bloquée** : un fil qui tombe est remplacé, un calcul qui dépasse son
+  délai est abandonné, et une réponse absente ou illégale est remplacée par un coup de
+  secours. Quand la file s'allonge, chaque bot réfléchit moins longtemps (jamais moins de
+  30 ms) : il joue un peu moins bien plutôt que de faire attendre les joueurs.
+- **Coût** : environ 30 Mo de mémoire et un fil système par fil de calcul, très en deçà des
+  limites du conteneur (512 Mo, 128 processus).
+
+Ajouté
+- `BOT_WORKERS` dans la configuration (voir `docs/DEPLOIEMENT.md`).
+- La décision d'un bot est maintenant une fonction du socle (`chooseBotMove`), la même dans
+  le serveur et dans le fil de calcul. Conséquence pour un jeu : son état doit se copier tel
+  quel (données simples, ni fonctions ni objets à méthodes) ; un test du serveur le vérifie pour chaque jeu enregistré.
+
+Documentation
+- Le plafond de tables conseillé sur le NAS passe de 10 à 30, par paliers : voir
+  `docs/DEPLOIEMENT.md` § 3. La valeur n'a pas été mesurée sur le NAS lui-même.
+
+---
+
 <a name="v0.8.3"></a>
 ## 0.8.3 — 19 octobre 2026
 

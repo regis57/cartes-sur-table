@@ -94,7 +94,8 @@ dans la chaîne d'approvisionnement pour une fonction de 300 lignes.
 | Routes passkeys | 30 par heure et par IP | `app.ts` |
 | Événements Socket.io | seau à jetons par connexion | `security.ts` `createRateLimiter` |
 | Connexions simultanées par IP | plafonnées ; la place est prise au moment du contrôle, si bien que des demandes groupées dans une seule requête ne passent pas en nombre | `app.ts` `maxConnPerIp` |
-| Nombre de tables | plafonné, tables privées comprises ; 10 sur le NAS (`MAX_TABLES` dans le `.env`), à la mesure de son processeur | `app.ts` `maxTables`, [DEPLOIEMENT.md](DEPLOIEMENT.md) § 3 |
+| Nombre de tables | plafonné, tables privées comprises ; 10 sur le NAS jusqu'à la 0.8.2, 30 conseillé depuis que les bots calculent à part (`MAX_TABLES` dans le `.env`) | `app.ts` `maxTables`, [DEPLOIEMENT.md](DEPLOIEMENT.md) § 3 |
+| Calcul des bots | dans des `worker_thread` (de un à quatre), jamais dans le fil des connexions : un calcul long ne peut ni geler le site ni garder une table en attente (délai par demande, fil remplacé s'il tombe, coup de secours si la réponse manque ou est illégale). Le fil n'a ni réseau, ni fichier, ni accès à la base : il reçoit une copie de l'état d'une table et renvoie un coup, que la table revérifie avant de le jouer | `bot-pool.ts`, `bot-worker.ts`, `table.ts` `botAnswered` ; tests `bots.test.ts`, `moteur-bots.test.ts` |
 | Tables zombies | détruites par `onDestroy` | `table.ts` |
 | Table laissée au bilan (onglet oublié) | fermée après 15 minutes sans relance | `table.ts` `idleEndMs` |
 | Table privée en attente depuis 30 minutes | retirée, et ses membres prévenus et libérés | `lobby.ts` `sweep`, `app.ts` |
@@ -172,7 +173,7 @@ refaire ces tests est dans le [manifeste](MANIFESTE-SECURITE.md) § 9.
 | Signature des commits (Sigstore / GPG) | Le dépôt n'exige pas encore les commits signés | À activer |
 | Sauvegarde **hors site** | La sauvegarde est faite : copie cohérente quotidienne, intégrité vérifiée, chiffrée côté client sur une clé USB, sept jours au plus. Mais la clé reste branchée au NAS : elle ne protège ni d'un sinistre, ni d'un logiciel malveillant qui prendrait la main sur le serveur | Débrancher la clé régulièrement, ou en faire tourner deux |
 | Audit externe | Pas de budget | Si le projet grandit |
-| Bots calculés dans le fil principal | Un coup de bot réfléchit jusqu'à 150 ms, de façon synchrone : quelques dizaines de tables actives suffisent à occuper un cœur et à ralentir tout le site. Le plafond est ramené à 10 tables sur le NAS (`MAX_TABLES`), ce qui protège le site mais limite le nombre de joueurs simultanés | Calculer les bots dans un `worker_thread`, puis relever le plafond |
+| Processeur du NAS partagé par les bots | Depuis la 0.9.0, les bots calculent dans un fil à part et ne ralentissent plus les connexions (essai : 2 ms au lieu de 5 s à trente tables). Mais le NAS n'a que deux cœurs : très chargé, les bots jouent moins bien (budget réduit) avant que quiconque n'attende. Le plafond de 30 tables conseillé n'a pas été mesuré sur le NAS lui-même | Relever `MAX_TABLES` par paliers de dix en observant le jeu des bots ; mesurer sur le NAS si le site grandit |
 | En-têtes de sécurité des réponses propres à Socket.io | Le fichier client et les réponses d'interrogation longue ne passent pas par Express, donc sans `nosniff` ; risque faible (ce ne sont pas des documents) | À ajouter par les crochets d'en-têtes d'Engine.IO |
 
 Un manque signalé ici vaut mieux qu'un manque ignoré : ce tableau fait partie du bilan.

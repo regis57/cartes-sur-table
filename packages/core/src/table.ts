@@ -5,7 +5,7 @@
 
 import { randomUUID } from 'node:crypto';
 import type { BotLevel, GameDefinition, RoundSummary } from './contract.ts';
-import { mctsChooseMove } from './mcts.ts';
+import { chooseBotMove, simpleMove, type BotEngine } from './bot.ts';
 import { cryptoRng, seededRng, type Rng } from './rng.ts';
 import { createRateLimiter } from './security.ts';
 
@@ -52,6 +52,11 @@ export interface TableOptions {
   rejoinGraceMs?: number;
   /** Budget de réflexion du bot MCTS (ms). */
   botThinkMs?: number;
+  /**
+   * Moteur de calcul des bots (un fil à part, côté serveur). Sans lui, le bot réfléchit dans
+   * le processus même, en bloquant tout le reste le temps de son budget : c'est le cas des tests.
+   */
+  botEngine?: BotEngine;
   /** Durée au bilan (fin de manche ou de partie) sans que personne ne relance, avant fermeture (ms). */
   idleEndMs?: number;
   rng?: Rng;
@@ -112,6 +117,9 @@ export class Table<S, M, V> {
   private readonly botLevel: BotLevel;
   private readonly rejoinGraceMs: number;
   private readonly botThinkMs: number;
+  private readonly botEngine: BotEngine | null;
+  /** L'état pour lequel un bot est en train de calculer, pour ne pas lancer deux fois le même calcul. */
+  private botInFlight: S | null = null;
   private readonly idleEndMs: number;
   private readonly emoteLimiters: (() => boolean)[];
   private readonly onDestroy: TableOptions['onDestroy'];
@@ -132,6 +140,7 @@ export class Table<S, M, V> {
     this.botLevel = opts.botLevel ?? 'normal';
     this.rejoinGraceMs = opts.rejoinGraceMs ?? 90_000;
     this.botThinkMs = opts.botThinkMs ?? 150;
+    this.botEngine = opts.botEngine ?? null;
     this.idleEndMs = opts.idleEndMs ?? 15 * 60_000;
     this.onDestroy = opts.onDestroy;
     this.onRoundEnd = opts.onRoundEnd;
@@ -330,20 +339,46 @@ export class Table<S, M, V> {
     if (this.def.currentSeat(this.state) !== seat) return;
     const legal = this.def.legalMoves(this.state, seat);
     if (legal.length === 0) return;
-    let move: M;
-    // La stratégie propre au jeu passe la première, à tous les niveaux : c'est elle qui sait
-    // jouer moins bien sans jouer n'importe quoi. Sans elle, « facile » s'en tient à la
-    // politique de simulation et « normal » cherche (MCTS).
-    const propre = this.def.botMove?.(this.state, seat, legal, this.botRng, this.botLevel) ?? null;
-    if (propre !== null) {
-      move = propre;
-    } else if (this.botLevel === 'facile' || legal.length === 1) {
-      move = this.def.rolloutMove ? this.def.rolloutMove(this.state, seat, legal, this.botRng) : (legal[this.botRng.int(legal.length)] as M);
-    } else {
-      const res = mctsChooseMove(this.def, this.state, seat, { timeMs: this.botThinkMs, maxIterations: 4000, rng: this.botRng });
-      move = res ? res.move : (legal[0] as M);
+    // Un seul coup possible : rien à calculer, on ne dérange pas le moteur.
+    if (!this.botEngine || legal.length === 1) {
+      const move = chooseBotMove(this.def, this.state, seat, this.botLevel, this.botThinkMs, this.botRng) ?? (legal[0] as M);
+      this.apply(seat, move);
+      return;
     }
-    this.apply(seat, move);
+    if (this.botInFlight === this.state) return;
+    const snapshot = this.state;
+    this.botInFlight = snapshot;
+    const job = { gameId: this.def.id, state: snapshot, seat, level: this.botLevel, thinkMs: this.botThinkMs, seed: this.botRng.int(0x7fffffff) };
+    this.botEngine.choose(job).then(
+      (answer) => this.botAnswered(snapshot, seat, legal, answer),
+      () => this.botAnswered(snapshot, seat, legal, null),
+    );
+  }
+
+  /**
+   * Le calcul du bot est revenu. La table a pu bouger pendant ce temps (un coup joué, un
+   * humain revenu à son siège, la table fermée) : on ne joue que si rien n'a changé.
+   * Une réponse absente ou illégale n'arrête jamais la partie : un coup de secours est joué.
+   */
+  private botAnswered(snapshot: S, seat: number, legal: readonly M[], answer: unknown): void {
+    if (this.botInFlight === snapshot) this.botInFlight = null;
+    if (this.phase !== 'playing' || this.state !== snapshot) return;
+    if (!this.seats[seat]?.isBot || this.def.currentSeat(snapshot) !== seat) return;
+    const key = answer === null || answer === undefined ? null : this.safeMoveKey(answer as M);
+    const move = key === null ? undefined : legal.find((m) => this.def.moveKey(m) === key);
+    try {
+      this.apply(seat, move ?? simpleMove(this.def, snapshot, seat, legal, this.botRng));
+    } catch (err) {
+      console.error(`[table ${this.id}] bot :`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  private safeMoveKey(move: M): string | null {
+    try {
+      return this.def.moveKey(move);
+    } catch {
+      return null;
+    }
   }
 
   // ---------- présence ----------
