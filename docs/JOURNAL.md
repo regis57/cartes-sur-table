@@ -6,6 +6,21 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.8.3"></a>
+## 0.8.3 — 19 octobre 2026
+
+**Le bilan de la donne tient dans l'écran d'un téléphone debout.**
+
+Corrigé
+- **Bilan du tarot sur téléphone** : le tableau (nom, rôle, points de la manche, total) était
+  plus large que la boîte et se coupait sur la droite, au point de cacher les totaux. En écran
+  étroit, la boîte est un peu plus large, les cellules sont resserrées, le rôle passe sous le
+  nom et la colonne « Rôle » disparaît ; les points et le total restent sur une seule ligne.
+  Sur les grands écrans, rien ne change.
+- **Tarot, « 2 bout(s) »** : le texte du contrat dit maintenant « 1 bout » ou « 2 bouts ».
+
+---
+
 <a name="v0.8.2"></a>
 ## 0.8.2 — 18 octobre 2026
 
