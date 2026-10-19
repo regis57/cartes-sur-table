@@ -366,6 +366,36 @@ test('la définition : 12 phrases, succès connus, évaluation bornée', () => {
   assert.ok(e >= 0 && e <= 1);
 });
 
+test('annonces : seule l\'équipe qui marque montre ses cartes ; l\'autre garde son jeu caché, pour les joueurs comme pour les bots', () => {
+  let s = createRound(4, seededRng(9));
+  const taker = s.bidTurn;
+  s = applyMove(s, taker, { type: 'take', suit: s.turned.suit }, seededRng(1));
+  const gagnant = (taker + 1) % 4;
+  const perdant = (taker + 2) % 4;
+  const cent = { seat: gagnant, kind: 'cent' as const, points: 100, cards: s.hands[gagnant]!.slice(0, 5), height: 14 };
+  const tierce = { seat: perdant, kind: 'tierce' as const, points: 20, cards: s.hands[perdant]!.slice(0, 3), height: 10 };
+  s = { ...s, declarationsShown: true, declarations: [cent, tierce], declarationsTeam: teamOf(gagnant) };
+  for (let siege = 0; siege < 4; siege++) {
+    const v = view(s, siege);
+    assert.deepEqual(v.declarations!.map((d) => d.seat), [gagnant], `siège ${siege} : seule l'annonce qui marque est montrée`);
+    assert.equal(v.declarationsTeam, teamOf(gagnant));
+    assert.equal(v.declarationsEgales, false);
+  }
+  // Le preneur (qui n'est ni le détenteur de la plus forte annonce ni celui de la seconde) ne
+  // connaît que les cartes montrées : celles de l'équipe qui ne marque lui restent inconnues.
+  const mondes = Array.from({ length: 60 }, (_, k) => determinize(s, taker, seededRng(k)));
+  const garde = (hand: readonly Card[], cartes: readonly Card[]) => cartes.every((x) => hand.some((y) => cardKey(y) === cardKey(x)));
+  assert.ok(mondes.every((w) => garde(w.hands[gagnant]!, cent.cards)), 'les cartes montrées restent chez leur détenteur');
+  assert.ok(mondes.some((w) => !garde(w.hands[perdant]!, tierce.cards)), 'celles de l\'équipe qui ne marque pas ne sont pas connues');
+  // Égalité parfaite : personne ne marque, rien n'est montré, mais la table sait qu'il y a eu égalité.
+  const egal = { ...s, declarationsTeam: null };
+  const v = view(egal, 0);
+  assert.deepEqual(v.declarations, []);
+  assert.equal(v.declarationsEgales, true);
+  assert.equal(view({ ...s, declarations: [], declarationsTeam: null }, 0).declarationsEgales, false, 'sans annonce, pas d\'égalité');
+  assert.equal(view({ ...s, declarationsShown: false }, 0).declarations, null, 'avant le premier pli, rien n\'est montré');
+});
+
 test('capot du preneur : la défense garde les annonces qu\'elle seule marque', () => {
   const base = createRound(4, seededRng(2));
   const tierce = { seat: 1, kind: 'tierce' as const, points: 20, cards: cards('8♥ 9♥ 10♥'), height: 10 };

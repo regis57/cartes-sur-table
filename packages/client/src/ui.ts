@@ -85,3 +85,6 @@ export function closeDialog(id: string): void {
 }
 
 export const prefersReducedMotion = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Le temps de lire un pli posé au centre : plus court pour qui a demandé moins de mouvement. */
+export const dernierPliMs = (): number => (prefersReducedMotion() ? 600 : 1600);

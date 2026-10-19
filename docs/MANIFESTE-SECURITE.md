@@ -191,6 +191,7 @@ journal quand quelque chose change.
 | CAA, SPF, MX, DMARC | [MXToolbox](https://mxtoolbox.com) (*CAA Lookup*, *SPF*, *DMARC*) ou `dig` | CAA présents ; SPF `-all` ; MX nul ; DMARC `p=reject` |
 | Qualité d'application installable | Chrome → outils de développement → **Lighthouse** | PWA installable, accessibilité ≥ 95, pas de ressource tierce |
 | Que l'origine n'est pas exposée | `curl -sI https://<site>` | `server: cloudflare`, un `cf-ray`, la CSP et HSTS ; **aucune** adresse domestique nulle part |
+| En-têtes de Socket.io | `curl -sI https://<site>/socket.io/socket.io.esm.min.js` | `x-content-type-options: nosniff`, la CSP et `x-frame-options: DENY`, comme sur les pages |
 | Comportement sous flot | depuis un terminal : 100 requêtes rapides sur `/socket.io/` | les dernières reçoivent un **429** de Cloudflare avant le NAS |
 | Code et dépendances | `npm run verify`, puis GitHub → **Security** | 0 alerte ouverte CodeQL, Dependabot, gitleaks, Trivy, ZAP |
 | Le contrôle externe maison | GitHub → **Actions → Sécurité → Run workflow** | vert ; il échoue si un en-tête manque, si un cookie apparaît, si le courrier n'est plus verrouillé |

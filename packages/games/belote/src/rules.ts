@@ -161,9 +161,15 @@ export interface BeloteView {
   /** Points de cartes déjà ramassés par chaque équipe (visibles : les plis sont publics). */
   readonly wonPoints: readonly [number, number];
   readonly beloteSeat: number;
-  /** Annonces montrées à tous après le premier pli, avec l'équipe qui les marque. */
+  /**
+   * Annonces montrées à tous après le premier pli : celles de l'équipe qui marque, seules.
+   * Comme à une vraie table, l'autre équipe n'abat pas son jeu : ses annonces ne comptent pas
+   * et ses cartes restent cachées.
+   */
   readonly declarations: readonly Declaration[] | null;
   readonly declarationsTeam: 0 | 1 | null;
+  /** Des annonces se sont annulées à égalité parfaite : personne ne marque, rien n'est montré. */
+  readonly declarationsEgales: boolean;
   readonly litige: number;
   readonly teamScores: readonly [number, number];
   /** Scores par siège (celui de son équipe), pour l'étiquette commune. */
@@ -245,6 +251,11 @@ export function findDeclarations(hand: readonly Card[], seat: number): Declarati
 }
 
 /** L'équipe qui marque ses annonces, ou null si personne n'en a (ou égalité parfaite). */
+/** Cette annonce est-elle de l'équipe qui marque (et donc montrée) ? */
+function scoringDeclaration(state: Pick<BeloteState, 'declarationsTeam'>, d: Declaration): boolean {
+  return state.declarationsTeam !== null && teamOf(d.seat) === state.declarationsTeam;
+}
+
 export function declaringTeam(decls: readonly Declaration[], trump: Suit): 0 | 1 | null {
   if (decls.length === 0) return null;
   // Règles de la Fédération française de belote : la plus forte en points ; à points égaux,
@@ -609,8 +620,9 @@ export function view(state: BeloteState, seat: number): BeloteView {
     totalTricks: TRICKS,
     wonPoints: trump ? [state.won[0].reduce((s, c) => s + cardPoints(c, trump), 0), state.won[1].reduce((s, c) => s + cardPoints(c, trump), 0)] : [0, 0],
     beloteSeat: state.beloteAnnounced ? state.beloteSeat : -1,
-    declarations: state.declarationsShown ? state.declarations : null,
+    declarations: state.declarationsShown ? state.declarations.filter((d) => scoringDeclaration(state, d)) : null,
     declarationsTeam: state.declarationsShown ? state.declarationsTeam : null,
+    declarationsEgales: state.declarationsShown && state.declarationsTeam === null && state.declarations.length > 0,
     litige: state.litige,
     teamScores: state.teamScores,
     scores: [0, 1, 2, 3].map((s) => state.teamScores[teamOf(s)]),
@@ -647,7 +659,8 @@ export function determinize(state: BeloteState, seat: number, rng: Rng): BeloteS
     (fixed[holder] as Card[]).push(c);
   };
   if (!bidding) fix(state.taker, state.turned);
-  if (state.declarationsShown) for (const d of state.declarations) for (const c of d.cards) fix(d.seat, c);
+  // Seules les annonces montrées à la table sont connues : celles de l'équipe qui marque.
+  if (state.declarationsShown) for (const d of state.declarations) if (scoringDeclaration(state, d)) for (const c of d.cards) fix(d.seat, c);
   if (state.trump && state.beloteAnnounced && state.belotePlayed === 1) {
     for (const value of ['R', 'D'] as const) fix(state.beloteSeat, { suit: state.trump, value });
   }

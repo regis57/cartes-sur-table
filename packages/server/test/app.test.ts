@@ -543,3 +543,26 @@ test('Passkeys : en production sans PUBLIC_ORIGIN, refusées', async () => {
     await server.close();
   }
 });
+
+test('HTTP : les réponses propres à Socket.io portent les mêmes en-têtes de sécurité que le reste', async () => {
+  const { server, port } = await boot();
+  try {
+    // Le fichier client et l'interrogation longue sont servis par Socket.io, avant Express.
+    for (const chemin of ['/socket.io/socket.io.esm.min.js', '/socket.io/?EIO=4&transport=polling']) {
+      const r = await req(port, 'GET', chemin);
+      assert.equal(r.status, 200, chemin);
+      assert.equal(r.headers['x-content-type-options'], 'nosniff', chemin);
+      assert.ok(r.headers['content-security-policy']?.includes("default-src 'none'"), chemin);
+      assert.equal(r.headers['x-frame-options'], 'DENY', chemin);
+      assert.equal(r.headers['cross-origin-resource-policy'], 'same-origin', chemin);
+      assert.equal(r.headers['referrer-policy'], 'no-referrer', chemin);
+    }
+    // HSTS suit la même règle que partout : seulement quand la requête arrive en HTTPS.
+    const clair = await req(port, 'GET', '/socket.io/?EIO=4&transport=polling');
+    assert.equal(clair.headers['strict-transport-security'], undefined);
+    const https = await req(port, 'GET', '/socket.io/?EIO=4&transport=polling', undefined, { 'x-forwarded-proto': 'https' });
+    assert.match(String(https.headers['strict-transport-security']), /max-age=31536000/);
+  } finally {
+    await server.close();
+  }
+});
