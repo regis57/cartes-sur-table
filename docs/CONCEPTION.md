@@ -107,7 +107,8 @@ requête `/healthz` mettait plus de cinq secondes à répondre. Le calcul est do
   erreur est remplacée par un coup de secours (la politique de simulation du jeu) : aucune
   panne de calcul ne peut figer une partie.
 - **Un pool côté serveur** (`server/src/bot-pool.ts`, `bot-worker.ts`). Les fils sont lancés à
-  la première demande, relancés s'ils tombent, et chaque demande a un délai. Le fil ne garde
+  la première demande, relancés s'ils tombent, et chaque demande a un délai, qui ne court qu'une
+  fois le fil prêt : sur une petite machine, le chargement des trois jeux peut être long. Le fil ne garde
   rien d'un appel à l'autre : l'état est copié à chaque envoi (`postMessage`), le générateur
   d'aléa est reconstruit depuis une graine donnée par la table. La décision reste donc
   rejouable, et ne dépend pas du fil qui la calcule.
