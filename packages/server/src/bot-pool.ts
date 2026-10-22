@@ -13,7 +13,8 @@ import type { BotEngine, BotJob } from '@jdc/core';
  *
  * Quatre garde-fous, pour qu'une table ne reste jamais bloquée :
  *  - les fils sont lancés à la première demande, et relancés s'ils tombent ;
- *  - une demande qui dépasse son délai est abandonnée, son fil est remplacé ;
+ *  - une demande qui dépasse son délai est abandonnée, son fil est remplacé ; le délai ne court
+ *    qu'une fois le fil prêt (le chargement des jeux peut être long sur une petite machine) ;
  *  - quand la file s'allonge, chaque bot réfléchit moins longtemps (jamais moins de `minThinkMs`) :
  *    on joue un peu moins bien plutôt que de faire attendre les joueurs ;
  *  - une demande qui échoue répond « pas de coup » ; la table joue alors un coup de secours.
@@ -26,6 +27,8 @@ export interface BotPoolOptions {
   graceMs?: number;
   /** Plancher du budget de réflexion sous charge (ms). */
   minThinkMs?: number;
+  /** Délai de démarrage d'un fil, du lancement à son message « prêt » (ms). */
+  bootMs?: number;
   /** Adresse du fil de calcul (surchargée par les tests). */
   workerUrl?: URL;
 }
@@ -46,12 +49,16 @@ interface Pending {
 interface Slot {
   worker: Worker;
   current: Pending | null;
+  /** Le fil a fini de se charger et peut calculer. */
+  ready: boolean;
+  bootTimer: ReturnType<typeof setTimeout> | null;
 }
 
 export function createBotPool(opts: BotPoolOptions): BotPool {
   const size = Math.max(1, Math.floor(opts.size));
   const graceMs = opts.graceMs ?? 3000;
   const minThinkMs = opts.minThinkMs ?? 30;
+  const bootMs = opts.bootMs ?? 15_000;
   const url = opts.workerUrl ?? new URL('./bot-worker.ts', import.meta.url);
   const slots: Slot[] = [];
   const queue: Pending[] = [];
@@ -60,8 +67,21 @@ export function createBotPool(opts: BotPoolOptions): BotPool {
   let closed = false;
 
   function spawn(): Slot {
-    const slot: Slot = { worker: new Worker(url), current: null };
-    slot.worker.on('message', (msg: { id: number; move: unknown; error?: string }) => {
+    const slot: Slot = { worker: new Worker(url), current: null, ready: false, bootTimer: null };
+    // Un fil qui ne devient jamais prêt est remplacé, comme un fil qui tombe. Cette minuterie retient
+    // aussi la boucle d'événements tant qu'une demande attend le fil (le fil lui-même n'y suffit pas).
+    slot.bootTimer = setTimeout(() => {
+      console.error('[bots] fil de calcul trop lent à démarrer, remplacé');
+      replace(slot);
+    }, bootMs);
+    slot.worker.on('message', (msg: { id?: number; ready?: true; move?: unknown; error?: string }) => {
+      if (msg.ready) {
+        slot.ready = true;
+        if (slot.bootTimer) clearTimeout(slot.bootTimer);
+        slot.bootTimer = null;
+        if (slot.current) armTimer(slot);
+        return;
+      }
       const p = slot.current;
       if (!p || p.id !== msg.id) return;
       if (msg.error) console.error('[bots] calcul :', msg.error);
@@ -94,6 +114,7 @@ export function createBotPool(opts: BotPoolOptions): BotPool {
     const i = slots.indexOf(slot);
     if (i < 0) return;
     slots.splice(i, 1);
+    if (slot.bootTimer) clearTimeout(slot.bootTimer);
     const p = slot.current;
     slot.current = null;
     void slot.worker.terminate().catch(() => undefined);
@@ -107,6 +128,17 @@ export function createBotPool(opts: BotPoolOptions): BotPool {
     pump();
   }
 
+  /** Le délai d'une demande : son budget de réflexion, plus la marge. */
+  function armTimer(slot: Slot): void {
+    const p = slot.current;
+    if (!p) return;
+    if (p.timer) clearTimeout(p.timer);
+    p.timer = setTimeout(() => {
+      console.error('[bots] délai dépassé, fil remplacé');
+      replace(slot);
+    }, p.job.thinkMs + graceMs);
+  }
+
   function pump(): void {
     if (closed) return;
     while (queue.length > 0) {
@@ -117,12 +149,10 @@ export function createBotPool(opts: BotPoolOptions): BotPool {
       // Plus la file est longue, moins chaque bot réfléchit.
       const thinkMs = Math.max(minThinkMs, Math.min(p.job.thinkMs, Math.floor(p.job.thinkMs / (1 + queue.length / size))));
       slot.current = p;
-      p.timer = setTimeout(() => {
-        console.error('[bots] délai dépassé, fil remplacé');
-        replace(slot as Slot);
-      }, thinkMs + graceMs);
+      p.job = { ...p.job, thinkMs };
+      if (slot.ready) armTimer(slot);
       try {
-        slot.worker.postMessage({ id: p.id, job: { ...p.job, thinkMs } });
+        slot.worker.postMessage({ id: p.id, job: p.job });
       } catch (err) {
         // État non copiable : la demande ne peut pas aboutir, la table jouera un coup de secours.
         console.error('[bots] envoi impossible :', err instanceof Error ? err.message : err);
@@ -144,6 +174,7 @@ export function createBotPool(opts: BotPoolOptions): BotPool {
       closed = true;
       for (const p of queue.splice(0)) p.resolve(null);
       await Promise.all(slots.splice(0).map(async (s) => {
+        if (s.bootTimer) clearTimeout(s.bootTimer);
         if (s.current) {
           if (s.current.timer) clearTimeout(s.current.timer);
           s.current.resolve(null);

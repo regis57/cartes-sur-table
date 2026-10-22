@@ -28,3 +28,6 @@ port.on('message', (req: Request) => {
     port.postMessage({ id: req.id, move: null, error: err instanceof Error ? err.message : String(err) });
   }
 });
+
+// Le chargement des jeux est fini : le pool peut compter le délai d'une demande à partir d'ici.
+port.postMessage({ ready: true });
