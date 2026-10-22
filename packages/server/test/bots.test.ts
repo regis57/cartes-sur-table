@@ -36,10 +36,11 @@ test('Pool de bots : chaque jeu joue une manche entière dont tous les coups pas
   }
 });
 
-test('Pool de bots : la réflexion ne bloque pas le fil principal', async () => {
-  const pool = createBotPool({ size: 1 });
+test('Pool de bots : un calcul qui occupe un fil ne bloque pas le fil principal', async () => {
+  // Un fil factice qui calcule sans pause pendant 300 ms : la durée ne dépend pas de la machine
+  // (le MCTS réel, lui, s'arrête aussi à son plafond d'itérations, et peut finir plus tôt).
+  const pool = createBotPool({ size: 1, workerUrl: FACTICE });
   try {
-    // Un coup de 300 ms de réflexion : dans le fil principal, plus rien ne bougerait pendant ce temps.
     let last = Date.now();
     let worst = 0;
     const tick = setInterval(() => {
@@ -47,15 +48,11 @@ test('Pool de bots : la réflexion ne bloque pas le fil principal', async () => 
       worst = Math.max(worst, now - last);
       last = now;
     }, 10);
-    // Le 8 Américain n'a pas de stratégie propre : c'est le MCTS qui occupe tout le budget.
-    const huit = GAMES.find((g) => g.meta.id === 'huit-americain')!;
-    const s2 = huit.def.createRound(4, seededRng(5));
-    const seat2 = huit.def.currentSeat(s2) as number;
     const t0 = Date.now();
-    await pool.choose(job('huit-americain', s2, { seat: seat2, thinkMs: 300 }));
+    assert.equal(await pool.choose(job('occupe', 300)), 'ok');
     const duree = Date.now() - t0;
     clearInterval(tick);
-    assert.ok(duree >= 250, `le calcul a bien occupé un fil (${duree} ms)`);
+    assert.ok(duree >= 290, `le calcul a bien occupé un fil (${duree} ms)`);
     assert.ok(worst < 150, `le fil principal est resté libre (pire intervalle ${worst} ms)`);
   } finally {
     await pool.close();
@@ -128,4 +125,27 @@ test('Configuration : BOT_WORKERS règle le nombre de fils, 0 les désactive', a
   assert.equal(loadConfig({ BOT_WORKERS: '999' }).botWorkers, 16, 'plafonné');
   const par_defaut = loadConfig({}).botWorkers;
   assert.ok(par_defaut >= 1 && par_defaut <= 4, `par défaut entre 1 et 4 (${par_defaut})`);
+});
+
+test('Pool de bots : le délai d\'une demande ne court pas pendant le chargement du fil', async () => {
+  const LENT = new URL('./aide/worker-lent.ts', import.meta.url);
+  // Le fil met 500 ms à se charger ; la marge de la demande n'est que de 100 ms.
+  const pool = createBotPool({ size: 1, workerUrl: LENT, graceMs: 100 });
+  try {
+    assert.equal(await pool.choose(job('ok', 0, { thinkMs: 20 })), 'ok');
+    assert.equal(pool.stats().restarts, 0, 'le fil lent n\'a pas été remplacé');
+  } finally {
+    await pool.close();
+  }
+  // Un fil qui met plus longtemps que le délai de démarrage est remplacé, et la demande répond « pas de coup ».
+  const origine = console.error;
+  console.error = () => undefined;
+  const impatient = createBotPool({ size: 1, workerUrl: LENT, bootMs: 100 });
+  try {
+    assert.equal(await impatient.choose(job('ok', 0)), null);
+    assert.ok(impatient.stats().restarts >= 1);
+  } finally {
+    console.error = origine;
+    await impatient.close();
+  }
 });

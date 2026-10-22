@@ -6,6 +6,26 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.9.2"></a>
+## 0.9.2 — 22 octobre 2026
+
+**Le pool de bots ne compte plus le délai d'un calcul pendant le chargement de son fil.**
+
+Corrigé
+- **Fils de calcul des bots** : le délai d'une demande commençait à courir dès son envoi, donc
+  pendant que le fil, tout neuf, chargeait les trois jeux. Sur une machine lente ou chargée,
+  ce chargement pouvait dépasser le délai : la demande était abandonnée, le fil remplacé, et le
+  bot jouait un coup de secours sans avoir réfléchi. Le fil annonce maintenant qu'il est prêt, et
+  le délai ne court qu'à partir de là. Un fil qui ne devient jamais prêt (15 secondes) est
+  remplacé, comme un fil qui tombe.
+- **Tests** : deux tests du pool dépendaient de la vitesse de la machine (un calcul « d'au moins
+  250 ms » alors que le MCTS s'arrête aussi à son plafond d'itérations ; un délai trop serré pour
+  le démarrage d'un fil). Ils s'appuient maintenant sur des fils factices à durée fixe, et un
+  test vérifie qu'un fil lent à charger n'est pas remplacé à tort. Douze exécutions en parallèle
+  passent, là où trois sur douze échouaient auparavant.
+
+---
+
 <a name="v0.9.1"></a>
 ## 0.9.1 — 19 octobre 2026
 
