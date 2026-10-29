@@ -8,7 +8,7 @@ ARG APP_REVISION
 ARG APP_BUILT_AT
 
 # --- Étape 1 : construire le client (TypeScript → JavaScript, dépendances de développement)
-FROM node:26.11-alpine@sha256:143494b1da2945f061539253adc65e4f1569ddf07da2d384c022c791a9d90a4a AS build
+FROM node:26.12-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json tsconfig.json ./
 COPY packages/core/package.json packages/core/
@@ -20,7 +20,7 @@ COPY packages ./packages
 RUN npm run build
 
 # --- Étape 2 : dépendances de production seulement
-FROM node:26.11-alpine@sha256:143494b1da2945f061539253adc65e4f1569ddf07da2d384c022c791a9d90a4a AS deps
+FROM node:26.12-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/
@@ -30,7 +30,7 @@ COPY packages/client/package.json packages/client/
 RUN npm ci --omit=dev --ignore-scripts
 
 # --- Étape 3 : image finale
-FROM node:26.11-alpine@sha256:143494b1da2945f061539253adc65e4f1569ddf07da2d384c022c791a9d90a4a AS runtime
+FROM node:26.12-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS runtime
 ARG APP_VERSION
 ARG APP_REVISION
 ARG APP_BUILT_AT
