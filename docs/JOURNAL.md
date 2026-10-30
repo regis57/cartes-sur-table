@@ -6,6 +6,21 @@ visible sur `/api/version` du site. Le journal est repris tel quel dans le wiki 
 
 ---
 
+<a name="v0.9.3"></a>
+## 0.9.3 — 30 octobre 2026
+
+**Une faille de dénial de service dans `body-parser` (dépendance d'Express) est corrigée, et l'API refuse les corps compressés.**
+
+Corrigé
+- **`body-parser` 2.3.0 → 2.4.0** (GHSA-27r3-jxmh-p828, gravité haute) : des octets laissés après un corps de requête compressé pouvaient occuper le serveur. L'audit des dépendances de production (`npm audit`) la signalait sur toutes les pull requests, ce qui bloquait les mises à jour de Dependabot (Node 26.12, groupe d'actions) alors que leurs tests passaient. Seul le fichier de verrouillage change : `package.json` garde les mêmes plages.
+- **L'API refuse les corps compressés** (`inflate: false`, réponse 415) : aucun navigateur ne compresse ce qu'il envoie, et la décompression est la porte d'entrée de cette famille d'attaques. La faille aurait été sans objet ici ; la porte est fermée à la source plutôt que de dépendre de la prochaine version.
+
+Documentation
+- Bilan de sécurité : la limite de l'API et la conduite à tenir quand une faille publiée après coup fait rougir l'audit.
+- Contrôles automatiques : ce que signifie un audit rouge sans changement de code.
+
+---
+
 <a name="v0.9.2"></a>
 ## 0.9.2 — 22 octobre 2026
 
