@@ -3,7 +3,7 @@
 | Contrôle | Où | Quand | Verdict |
 |---|---|---|---|
 | Typage strict, tests (unitaires, intégration, simulation de parties), construction | `npm run verify`, CI | chaque commit, chaque PR | bloquant |
-| Audit des dépendances de production | `npm audit`, CI | chaque PR | bloquant au niveau « élevé » |
+| Audit des dépendances de production | `npm audit`, CI | chaque PR | bloquant au niveau « élevé » ; une faille publiée après la dernière fusion fait rougir **toutes** les PR, même sans changement de code : on la corrige par `npm audit fix` dans une PR à part (la 0.9.3 en est un exemple), après quoi on met à jour les autres |
 | Revue des dépendances (vulnérabilités, licences) | `dependency-review` | chaque PR | bloquant |
 | Hygiène du dépôt : secrets, adresses personnelles, inline, tiers, identités de commit | `scripts/hygiene.mjs`, hooks, CI | chaque commit, push, PR | bloquant |
 | Secrets dans l'historique | gitleaks | chaque PR, chaque lundi | bloquant |

@@ -73,7 +73,9 @@ export function createApp(overrides: Partial<Config> = {}): AppHandle {
   });
 
   const api = express.Router();
-  api.use(express.json({ limit: '4kb', strict: true }));
+  // `inflate: false` : aucun navigateur ne compresse ce qu'il envoie, et un corps compressé est la
+  // porte d'entrée des attaques par décompression (la faille de body-parser GHSA-27r3-jxmh-p828).
+  api.use(express.json({ limit: '4kb', strict: true, inflate: false }));
   api.use((_req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     next();

@@ -45,6 +45,7 @@ la surface** (deux dépendances, aucun port ouvert, aucune ressource tierce).
 | Pseudos : normalisation NFC, retrait des caractères de contrôle, de formatage, **bidirectionnels** (« Trojan Source ») et **invisibles** (remplissages hangul et autres caractères ignorables), liste blanche de caractères, longueur 20 | `security.ts` `sanitizeName` |
 | Chaque identifiant a son format validé : table (`^(solo\|online\|private)_…`), code d'invitation (alphabet sans 0/O/1/I), jeton (52 base32), clé de reprise (UUID v4), identifiant de passkey (base64url borné) | `security.ts`, `webauthn.ts` |
 | Charge utile Socket.io plafonnée à **4 Ko** | `app.ts` (`maxHttpBufferSize`) |
+| Corps des requêtes de l'API plafonnés à **4 Ko**, JSON strict, et **jamais décompressés** (`inflate: false`, 415 sinon) : un corps compressé est refusé avant d'être lu | `app.ts` (`express.json`), testé dans `app.test.ts` |
 | Tout objet reçu passe par `isPlainObject` / `isSmallInt` avant usage | `security.ts`, `app.ts` |
 | Aucun texte libre entre joueurs : réactions et phrases sont des **codes d'un catalogue fermé** | `table.ts` `EMOJI_CODES`, `PHRASES` |
 | Requêtes SQL exclusivement préparées et paramétrées | `profiles.ts` |
