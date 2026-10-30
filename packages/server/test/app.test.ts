@@ -544,6 +544,21 @@ test('Passkeys : en production sans PUBLIC_ORIGIN, refusées', async () => {
   }
 });
 
+test('API : un corps compressé est refusé, sans être décompressé', async () => {
+  const { server, port } = await boot();
+  try {
+    for (const encodage of ['gzip', 'deflate', 'br']) {
+      const r = await req(port, 'POST', '/api/profil', { token: 'x'.repeat(40), pseudo: 'Régis' }, { 'content-encoding': encodage });
+      assert.equal(r.status, 415, encodage);
+    }
+    // Sans encodage, le même corps est lu normalement (il est refusé pour son contenu, pas pour sa forme).
+    const clair = await req(port, 'POST', '/api/profil', { token: 'court', pseudo: 'x' });
+    assert.equal(clair.status, 400);
+  } finally {
+    await server.close();
+  }
+});
+
 test('HTTP : les réponses propres à Socket.io portent les mêmes en-têtes de sécurité que le reste', async () => {
   const { server, port } = await boot();
   try {
